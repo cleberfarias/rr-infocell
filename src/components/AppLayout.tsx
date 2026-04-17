@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Wrench, ClipboardCheck, Activity, FileCheck2,
-  Package, ShoppingCart, LineChart, Users, LogOut, Bell, Search, Plus,
+  Package, ShoppingCart, LineChart, Receipt, Users, LogOut, Bell, Search, Plus,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ const nav = [
   { to: "/app/estoque",    label: "Estoque",       icon: Package },
   { to: "/app/pdv",        label: "PDV / Caixa",   icon: ShoppingCart },
   { to: "/app/financeiro", label: "Financeiro",    icon: LineChart },
+  { to: "/app/despesas",   label: "Despesas",      icon: Receipt },
   { to: "/app/clientes",   label: "Clientes",      icon: Users },
 ];
 

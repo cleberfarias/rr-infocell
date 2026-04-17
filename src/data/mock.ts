@@ -67,5 +67,42 @@ export const pecasMaisUsadas = [
   { nome: "Microfone G84", qtd: 5 },
 ];
 
+export type DespesaCategoria =
+  | "aluguel" | "agua" | "luz" | "internet" | "telefone"
+  | "salarios" | "marketing" | "impostos" | "outros";
+
+export type Despesa = {
+  id: string;
+  descricao: string;
+  categoria: DespesaCategoria;
+  fornecedor?: string;
+  valor: number;
+  vencimento: string; // dd/mm
+  recorrente: boolean;
+  pago: boolean;
+};
+
+export const despesas: Despesa[] = [
+  { id: "DSP-001", descricao: "Aluguel da loja",         categoria: "aluguel",  fornecedor: "Imobiliária Centro",      valor: 2200, vencimento: "05/05", recorrente: true, pago: true  },
+  { id: "DSP-002", descricao: "Energia elétrica",        categoria: "luz",      fornecedor: "Enel SP",                 valor: 540,  vencimento: "10/05", recorrente: true, pago: true  },
+  { id: "DSP-003", descricao: "Conta de água",           categoria: "agua",     fornecedor: "Sabesp",                  valor: 180,  vencimento: "12/05", recorrente: true, pago: false },
+  { id: "DSP-004", descricao: "Internet fibra 600MB",    categoria: "internet", fornecedor: "Vivo Empresas",           valor: 199,  vencimento: "15/05", recorrente: true, pago: true  },
+  { id: "DSP-005", descricao: "Telefone fixo",           categoria: "telefone", fornecedor: "Vivo",                    valor: 89,   vencimento: "15/05", recorrente: true, pago: false },
+  { id: "DSP-006", descricao: "Salário técnico Rafael",  categoria: "salarios", fornecedor: "Folha de pagamento",      valor: 2400, vencimento: "05/05", recorrente: true, pago: false },
+  { id: "DSP-007", descricao: "Anúncio Instagram",       categoria: "marketing",fornecedor: "Meta Ads",                valor: 250,  vencimento: "20/05", recorrente: false, pago: false },
+];
+
+export const categoriaLabels: Record<DespesaCategoria, string> = {
+  aluguel: "Aluguel",
+  agua: "Água",
+  luz: "Energia",
+  internet: "Internet",
+  telefone: "Telefone",
+  salarios: "Salários",
+  marketing: "Marketing",
+  impostos: "Impostos",
+  outros: "Outros",
+};
+
 export const formatBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });

@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { faturamentoSemanal, ordens, pecasEstoque, formatBRL } from "@/data/mock";
+import { faturamentoSemanal, ordens, pecasEstoque, despesas, formatBRL } from "@/data/mock";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Calendar, TrendingUp, TrendingDown } from "lucide-react";
 
@@ -9,7 +9,7 @@ const Financeiro = () => {
   const receitaProdutos = ordens.reduce((s, o) => s + o.valorPecas, 0) * 4;
   const custoPecas = ordens.reduce((s, o) => s + o.pecas.reduce((a, p) => a + p.custo * p.qtd, 0), 0) * 4;
   const lucroBruto = receitaServicos + receitaProdutos - custoPecas;
-  const despesasFixas = 3200;
+  const despesasFixas = despesas.reduce((s, d) => s + d.valor, 0);
   const lucroLiquido = lucroBruto - despesasFixas;
 
   const linhas = [

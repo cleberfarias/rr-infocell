@@ -3,12 +3,50 @@ import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Wrench, Cpu } from "lucide-react";
+import { ShieldCheck, Wrench, Cpu, UserCog, Headset, Settings2, Check } from "lucide-react";
 import { useState } from "react";
+
+type Role = "admin" | "atendente" | "tecnico";
+
+const roles: Record<Role, {
+  titulo: string;
+  descricao: string;
+  email: string;
+  badge: string;
+  icon: typeof UserCog;
+  acesso: string[];
+}> = {
+  admin: {
+    titulo: "Administrador",
+    descricao: "Acesso total: financeiro, despesas, relatórios e gestão da loja.",
+    email: "ricardo@rrinfocell.com.br",
+    badge: "Acesso total",
+    icon: UserCog,
+    acesso: ["Dashboard completo", "Financeiro & DRE", "Despesas", "Usuários"],
+  },
+  atendente: {
+    titulo: "Atendente / Balcão",
+    descricao: "Cadastro de OS, checklist, clientes e PDV. Sem acesso financeiro.",
+    email: "atendente@rrinfocell.com.br",
+    badge: "Operacional",
+    icon: Headset,
+    acesso: ["Nova OS", "Checklist", "Clientes", "PDV / Caixa"],
+  },
+  tecnico: {
+    titulo: "Técnico de bancada",
+    descricao: "Foco em manutenção, diagnóstico e baixa de peças no estoque.",
+    email: "tecnico@rrinfocell.com.br",
+    badge: "Bancada",
+    icon: Settings2,
+    acesso: ["Manutenção", "Diagnóstico", "Estoque (consulta)", "Orçamento técnico"],
+  },
+};
 
 const Login = () => {
   const navigate = useNavigate();
-  const [role, setRole] = useState<"admin" | "atendente" | "tecnico">("admin");
+  const [role, setRole] = useState<Role>("admin");
+  const config = roles[role];
+  const RoleIcon = config.icon;
 
   const handle = (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,31 +106,62 @@ const Login = () => {
           <div className="space-y-2">
             <p className="font-mono text-xs uppercase tracking-widest text-primary">Bem-vindo de volta</p>
             <h1 className="font-display text-3xl font-bold">Acessar o painel</h1>
-            <p className="text-sm text-muted-foreground">Use suas credenciais para entrar no sistema RR Infocell.</p>
+            <p className="text-sm text-muted-foreground">Selecione seu perfil de acesso e entre no sistema RR Infocell.</p>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 rounded-md border border-border bg-secondary/40 p-1">
-            {(["admin", "atendente", "tecnico"] as const).map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => setRole(r)}
-                className={
-                  "rounded-sm px-2 py-1.5 text-xs font-medium uppercase tracking-wide transition-colors " +
-                  (role === r
-                    ? "bg-gradient-primary text-primary-foreground shadow-glow"
-                    : "text-muted-foreground hover:text-foreground")
-                }
-              >
-                {r}
-              </button>
-            ))}
+          {/* Seletor de perfil */}
+          <div className="grid grid-cols-3 gap-2">
+            {(Object.keys(roles) as Role[]).map((r) => {
+              const Icon = roles[r].icon;
+              const ativo = role === r;
+              return (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setRole(r)}
+                  className={
+                    "flex flex-col items-center gap-1.5 rounded-md border px-2 py-3 text-xs font-medium transition-all " +
+                    (ativo
+                      ? "border-primary/60 bg-primary/10 text-foreground shadow-glow"
+                      : "border-border bg-secondary/30 text-muted-foreground hover:border-border hover:text-foreground")
+                  }
+                >
+                  <Icon className={"h-4 w-4 " + (ativo ? "text-primary" : "")} />
+                  <span className="capitalize">{r}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Card descritivo do perfil escolhido */}
+          <div className="rounded-md border border-border bg-card/60 p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-gradient-primary text-primary-foreground">
+                <RoleIcon className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="font-display text-sm font-semibold">{config.titulo}</p>
+                  <span className="rounded-sm bg-primary/15 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-primary">
+                    {config.badge}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">{config.descricao}</p>
+                <ul className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">
+                  {config.acesso.map((a) => (
+                    <li key={a} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                      <Check className="h-3 w-3 text-success" /> {a}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           </div>
 
           <form onSubmit={handle} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">E-mail</Label>
-              <Input id="email" type="email" defaultValue="ricardo@rrinfocell.com.br" />
+              <Input id="email" type="email" key={config.email} defaultValue={config.email} />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -102,7 +171,7 @@ const Login = () => {
               <Input id="senha" type="password" defaultValue="••••••••" />
             </div>
             <Button type="submit" className="w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90">
-              Entrar no sistema
+              Entrar como {config.titulo}
             </Button>
           </form>
 
