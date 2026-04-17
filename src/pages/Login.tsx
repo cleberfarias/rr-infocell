@@ -3,12 +3,50 @@ import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Wrench, Cpu } from "lucide-react";
+import { ShieldCheck, Wrench, Cpu, UserCog, Headset, Settings2, Check } from "lucide-react";
 import { useState } from "react";
+
+type Role = "admin" | "atendente" | "tecnico";
+
+const roles: Record<Role, {
+  titulo: string;
+  descricao: string;
+  email: string;
+  badge: string;
+  icon: typeof UserCog;
+  acesso: string[];
+}> = {
+  admin: {
+    titulo: "Administrador",
+    descricao: "Acesso total: financeiro, despesas, relatórios e gestão da loja.",
+    email: "ricardo@rrinfocell.com.br",
+    badge: "Acesso total",
+    icon: UserCog,
+    acesso: ["Dashboard completo", "Financeiro & DRE", "Despesas", "Usuários"],
+  },
+  atendente: {
+    titulo: "Atendente / Balcão",
+    descricao: "Cadastro de OS, checklist, clientes e PDV. Sem acesso financeiro.",
+    email: "atendente@rrinfocell.com.br",
+    badge: "Operacional",
+    icon: Headset,
+    acesso: ["Nova OS", "Checklist", "Clientes", "PDV / Caixa"],
+  },
+  tecnico: {
+    titulo: "Técnico de bancada",
+    descricao: "Foco em manutenção, diagnóstico e baixa de peças no estoque.",
+    email: "tecnico@rrinfocell.com.br",
+    badge: "Bancada",
+    icon: Settings2,
+    acesso: ["Manutenção", "Diagnóstico", "Estoque (consulta)", "Orçamento técnico"],
+  },
+};
 
 const Login = () => {
   const navigate = useNavigate();
-  const [role, setRole] = useState<"admin" | "atendente" | "tecnico">("admin");
+  const [role, setRole] = useState<Role>("admin");
+  const config = roles[role];
+  const RoleIcon = config.icon;
 
   const handle = (e: React.FormEvent) => {
     e.preventDefault();
