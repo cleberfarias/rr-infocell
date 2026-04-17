@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useLocation, Navigate } from "react-router-dom";
 import {
   LayoutDashboard, Wrench, ClipboardCheck, Activity, FileCheck2,
   Package, ShoppingCart, LineChart, Receipt, Users, LogOut, Bell, Search, Plus,
@@ -6,25 +6,43 @@ import {
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { getRole, canAccess, roleLabels, roleHome, ROLE_KEY, NAME_KEY, roleNames } from "@/lib/roles";
 
-const nav = [
-  { to: "/app",            label: "Dashboard",     icon: LayoutDashboard },
-  { to: "/app/ordens",     label: "Ordens de Serviço", icon: Wrench },
-  { to: "/app/checklist",  label: "Checklist",     icon: ClipboardCheck },
-  { to: "/app/manutencao", label: "Manutenção",    icon: Activity },
-  { to: "/app/orcamento",  label: "Orçamentos",    icon: FileCheck2 },
-  { to: "/app/estoque",    label: "Estoque",       icon: Package },
-  { to: "/app/pdv",        label: "PDV / Caixa",   icon: ShoppingCart },
-  { to: "/app/financeiro", label: "Financeiro",    icon: LineChart },
-  { to: "/app/despesas",   label: "Despesas",      icon: Receipt },
-  { to: "/app/clientes",   label: "Clientes",      icon: Users },
+const allNav = [
+  { to: "/app",            label: "Dashboard",         icon: LayoutDashboard, key: "" },
+  { to: "/app/ordens",     label: "Ordens de Serviço", icon: Wrench,          key: "ordens" },
+  { to: "/app/checklist",  label: "Checklist",         icon: ClipboardCheck,  key: "checklist" },
+  { to: "/app/manutencao", label: "Manutenção",        icon: Activity,        key: "manutencao" },
+  { to: "/app/orcamento",  label: "Orçamentos",        icon: FileCheck2,      key: "orcamento" },
+  { to: "/app/estoque",    label: "Estoque",           icon: Package,         key: "estoque" },
+  { to: "/app/pdv",        label: "PDV / Caixa",       icon: ShoppingCart,    key: "pdv" },
+  { to: "/app/financeiro", label: "Financeiro",        icon: LineChart,       key: "financeiro" },
+  { to: "/app/despesas",   label: "Despesas",          icon: Receipt,         key: "despesas" },
+  { to: "/app/clientes",   label: "Clientes",          icon: Users,           key: "clientes" },
 ];
 
 export const AppLayout = () => {
   const location = useLocation();
+  const role = getRole();
+  const nome = (typeof window !== "undefined" && localStorage.getItem(NAME_KEY)) || roleNames[role];
+
+  // Bloqueio de rota: se o perfil não tem acesso, manda pra home dele
+  if (!canAccess(role, location.pathname)) {
+    return <Navigate to={roleHome[role]} replace />;
+  }
+
+  const nav = allNav.filter((n) => canAccess(role, n.to));
   const current = nav.find((n) =>
     n.to === "/app" ? location.pathname === "/app" : location.pathname.startsWith(n.to)
   );
+
+  const podeNovaOS = canAccess(role, "/app/ordens/nova");
+  const inicial = nome.trim().charAt(0).toUpperCase();
+
+  const sair = () => {
+    localStorage.removeItem(ROLE_KEY);
+    localStorage.removeItem(NAME_KEY);
+  };
 
   return (
     <div className="flex min-h-screen w-full bg-background">
@@ -36,7 +54,7 @@ export const AppLayout = () => {
 
         <nav className="flex-1 space-y-1 p-3">
           <p className="px-3 pb-2 pt-3 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-            Operação
+            Operação · {roleLabels[role]}
           </p>
           {nav.map(({ to, label, icon: Icon }) => (
             <NavLink
@@ -61,13 +79,13 @@ export const AppLayout = () => {
         <div className="border-t border-sidebar-border p-3">
           <div className="flex items-center gap-3 rounded-md bg-sidebar-accent/50 p-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-md bg-gradient-primary font-display font-bold text-primary-foreground">
-              R
+              {inicial}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-sidebar-accent-foreground">Ricardo R.</p>
-              <p className="truncate text-xs text-muted-foreground">Administrador</p>
+              <p className="truncate text-sm font-medium text-sidebar-accent-foreground">{nome}</p>
+              <p className="truncate text-xs text-muted-foreground">{roleLabels[role]}</p>
             </div>
-            <NavLink to="/" className="rounded-md p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-foreground">
+            <NavLink to="/" onClick={sair} className="rounded-md p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-foreground">
               <LogOut className="h-4 w-4" />
             </NavLink>
           </div>
@@ -83,10 +101,10 @@ export const AppLayout = () => {
           </div>
           <div className="hidden md:flex flex-col">
             <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
-              RR Infocell • Painel
+              RR Infocell • {roleLabels[role]}
             </p>
             <h1 className="font-display text-lg font-semibold leading-none">
-              {current?.label ?? "Dashboard"}
+              {current?.label ?? "Painel"}
             </h1>
           </div>
 
@@ -102,11 +120,13 @@ export const AppLayout = () => {
               <Bell className="h-4 w-4" />
               <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-primary animate-pulse-glow" />
             </Button>
-            <Button asChild className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90">
-              <NavLink to="/app/ordens/nova">
-                <Plus className="h-4 w-4" /> Nova OS
-              </NavLink>
-            </Button>
+            {podeNovaOS && (
+              <Button asChild className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90">
+                <NavLink to="/app/ordens/nova">
+                  <Plus className="h-4 w-4" /> Nova OS
+                </NavLink>
+              </Button>
+            )}
           </div>
         </header>
 

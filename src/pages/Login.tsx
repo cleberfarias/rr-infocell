@@ -50,7 +50,10 @@ const Login = () => {
 
   const handle = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate("/app");
+    import("@/lib/roles").then(({ setRole: persistRole, roleHome }) => {
+      persistRole(role);
+      navigate(roleHome[role]);
+    });
   };
 
   return (
