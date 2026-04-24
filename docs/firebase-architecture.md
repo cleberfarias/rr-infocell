@@ -64,6 +64,12 @@ Fluxo recomendado:
 - Escritas sensiveis devem passar pelo backend.
 - Dados financeiros e configuracoes devem ser restritos a `admin`.
 - Storage deve exigir usuario autenticado e vinculo com OS quando fotos forem implementadas.
+- Regras iniciais ficam em `infra/firebase/firestore.rules` e `infra/firebase/storage.rules`.
+- Configuracao de Hosting, regras e emuladores fica em `firebase.json`.
+
+## Setup operacional
+
+O passo a passo de criacao do projeto, variaveis de ambiente, emuladores e deploy esta documentado em `docs/firebase-setup.md`.
 
 ## Backend Node/Express
 

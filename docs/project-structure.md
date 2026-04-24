@@ -7,6 +7,8 @@ rr-infocell/
 |-- frontend/
 |-- backend/
 |-- infra/
+|-- firebase.json
+|-- .firebaserc.example
 |-- docs/
 `-- README.md
 ```
@@ -46,7 +48,7 @@ Arquivos principais:
 
 ## Infra
 
-Reservado para deploy e configuracao operacional.
+Contem configuracoes de deploy e ambiente Firebase.
 
 Responsabilidades:
 
@@ -55,6 +57,13 @@ Responsabilidades:
 - Regras do Storage.
 - Scripts de deploy.
 - Documentacao de ambiente.
+
+Arquivos principais:
+
+- `infra/firebase/firestore.rules`
+- `infra/firebase/storage.rules`
+- `firebase.json`
+- `.firebaserc.example`
 
 ## Docs
 
@@ -65,4 +74,5 @@ Arquivos principais:
 - `design-system.md`
 - `mvp-scope.md`
 - `firebase-architecture.md`
+- `firebase-setup.md`
 - `project-structure.md`

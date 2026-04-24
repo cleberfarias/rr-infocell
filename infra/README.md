@@ -10,21 +10,24 @@ Pasta reservada para configuracoes de infraestrutura, deploy e ambiente local.
 - Arquivos futuros: Firebase Storage.
 - Backend: API Node/Express publicada em Cloud Run, Render ou Railway.
 
-## Arquivos futuros
+## Arquivos Firebase
 
 ```text
 infra/
 |-- firebase/
-|   |-- firebase.json
 |   |-- firestore.rules
-|   |-- storage.rules
-|   `-- .firebaserc.example
+|   `-- storage.rules
 |-- scripts/
 |   |-- deploy-frontend.sh
 |   |-- deploy-backend.sh
 |   `-- deploy-all.sh
 `-- README.md
 ```
+
+Arquivos na raiz:
+
+- `firebase.json`
+- `.firebaserc.example`
 
 ## Observacao
 
