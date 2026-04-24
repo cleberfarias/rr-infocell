@@ -1,6 +1,6 @@
-# Backend
+# Backend RR Infocell
 
-Pasta reservada para a API do MVP do RR Infocell.
+API base do MVP do RR Infocell.
 
 ## Stack definida
 
@@ -20,17 +20,59 @@ Pasta reservada para a API do MVP do RR Infocell.
 - Registrar historico de alteracoes.
 - Expor endpoints para o frontend.
 
-## Modulos previstos
+## Modulos iniciais
 
-- `auth`
-- `usuarios`
+- `health`
 - `clientes`
 - `aparelhos`
 - `ordens-servico`
 - `checklists`
-- `estoque`
-- `relatorios`
+
+Os modulos de dominio ainda estao em modo scaffold. Eles ja expõem rotas base para evolucao das regras de negocio.
+
+## Como rodar
+
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+Servidor local padrao:
+
+```text
+http://localhost:3333
+```
+
+Health check:
+
+```text
+GET /api/health
+```
+
+## Variaveis de ambiente
+
+Copie `.env.example` para `.env` e preencha as credenciais quando o Firebase Admin SDK for usado de verdade.
+
+```text
+PORT=3333
+CORS_ORIGIN=http://localhost:8080
+FIREBASE_PROJECT_ID=
+FIREBASE_CLIENT_EMAIL=
+FIREBASE_PRIVATE_KEY=
+```
+
+Sem credenciais, a API sobe em modo local e informa `firebaseAdmin: not_configured` no health check.
+
+## Validacao
+
+```bash
+npm run build
+npm run lint
+npm run format:check
+npm test
+```
 
 ## Status
 
-Ainda nao implementado. A Fase 1 apenas define a estrutura e a arquitetura.
+Base implementada com Express, TypeScript, middlewares globais, tratamento padronizado de erros, health check, rotas scaffold e preparacao do Firebase Admin SDK.

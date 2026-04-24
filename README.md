@@ -11,6 +11,7 @@ O objetivo do projeto e centralizar o fluxo operacional da RR Infocell: clientes
 - Firebase definido como base tecnica do MVP.
 - Design system inicial criado e documentado.
 - Frontend reorganizado em `frontend/`.
+- Backend base criado em `backend/`.
 
 ## Stack definida
 
@@ -24,7 +25,7 @@ O objetivo do projeto e centralizar o fluxo operacional da RR Infocell: clientes
 - lucide-react
 - Recharts
 
-### Backend futuro
+### Backend
 
 - Node.js
 - Express
@@ -50,6 +51,8 @@ rr-infocell/
 |   |-- package.json
 |   `-- vite.config.ts
 |-- backend/
+|   |-- src/
+|   |-- package.json
 |   `-- README.md
 |-- infra/
 |   `-- README.md
@@ -76,11 +79,39 @@ Servidor local padrao:
 http://localhost:8080
 ```
 
+## Como rodar o backend
+
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+Servidor local padrao:
+
+```text
+http://localhost:3333
+```
+
+Health check:
+
+```text
+GET /api/health
+```
+
 ## Validacao
 
 ```bash
 cd frontend
 npm run build
+npm test
+```
+
+```bash
+cd backend
+npm run build
+npm run lint
+npm run format:check
 npm test
 ```
 

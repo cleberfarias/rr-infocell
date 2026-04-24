@@ -26,7 +26,7 @@ Responsabilidades:
 
 ## Backend
 
-Reservado para API Node/Express.
+Contem a API Node/Express base do MVP.
 
 Responsabilidades:
 
@@ -35,6 +35,14 @@ Responsabilidades:
 - Operacoes sensiveis no Firestore.
 - Geracao de numero automatico de OS.
 - Logs de auditoria.
+
+Arquivos principais:
+
+- `src/app.ts`
+- `src/server.ts`
+- `src/routes.ts`
+- `src/firebase/admin.ts`
+- `src/modules/health/health.routes.ts`
 
 ## Infra
 
