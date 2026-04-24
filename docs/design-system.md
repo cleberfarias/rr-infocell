@@ -66,12 +66,49 @@ Use para areas com cabecalho e conteudo: tabelas, listas, graficos e blocos de f
 </SectionPanel>
 ```
 
+### `DataTable`
+
+Use para listagens operacionais com colunas densas, leitura horizontal e acoes por linha.
+
+```tsx
+<DataTable
+  columns={columns}
+  data={ordens}
+  getRowKey={(ordem) => ordem.id}
+  emptyState={<EmptyState title="Nenhuma ordem encontrada" />}
+/>
+```
+
+### `FormField`
+
+Use para padronizar label, hint e erro em filtros e formularios.
+
+```tsx
+<FormField id="cliente" label="Cliente" hint="Nome completo ou telefone">
+  <Input id="cliente" />
+</FormField>
+```
+
+### `EmptyState`
+
+Use em tabelas e paineis sem dados, sempre com mensagem objetiva e acao quando existir proximo passo claro.
+
+```tsx
+<EmptyState
+  icon={ClipboardList}
+  title="Nenhuma ordem encontrada"
+  description="Ajuste a busca ou crie uma nova ordem de servico."
+/>
+```
+
 ## Regras de uso
 
 - Acao principal da tela usa `Button` default ou `bg-gradient-primary` quando precisa de destaque.
 - Acoes secundarias usam `outline` ou `ghost`.
 - Cards devem usar `surface-panel` para manter a aparencia do produto.
-- Tabelas devem priorizar densidade, alinhamento e leitura rapida.
+- Tabelas devem usar `DataTable` e priorizar densidade, alinhamento e leitura rapida.
+- Campos de formulario e filtros devem usar `FormField` para manter label, hint e erro consistentes.
+- Estados vazios devem usar `EmptyState`; nao deixar paineis sem dados em branco.
 - Status devem usar `StatusBadge`; nao criar badges manuais com cores soltas.
 - Nao usar cores Tailwind cruas como `blue-500`, `red-500` ou `green-500` em telas do produto. Preferir tokens (`primary`, `success`, `warning`, `destructive`, `muted`, `border`).
 - Icones devem vir de `lucide-react`.
@@ -79,8 +116,5 @@ Use para areas com cabecalho e conteudo: tabelas, listas, graficos e blocos de f
 
 ## Proximos componentes recomendados
 
-- `DataTable` para listagens de OS, clientes, estoque e financeiro.
-- `FormField` para padronizar label, hint, erro e input.
 - `StatusTimeline` para ciclo de vida da ordem de servico.
-- `EmptyState` para telas sem dados.
 - `ConfirmDialog` para acoes destrutivas.
