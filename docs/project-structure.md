@@ -1,0 +1,60 @@
+# Estrutura do projeto
+
+## Estrutura atual
+
+```text
+rr-infocell/
+|-- frontend/
+|-- backend/
+|-- infra/
+|-- docs/
+`-- README.md
+```
+
+## Frontend
+
+Contem o app React/Vite atual.
+
+Responsabilidades:
+
+- Telas.
+- Layout.
+- Componentes de interface.
+- Design system.
+- Integracao com API.
+- Integracao com Firebase client quando necessario.
+
+## Backend
+
+Reservado para API Node/Express.
+
+Responsabilidades:
+
+- Regras de negocio.
+- Autenticacao validada via Firebase Admin SDK.
+- Operacoes sensiveis no Firestore.
+- Geracao de numero automatico de OS.
+- Logs de auditoria.
+
+## Infra
+
+Reservado para deploy e configuracao operacional.
+
+Responsabilidades:
+
+- Firebase Hosting.
+- Regras do Firestore.
+- Regras do Storage.
+- Scripts de deploy.
+- Documentacao de ambiente.
+
+## Docs
+
+Documentacao do projeto e decisoes tecnicas.
+
+Arquivos principais:
+
+- `design-system.md`
+- `mvp-scope.md`
+- `firebase-architecture.md`
+- `project-structure.md`
