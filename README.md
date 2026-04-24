@@ -57,6 +57,7 @@ rr-infocell/
 |   |-- design-system.md
 |   |-- firebase-architecture.md
 |   |-- mvp-scope.md
+|   |-- notion-update-rule.md
 |   `-- project-structure.md
 `-- README.md
 ```
@@ -89,6 +90,7 @@ npm test
 - [Escopo do MVP](docs/mvp-scope.md)
 - [Arquitetura Firebase](docs/firebase-architecture.md)
 - [Estrutura do projeto](docs/project-structure.md)
+- [Regra de atualizacao do Notion](docs/notion-update-rule.md)
 
 ## Funcionalidades do MVP
 
