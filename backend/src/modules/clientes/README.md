@@ -6,9 +6,9 @@ Gerenciar a base de clientes do RR Infocell. Este modulo alimenta os cadastros d
 
 ## Status atual
 
-Implementado com API REST, validacao Zod, service, repository em memoria e testes de rotas.
+Implementado com API REST, validacao Zod, service, repository Firestore, fallback em memoria e testes de rotas.
 
-Enquanto o Firebase real nao estiver configurado, os dados ficam em memoria. Cadastros criados durante a execucao local sao perdidos ao reiniciar o backend.
+Quando o Firebase Admin SDK estiver configurado, os dados sao persistidos na colecao `clientes` do Firestore. Com `FIRESTORE_EMULATOR_HOST`, o modulo usa o Firestore Emulator sem service account. Sem credenciais ou emulador, os dados ficam em memoria; cadastros criados durante a execucao local sao perdidos ao reiniciar o backend.
 
 ## Endpoints
 
@@ -79,7 +79,7 @@ A busca em `GET /api/clientes?q=termo` consulta:
 - `clientes.routes.ts`: rotas HTTP.
 - `clientes.schemas.ts`: validacao de entrada e busca.
 - `clientes.service.ts`: regras de aplicacao.
-- `clientes.repository.ts`: armazenamento em memoria.
+- `clientes.repository.ts`: armazenamento Firestore e fallback em memoria.
 - `clientes.types.ts`: tipos do modulo.
 - `clientes.routes.test.ts`: testes de contrato das rotas.
 
@@ -101,7 +101,6 @@ Cobertura atual:
 
 ## Proximos passos
 
-- Trocar repository em memoria por Firestore.
 - Criar verificacao de duplicidade por telefone/documento.
 - Adicionar paginacao quando houver volume real.
 - Vincular aparelhos e ordens de servico ao cliente.

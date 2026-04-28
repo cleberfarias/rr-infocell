@@ -72,6 +72,14 @@ FIREBASE_PRIVATE_KEY=
 
 Sem credenciais, a API sobe em modo local e informa `firebaseAdmin: not_configured` no health check.
 
+Para usar Firestore Emulator sem service account, configure:
+
+```text
+FIREBASE_PROJECT_ID=rr-infocell
+FIRESTORE_EMULATOR_HOST=127.0.0.1:8081
+FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099
+```
+
 ## Validacao
 
 ```bash
@@ -83,4 +91,4 @@ npm test
 
 ## Status
 
-Base implementada com Express, TypeScript, middlewares globais, tratamento padronizado de erros, health check, modulo de clientes funcional, rotas scaffold dos demais modulos e preparacao do Firebase Admin SDK.
+Base implementada com Express, TypeScript, middlewares globais, tratamento padronizado de erros, health check, modulo de clientes funcional com Firestore/fallback local, rotas scaffold dos demais modulos e Firebase Admin SDK.

@@ -53,7 +53,7 @@ Arquivos principais:
 Modulos atuais:
 
 - `health`: status da API.
-- `clientes`: CRUD implementado com busca, validacao e testes.
+- `clientes`: CRUD implementado com busca, validacao, Firestore/fallback local e testes.
 - `aparelhos`: scaffold.
 - `ordens-servico`: scaffold.
 - `checklists`: scaffold.
@@ -96,7 +96,9 @@ Arquivos principais:
 Comandos de desenvolvimento na raiz:
 
 - `make dev`: sobe backend e frontend em paralelo.
+- `make dev-db`: sobe Firebase Emulator, backend e frontend em paralelo.
 - `make dev-fresh`: para as portas locais e sobe tudo novamente.
-- `make dev-stop`: encerra processos nas portas `3333` e `5173`.
+- `make dev-stop`: encerra processos nas portas locais do app e dos emuladores.
 - `make dev-backend`: sobe apenas o backend.
 - `make dev-frontend`: sobe apenas o frontend.
+- `make firebase-emulators`: sobe apenas Auth, Firestore e Storage Emulator.

@@ -12,7 +12,7 @@ O objetivo do projeto e centralizar o fluxo operacional da RR Infocell: clientes
 - Design system inicial criado e documentado.
 - Frontend reorganizado em `frontend/`.
 - Backend base criado em `backend/`.
-- Modulo de clientes implementado com API REST, tela integrada e testes.
+- Modulo de clientes implementado com API REST, tela integrada, Firestore/fallback local e testes.
 
 ## Stack definida
 
@@ -77,6 +77,12 @@ rr-infocell/
 make dev
 ```
 
+Para rodar com Firebase Emulator local:
+
+```bash
+make dev-db
+```
+
 Se as portas ja estiverem ocupadas por uma execucao anterior:
 
 ```bash
@@ -88,6 +94,7 @@ Servicos locais:
 ```text
 Frontend: http://127.0.0.1:5173
 Backend:  http://localhost:3333
+Firebase UI: http://127.0.0.1:4000
 ```
 
 ## Como rodar o frontend

@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type NextFunction, type Request, type Response } from "express";
 import { ZodError } from "zod";
 
 import { AppError } from "../../shared/errors.js";
@@ -7,6 +7,13 @@ import { clienteInputSchema, clienteSearchSchema } from "./clientes.schemas.js";
 import { clientesService } from "./clientes.service.js";
 
 export const clientesRoutes = Router();
+
+type AsyncRouteHandler = (request: Request, response: Response, next: NextFunction) => Promise<void>;
+
+const asyncHandler =
+  (handler: AsyncRouteHandler) => (request: Request, response: Response, next: NextFunction) => {
+    handler(request, response, next).catch(next);
+  };
 
 const parseOrThrow = <T>(parse: () => T) => {
   try {
@@ -20,9 +27,9 @@ const parseOrThrow = <T>(parse: () => T) => {
   }
 };
 
-clientesRoutes.get("/", (request, response) => {
+clientesRoutes.get("/", asyncHandler(async (request, response) => {
   const { q } = parseOrThrow(() => clienteSearchSchema.parse(request.query));
-  const clientes = clientesService.list(q);
+  const clientes = await clientesService.list(q);
 
   response.status(httpStatus.ok).json({
     data: clientes,
@@ -31,32 +38,37 @@ clientesRoutes.get("/", (request, response) => {
       query: q,
     },
   });
-});
+}));
 
-clientesRoutes.get("/:id", (request, response) => {
+clientesRoutes.get("/:id", asyncHandler(async (request, response) => {
+  const id = String(request.params.id);
+
   response.status(httpStatus.ok).json({
-    data: clientesService.getById(request.params.id),
+    data: await clientesService.getById(id),
   });
-});
+}));
 
-clientesRoutes.post("/", (request, response) => {
+clientesRoutes.post("/", asyncHandler(async (request, response) => {
   const input = parseOrThrow(() => clienteInputSchema.parse(request.body));
 
   response.status(httpStatus.created).json({
-    data: clientesService.create(input),
+    data: await clientesService.create(input),
   });
-});
+}));
 
-clientesRoutes.put("/:id", (request, response) => {
+clientesRoutes.put("/:id", asyncHandler(async (request, response) => {
+  const id = String(request.params.id);
   const input = parseOrThrow(() => clienteInputSchema.parse(request.body));
 
   response.status(httpStatus.ok).json({
-    data: clientesService.update(request.params.id, input),
+    data: await clientesService.update(id, input),
   });
-});
+}));
 
-clientesRoutes.delete("/:id", (request, response) => {
-  clientesService.delete(request.params.id);
+clientesRoutes.delete("/:id", asyncHandler(async (request, response) => {
+  const id = String(request.params.id);
+
+  await clientesService.delete(id);
 
   response.status(204).send();
-});
+}));

@@ -41,6 +41,12 @@ Os servicos podem ser iniciados pela raiz do repositorio:
 make dev
 ```
 
+Para rodar com banco local via Firestore Emulator:
+
+```bash
+make dev-db
+```
+
 Se as portas locais ja estiverem ocupadas:
 
 ```bash
@@ -51,3 +57,7 @@ Portas padrao:
 
 - Frontend: `5173`
 - Backend: `3333`
+- Firebase Emulator UI: `4000`
+- Firestore Emulator: `8081`
+- Auth Emulator: `9099`
+- Storage Emulator: `9199`
