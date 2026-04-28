@@ -15,15 +15,31 @@ O backend ja esta preparado para usar Firestore no modulo de clientes quando o F
 - `frontend/.env.example`: variaveis publicas do Firebase client e API.
 - `backend/.env.example`: variaveis privadas do Firebase Admin SDK.
 
+## Estado atual
+
+- Projeto Firebase criado: `rr-infocell`.
+- App Web criado e variaveis publicas obtidas.
+- Firestore database criado: `(default)`.
+- Regiao do Firestore: `nam5`.
+- Cloud Firestore API habilitada.
+- Regras do Firestore publicadas.
+- Backend local validado gravando e lendo da colecao `clientes` no Firestore real.
+- Service account local criada para desenvolvimento em `backend/firebase-service-account.local.json`.
+
 ## Passos no Firebase Console
 
+Itens ja executados:
+
 1. Criar um projeto Firebase para o RR Infocell.
-2. Ativar Firebase Auth.
-3. Ativar Firestore.
-4. Ativar Firebase Storage.
-5. Cadastrar um app Web para obter as variaveis `VITE_FIREBASE_*`.
-6. Criar uma service account para o backend.
-7. Definir claims de perfil nos usuarios: `admin`, `atendente` ou `tecnico`.
+2. Ativar Firestore.
+3. Cadastrar um app Web para obter as variaveis `VITE_FIREBASE_*`.
+4. Criar service account local para o backend.
+
+Itens pendentes:
+
+1. Ativar/configurar Firebase Auth para usuarios internos.
+2. Configurar Firebase Storage quando upload de arquivos entrar no MVP.
+3. Definir claims de perfil nos usuarios: `admin`, `atendente` ou `tecnico`.
 
 ## Configuracao local
 
@@ -106,6 +122,7 @@ Status atual:
 - Regiao do database: `nam5`.
 - Regras publicadas de: `infra/firebase/firestore.rules`.
 - Backend local autenticado por service account JSON via `GOOGLE_APPLICATION_CREDENTIALS`.
+- Validado com `POST /api/clientes` e `GET /api/clientes?q=Firebase Real`.
 
 Arquivo local usado no desenvolvimento:
 

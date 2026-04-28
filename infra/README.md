@@ -6,7 +6,7 @@ Pasta reservada para configuracoes de infraestrutura, deploy e ambiente local.
 
 - Frontend: Firebase Hosting.
 - Auth: Firebase Auth.
-- Banco: Firestore.
+- Banco: Firestore real no projeto `rr-infocell`.
 - Arquivos futuros: Firebase Storage.
 - Backend: API Node/Express publicada em Cloud Run, Render ou Railway.
 
@@ -36,6 +36,15 @@ Esses dois arquivos ficam na raiz porque a Firebase CLI usa esse local por padra
 ## Observacao
 
 Docker pode ser usado para padronizar a API no futuro, mas PostgreSQL e Prisma ficam fora do MVP inicial.
+
+## Estado Firebase
+
+- Projeto Firebase: `rr-infocell`.
+- Firestore database: `(default)`.
+- Regiao atual do Firestore: `nam5`.
+- Regras do Firestore publicadas a partir de `infra/firebase/firestore.rules`.
+- Backend local pode usar Firestore real via service account JSON ignorada pelo Git.
+- Emuladores continuam disponiveis para desenvolvimento isolado.
 
 ## Desenvolvimento local
 

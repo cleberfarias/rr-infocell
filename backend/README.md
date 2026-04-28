@@ -64,13 +64,23 @@ Copie `.env.example` para `.env` e preencha as credenciais quando o Firebase Adm
 
 ```text
 PORT=3333
-CORS_ORIGIN=http://localhost:8080
-FIREBASE_PROJECT_ID=
+CORS_ORIGIN=http://127.0.0.1:5173
+FIREBASE_PROJECT_ID=rr-infocell
 FIREBASE_CLIENT_EMAIL=
 FIREBASE_PRIVATE_KEY=
+GOOGLE_APPLICATION_CREDENTIALS=
 ```
 
 Sem credenciais, a API sobe em modo local e informa `firebaseAdmin: not_configured` no health check.
+
+Para usar o Firestore real localmente, configure:
+
+```text
+FIREBASE_PROJECT_ID=rr-infocell
+GOOGLE_APPLICATION_CREDENTIALS=./firebase-service-account.local.json
+```
+
+O arquivo de service account local deve ficar fora do Git.
 
 Para usar Firestore Emulator sem service account, configure:
 
@@ -91,4 +101,4 @@ npm test
 
 ## Status
 
-Base implementada com Express, TypeScript, middlewares globais, tratamento padronizado de erros, health check, modulo de clientes funcional com Firestore/fallback local, rotas scaffold dos demais modulos e Firebase Admin SDK.
+Base implementada com Express, TypeScript, middlewares globais, tratamento padronizado de erros, health check, modulo de clientes funcional com Firestore real/fallback local, rotas scaffold dos demais modulos e Firebase Admin SDK.

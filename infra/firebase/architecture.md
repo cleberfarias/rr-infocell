@@ -5,10 +5,19 @@
 O MVP usara Firebase como base principal:
 
 - Firebase Auth para usuarios internos.
-- Firestore como banco de dados.
+- Firestore real como banco de dados principal.
 - Firebase Storage para arquivos futuros.
 - Firebase Hosting para o frontend.
 - Firebase Admin SDK no backend Node/Express.
+
+## Estado atual
+
+- Projeto Firebase: `rr-infocell`.
+- Firestore database: `(default)`.
+- Regiao do Firestore: `nam5`.
+- Colecao `clientes` validada com escrita/leitura pelo backend.
+- Backend local usa service account via `GOOGLE_APPLICATION_CREDENTIALS`.
+- Auth e custom claims ainda precisam ser finalizados para controle de acesso por perfil.
 
 ## Por que Firebase
 

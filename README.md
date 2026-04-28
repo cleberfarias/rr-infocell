@@ -13,6 +13,7 @@ O objetivo do projeto e centralizar o fluxo operacional da RR Infocell: clientes
 - Frontend reorganizado em `frontend/`.
 - Backend base criado em `backend/`.
 - Modulo de clientes implementado com API REST, tela integrada, Firestore/fallback local e testes.
+- Firestore real ativo no projeto `rr-infocell` e modulo de clientes validado gravando no banco real.
 
 ## Stack definida
 
@@ -98,6 +99,8 @@ Frontend: http://127.0.0.1:5173
 Backend:  http://localhost:3333
 Firebase UI: http://127.0.0.1:4000
 ```
+
+Por padrao, o backend local usa Firestore real quando `backend/.env` aponta para uma service account via `GOOGLE_APPLICATION_CREDENTIALS`. Use `make dev-db` apenas quando quiser trabalhar com banco emulado.
 
 ## Como rodar o frontend
 
