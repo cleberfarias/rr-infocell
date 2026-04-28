@@ -22,13 +22,13 @@ API base do MVP do RR Infocell.
 
 ## Modulos iniciais
 
-- `health`
-- `clientes`
-- `aparelhos`
-- `ordens-servico`
-- `checklists`
+- `health`: endpoint de status da API e Firebase Admin SDK.
+- `clientes`: CRUD de clientes com busca, validacao e testes.
+- `aparelhos`: scaffold do cadastro de aparelhos.
+- `ordens-servico`: scaffold do fluxo central de OS.
+- `checklists`: scaffold do checklist tecnico vinculado a OS.
 
-Os modulos de dominio ainda estao em modo scaffold. Eles ja expõem rotas base para evolucao das regras de negocio.
+Cada modulo tem um `README.md` proprio em `src/modules/<modulo>/README.md`.
 
 ## Como rodar
 
