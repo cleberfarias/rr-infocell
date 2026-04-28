@@ -79,6 +79,7 @@ CORS_ORIGIN=http://127.0.0.1:5173
 FIREBASE_PROJECT_ID=
 FIREBASE_CLIENT_EMAIL=
 FIREBASE_PRIVATE_KEY=
+GOOGLE_APPLICATION_CREDENTIALS=
 
 # Opcional para emuladores locais
 FIRESTORE_EMULATOR_HOST=127.0.0.1:8081
@@ -92,8 +93,27 @@ Nunca commitar `.env` real ou chave privada da service account.
 O modulo de clientes seleciona o armazenamento automaticamente:
 
 - Com `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL` e `FIREBASE_PRIVATE_KEY`: usa Firestore na colecao `clientes`.
+- Com `FIREBASE_PROJECT_ID` e `GOOGLE_APPLICATION_CREDENTIALS`: usa Firestore real via service account JSON local.
 - Com `FIRESTORE_EMULATOR_HOST` e `FIREBASE_PROJECT_ID`: usa Firestore Emulator sem exigir service account.
 - Sem credenciais: usa armazenamento em memoria, apenas para desenvolvimento/testes locais.
+
+## Firestore real
+
+Status atual:
+
+- Projeto Firebase: `rr-infocell`.
+- Firestore database: `(default)`.
+- Regiao do database: `nam5`.
+- Regras publicadas de: `infra/firebase/firestore.rules`.
+- Backend local autenticado por service account JSON via `GOOGLE_APPLICATION_CREDENTIALS`.
+
+Arquivo local usado no desenvolvimento:
+
+```text
+backend/firebase-service-account.local.json
+```
+
+Esse arquivo e ignorado pelo Git e nunca deve ser commitado.
 
 Colecao inicial usada:
 
@@ -177,11 +197,8 @@ Deploy do hosting e regras:
 firebase deploy --only hosting,firestore:rules,storage
 ```
 
-## Pendencias para concluir a tarefa real
+## Pendencias operacionais
 
-- Ativar billing no projeto `rr-infocell`.
-- Criar o Firestore database default em `southamerica-east1`.
-- Copiar variaveis reais do app Web para `frontend/.env`.
-- Criar service account e preencher `backend/.env`.
-- Validar regras com emuladores.
-- Criar usuarios iniciais e claims de perfil.
+- Criar usuarios iniciais no Firebase Auth.
+- Definir custom claims de perfil nos usuarios: `admin`, `atendente` ou `tecnico`.
+- Criar rotina segura para setar claims pelo backend ou script administrativo.

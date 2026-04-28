@@ -5,6 +5,8 @@ import type { Cliente, ClienteInput } from "./clientes.types.js";
 
 const now = () => new Date().toISOString();
 const clientesCollection = "clientes";
+const withoutUndefined = <T extends Record<string, unknown>>(data: T) =>
+  Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as T;
 
 const seedClientes: Cliente[] = [
   {
@@ -140,7 +142,7 @@ export class FirestoreClientesRepository implements ClientesRepository {
       updatedAt: timestamp,
     };
 
-    await document.set(cliente);
+    await document.set(withoutUndefined(cliente));
 
     return cliente;
   }
@@ -158,7 +160,7 @@ export class FirestoreClientesRepository implements ClientesRepository {
       updatedAt: now(),
     };
 
-    await this.firestore.collection(clientesCollection).doc(id).set(cliente);
+    await this.firestore.collection(clientesCollection).doc(id).set(withoutUndefined(cliente));
 
     return cliente;
   }
