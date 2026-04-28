@@ -32,3 +32,22 @@ Arquivos na raiz:
 ## Observacao
 
 Docker pode ser usado para padronizar a API no futuro, mas PostgreSQL e Prisma ficam fora do MVP inicial.
+
+## Desenvolvimento local
+
+Os servicos podem ser iniciados pela raiz do repositorio:
+
+```bash
+make dev
+```
+
+Se as portas locais ja estiverem ocupadas:
+
+```bash
+make dev-fresh
+```
+
+Portas padrao:
+
+- Frontend: `5173`
+- Backend: `3333`

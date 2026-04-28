@@ -12,6 +12,7 @@ O objetivo do projeto e centralizar o fluxo operacional da RR Infocell: clientes
 - Design system inicial criado e documentado.
 - Frontend reorganizado em `frontend/`.
 - Backend base criado em `backend/`.
+- Modulo de clientes implementado com API REST, tela integrada e testes.
 
 ## Stack definida
 
@@ -59,6 +60,7 @@ rr-infocell/
 |   `-- README.md
 |-- firebase.json
 |-- .firebaserc.example
+|-- Makefile
 |-- docs/
 |   |-- design-system.md
 |   |-- firebase-architecture.md
@@ -69,18 +71,37 @@ rr-infocell/
 `-- README.md
 ```
 
+## Como rodar tudo junto
+
+```bash
+make dev
+```
+
+Se as portas ja estiverem ocupadas por uma execucao anterior:
+
+```bash
+make dev-fresh
+```
+
+Servicos locais:
+
+```text
+Frontend: http://127.0.0.1:5173
+Backend:  http://localhost:3333
+```
+
 ## Como rodar o frontend
 
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev -- --host 127.0.0.1 --port 5173
 ```
 
 Servidor local padrao:
 
 ```text
-http://localhost:8080
+http://127.0.0.1:5173
 ```
 
 ## Como rodar o backend
@@ -127,6 +148,8 @@ npm test
 - [Setup Firebase](docs/firebase-setup.md)
 - [Estrutura do projeto](docs/project-structure.md)
 - [Regra de atualizacao do Notion](docs/notion-update-rule.md)
+- [Backend](backend/README.md)
+- [Modulo clientes](backend/src/modules/clientes/README.md)
 
 ## Funcionalidades do MVP
 

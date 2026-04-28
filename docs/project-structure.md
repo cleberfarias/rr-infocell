@@ -9,6 +9,7 @@ rr-infocell/
 |-- infra/
 |-- firebase.json
 |-- .firebaserc.example
+|-- Makefile
 |-- docs/
 `-- README.md
 ```
@@ -45,6 +46,19 @@ Arquivos principais:
 - `src/routes.ts`
 - `src/firebase/admin.ts`
 - `src/modules/health/health.routes.ts`
+- `src/modules/clientes/clientes.routes.ts`
+- `src/modules/clientes/clientes.service.ts`
+- `src/modules/clientes/clientes.repository.ts`
+
+Modulos atuais:
+
+- `health`: status da API.
+- `clientes`: CRUD implementado com busca, validacao e testes.
+- `aparelhos`: scaffold.
+- `ordens-servico`: scaffold.
+- `checklists`: scaffold.
+
+Cada modulo possui documentacao propria em `backend/src/modules/<modulo>/README.md`.
 
 ## Infra
 
@@ -76,3 +90,13 @@ Arquivos principais:
 - `firebase-architecture.md`
 - `firebase-setup.md`
 - `project-structure.md`
+
+## Makefile
+
+Comandos de desenvolvimento na raiz:
+
+- `make dev`: sobe backend e frontend em paralelo.
+- `make dev-fresh`: para as portas locais e sobe tudo novamente.
+- `make dev-stop`: encerra processos nas portas `3333` e `5173`.
+- `make dev-backend`: sobe apenas o backend.
+- `make dev-frontend`: sobe apenas o frontend.

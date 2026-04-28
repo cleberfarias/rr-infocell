@@ -32,6 +32,14 @@ Cada modulo tem um `README.md` proprio em `src/modules/<modulo>/README.md`.
 
 ## Como rodar
 
+Pela raiz do repositorio:
+
+```bash
+make dev-backend
+```
+
+Ou diretamente na pasta do backend:
+
 ```bash
 cd backend
 npm install
@@ -75,4 +83,4 @@ npm test
 
 ## Status
 
-Base implementada com Express, TypeScript, middlewares globais, tratamento padronizado de erros, health check, rotas scaffold e preparacao do Firebase Admin SDK.
+Base implementada com Express, TypeScript, middlewares globais, tratamento padronizado de erros, health check, modulo de clientes funcional, rotas scaffold dos demais modulos e preparacao do Firebase Admin SDK.
