@@ -15,6 +15,8 @@ Pasta reservada para configuracoes de infraestrutura, deploy e ambiente local.
 ```text
 infra/
 |-- firebase/
+|   |-- architecture.md
+|   |-- setup.md
 |   |-- firestore.rules
 |   `-- storage.rules
 |-- scripts/
@@ -28,6 +30,8 @@ Arquivos na raiz:
 
 - `firebase.json`
 - `.firebaserc.example`
+
+Esses dois arquivos ficam na raiz porque a Firebase CLI usa esse local por padrao. As regras e documentos especificos do Firebase ficam em `infra/firebase/`.
 
 ## Observacao
 

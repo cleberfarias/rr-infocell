@@ -57,14 +57,16 @@ rr-infocell/
 |   `-- README.md
 |-- infra/
 |   |-- firebase/
+|   |   |-- architecture.md
+|   |   |-- setup.md
+|   |   |-- firestore.rules
+|   |   `-- storage.rules
 |   `-- README.md
 |-- firebase.json
 |-- .firebaserc.example
 |-- Makefile
 |-- docs/
 |   |-- design-system.md
-|   |-- firebase-architecture.md
-|   |-- firebase-setup.md
 |   |-- mvp-scope.md
 |   |-- notion-update-rule.md
 |   `-- project-structure.md
@@ -151,8 +153,8 @@ npm test
 
 - [Design system](docs/design-system.md)
 - [Escopo do MVP](docs/mvp-scope.md)
-- [Arquitetura Firebase](docs/firebase-architecture.md)
-- [Setup Firebase](docs/firebase-setup.md)
+- [Arquitetura Firebase](infra/firebase/architecture.md)
+- [Setup Firebase](infra/firebase/setup.md)
 - [Estrutura do projeto](docs/project-structure.md)
 - [Regra de atualizacao do Notion](docs/notion-update-rule.md)
 - [Backend](backend/README.md)

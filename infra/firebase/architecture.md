@@ -69,7 +69,7 @@ Fluxo recomendado:
 
 ## Setup operacional
 
-O passo a passo de criacao do projeto, variaveis de ambiente, emuladores e deploy esta documentado em `docs/firebase-setup.md`.
+O passo a passo de criacao do projeto, variaveis de ambiente, emuladores e deploy esta documentado em `infra/firebase/setup.md`.
 
 ## Backend Node/Express
 

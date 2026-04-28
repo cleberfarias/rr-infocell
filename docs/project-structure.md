@@ -76,6 +76,8 @@ Arquivos principais:
 
 - `infra/firebase/firestore.rules`
 - `infra/firebase/storage.rules`
+- `infra/firebase/architecture.md`
+- `infra/firebase/setup.md`
 - `firebase.json`
 - `.firebaserc.example`
 
@@ -87,8 +89,6 @@ Arquivos principais:
 
 - `design-system.md`
 - `mvp-scope.md`
-- `firebase-architecture.md`
-- `firebase-setup.md`
 - `project-structure.md`
 
 ## Makefile
