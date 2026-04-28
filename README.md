@@ -14,6 +14,7 @@ O objetivo do projeto e centralizar o fluxo operacional da RR Infocell: clientes
 - Backend base criado em `backend/`.
 - Modulo de clientes implementado com API REST, tela integrada, Firestore/fallback local e testes.
 - Firestore real ativo no projeto `rr-infocell` e modulo de clientes validado gravando no banco real.
+- Base de Firebase Auth preparada no frontend com `AuthProvider`, login/logout e protecao de rotas por perfil.
 
 ## Stack definida
 
@@ -102,6 +103,19 @@ Firebase UI: http://127.0.0.1:4000
 
 Por padrao, o backend local usa Firestore real quando `backend/.env` aponta para uma service account via `GOOGLE_APPLICATION_CREDENTIALS`. Use `make dev-db` apenas quando quiser trabalhar com banco emulado.
 
+## Autenticacao no frontend
+
+O frontend ja tem base para Firebase Auth. Em desenvolvimento, `VITE_AUTH_DEV_MODE=true` permite entrar escolhendo o perfil na tela de login sem precisar criar usuarios reais ainda.
+
+Para testar com usuarios reais do Firebase Auth depois:
+
+1. Crie os usuarios no Firebase Console.
+2. Configure `frontend/.env` com as variaveis `VITE_FIREBASE_*`.
+3. Altere `VITE_AUTH_DEV_MODE=false`.
+4. Entre com e-mail e senha reais.
+
+As permissoes finas por usuario ainda dependem dos custom claims `admin`, `atendente` e `tecnico`, que ficaram para a fase em que todas as telas e acessos estiverem definidos.
+
 ## Como rodar o frontend
 
 ```bash
@@ -165,7 +179,7 @@ npm test
 
 ## Funcionalidades do MVP
 
-- Login simples.
+- Login com base preparada para Firebase Auth.
 - Dashboard inicial.
 - Cadastro de clientes.
 - Cadastro de aparelhos.

@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/lib/auth";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AppLayout from "./components/AppLayout";
@@ -25,25 +26,27 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/app" element={<AppLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="ordens" element={<Ordens />} />
-            <Route path="ordens/nova" element={<NovaOS />} />
-            <Route path="checklist" element={<Checklist />} />
-            <Route path="manutencao" element={<Manutencao />} />
-            <Route path="orcamento" element={<Orcamento />} />
-            <Route path="estoque" element={<Estoque />} />
-            <Route path="pdv" element={<PDV />} />
-            <Route path="financeiro" element={<Financeiro />} />
-            <Route path="despesas" element={<Despesas />} />
-            <Route path="clientes" element={<Clientes />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/app" element={<AppLayout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="ordens" element={<Ordens />} />
+              <Route path="ordens/nova" element={<NovaOS />} />
+              <Route path="checklist" element={<Checklist />} />
+              <Route path="manutencao" element={<Manutencao />} />
+              <Route path="orcamento" element={<Orcamento />} />
+              <Route path="estoque" element={<Estoque />} />
+              <Route path="pdv" element={<PDV />} />
+              <Route path="financeiro" element={<Financeiro />} />
+              <Route path="despesas" element={<Despesas />} />
+              <Route path="clientes" element={<Clientes />} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

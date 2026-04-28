@@ -25,6 +25,7 @@ O backend ja esta preparado para usar Firestore no modulo de clientes quando o F
 - Regras do Firestore publicadas.
 - Backend local validado gravando e lendo da colecao `clientes` no Firestore real.
 - Service account local criada para desenvolvimento em `backend/firebase-service-account.local.json`.
+- Frontend preparado com Firebase Auth client, `AuthProvider`, login/logout e protecao de rotas por perfil.
 
 ## Passos no Firebase Console
 
@@ -35,11 +36,17 @@ Itens ja executados:
 3. Cadastrar um app Web para obter as variaveis `VITE_FIREBASE_*`.
 4. Criar service account local para o backend.
 
+Itens ja preparados parcialmente:
+
+1. Base do Firebase Auth no frontend.
+2. Modo local de desenvolvimento com `VITE_AUTH_DEV_MODE=true`, sem exigir usuarios reais.
+
 Itens pendentes:
 
-1. Ativar/configurar Firebase Auth para usuarios internos.
-2. Configurar Firebase Storage quando upload de arquivos entrar no MVP.
-3. Definir claims de perfil nos usuarios: `admin`, `atendente` ou `tecnico`.
+1. Ativar o provedor Email/Password no Firebase Auth quando for testar acesso real.
+2. Criar usuarios iniciais no Firebase Auth.
+3. Configurar Firebase Storage quando upload de arquivos entrar no MVP.
+4. Definir claims de perfil nos usuarios: `admin`, `atendente` ou `tecnico`.
 
 ## Configuracao local
 
@@ -76,6 +83,7 @@ copy backend\.env.example backend\.env
 ```text
 VITE_APP_ENV=development
 VITE_API_BASE_URL=http://localhost:3333/api
+VITE_AUTH_DEV_MODE=true
 VITE_FIREBASE_API_KEY=
 VITE_FIREBASE_AUTH_DOMAIN=
 VITE_FIREBASE_PROJECT_ID=
@@ -85,6 +93,8 @@ VITE_FIREBASE_APP_ID=
 ```
 
 Essas variaveis sao publicas no app web, mas ainda assim devem ser configuradas por ambiente.
+
+`VITE_AUTH_DEV_MODE=true` mantem o login local por perfil, util para desenvolvimento enquanto os usuarios reais e custom claims ainda nao foram fechados. Para usar Firebase Auth real, altere para `false`, crie os usuarios no Firebase Console e entre com e-mail/senha reais.
 
 ## Variaveis do backend
 
@@ -112,6 +122,24 @@ O modulo de clientes seleciona o armazenamento automaticamente:
 - Com `FIREBASE_PROJECT_ID` e `GOOGLE_APPLICATION_CREDENTIALS`: usa Firestore real via service account JSON local.
 - Com `FIRESTORE_EMULATOR_HOST` e `FIREBASE_PROJECT_ID`: usa Firestore Emulator sem exigir service account.
 - Sem credenciais: usa armazenamento em memoria, apenas para desenvolvimento/testes locais.
+
+## Firebase Auth no frontend
+
+Arquivos principais:
+
+- `frontend/src/lib/firebase.ts`: inicializa o app Firebase client quando as variaveis `VITE_FIREBASE_*` existem.
+- `frontend/src/lib/auth.tsx`: centraliza sessao, login, logout, modo desenvolvimento e leitura futura de custom claims.
+- `frontend/src/pages/Login.tsx`: usa o provider de auth e permite escolher o perfil localmente.
+- `frontend/src/components/AppLayout.tsx`: protege as rotas internas e redireciona conforme o perfil.
+
+Fluxo atual:
+
+- Com `VITE_AUTH_DEV_MODE=true`: o login usa o perfil selecionado e nao chama Firebase Auth.
+- Com `VITE_AUTH_DEV_MODE=false`: o login usa `signInWithEmailAndPassword`.
+- Se o usuario tiver custom claim `role`, esse perfil sera usado.
+- Se ainda nao houver claim, o perfil selecionado na tela de login funciona como fallback temporario.
+
+O fallback por perfil deve ser removido quando os custom claims estiverem definidos para todos os usuarios reais.
 
 ## Firestore real
 

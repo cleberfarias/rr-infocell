@@ -6,7 +6,8 @@ import {
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { getRole, canAccess, roleLabels, roleHome, ROLE_KEY, NAME_KEY, roleNames } from "@/lib/roles";
+import { useAuth } from "@/lib/auth";
+import { canAccess, roleLabels, roleHome } from "@/lib/roles";
 
 const allNav = [
   { to: "/app",            label: "Dashboard",         icon: LayoutDashboard, key: "" },
@@ -23,8 +24,19 @@ const allNav = [
 
 export const AppLayout = () => {
   const location = useLocation();
-  const role = getRole();
-  const nome = (typeof window !== "undefined" && localStorage.getItem(NAME_KEY)) || roleNames[role];
+  const { displayName: nome, isAuthenticated, isLoading, logout, role } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
+        Carregando acesso...
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/" replace state={{ from: location.pathname }} />;
+  }
 
   // Bloqueio de rota: se o perfil não tem acesso, manda pra home dele
   if (!canAccess(role, location.pathname)) {
@@ -39,9 +51,8 @@ export const AppLayout = () => {
   const podeNovaOS = canAccess(role, "/app/ordens/nova");
   const inicial = nome.trim().charAt(0).toUpperCase();
 
-  const sair = () => {
-    localStorage.removeItem(ROLE_KEY);
-    localStorage.removeItem(NAME_KEY);
+  const sair = async () => {
+    await logout();
   };
 
   return (

@@ -45,6 +45,11 @@ export const setRole = (role: Role) => {
   localStorage.setItem(NAME_KEY, roleNames[role]);
 };
 
+export const clearRole = () => {
+  localStorage.removeItem(ROLE_KEY);
+  localStorage.removeItem(NAME_KEY);
+};
+
 export const canAccess = (role: Role, pathname: string): boolean => {
   // remove /app ou /app/
   const sub = pathname.replace(/^\/app\/?/, "");
