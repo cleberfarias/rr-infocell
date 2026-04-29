@@ -72,10 +72,36 @@ const statusClasses: Record<ChecklistItemStatus, string> = {
   nao_testado: "border-border bg-secondary/30",
 };
 
-const uploadWithTimeout = (storageRef: ReturnType<typeof ref>, file: File) =>
+const imageContentTypesByExtension: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+  bmp: "image/bmp",
+  heic: "image/heic",
+  heif: "image/heif",
+};
+
+const getFileExtension = (fileName: string) =>
+  fileName.split(".").pop()?.toLowerCase() ?? "";
+
+const getImageContentType = (file: File) => {
+  if (file.type.startsWith("image/")) {
+    return file.type;
+  }
+
+  return imageContentTypesByExtension[getFileExtension(file.name)] ?? null;
+};
+
+const uploadWithTimeout = (
+  storageRef: ReturnType<typeof ref>,
+  file: File,
+  contentType: string,
+) =>
   new Promise<UploadTaskSnapshot>((resolve, reject) => {
     const uploadTask = uploadBytesResumable(storageRef, file, {
-      contentType: file.type,
+      contentType,
     });
     const timeoutId = window.setTimeout(() => {
       uploadTask.cancel();
@@ -264,12 +290,16 @@ const Checklist = () => {
       return;
     }
 
-    const imageFiles = Array.from(files).filter((file) =>
-      file.type.startsWith("image/"),
-    );
+    const imageFiles = Array.from(files)
+      .map((file) => ({ file, contentType: getImageContentType(file) }))
+      .filter((item): item is { file: File; contentType: string } =>
+        Boolean(item.contentType),
+      );
 
     if (imageFiles.length === 0) {
-      setUploadError("Selecione apenas arquivos de imagem.");
+      setUploadError(
+        "Selecione arquivos de imagem nos formatos JPG, PNG, WEBP, GIF, BMP ou HEIC.",
+      );
       return;
     }
 
@@ -279,18 +309,18 @@ const Checklist = () => {
     try {
       const uploadedFotos: ChecklistFoto[] = [];
 
-      for (const [index, file] of imageFiles.entries()) {
+      for (const [index, { file, contentType }] of imageFiles.entries()) {
         const safeName = file.name.replace(/[^\w.-]/g, "_");
         const path = `ordensServico/${selectedOrdem.id}/${Date.now()}-${safeName}`;
         const storageRef = ref(firebaseStorage, path);
-        const snapshot = await uploadWithTimeout(storageRef, file);
+        const snapshot = await uploadWithTimeout(storageRef, file, contentType);
         const url = await getDownloadURL(snapshot.ref);
 
         uploadedFotos.push({
           nome: file.name,
           url,
           path,
-          contentType: file.type,
+          contentType,
           uploadedAt: new Date().toISOString(),
         });
         setUploadProgress(Math.round(((index + 1) / imageFiles.length) * 100));
@@ -546,7 +576,7 @@ const Checklist = () => {
                 {isUploading ? "Enviando..." : "Anexar fotos"}
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.bmp,.heic,.heif"
                   multiple
                   className="sr-only"
                   disabled={isUploading || !selectedOrdem}
