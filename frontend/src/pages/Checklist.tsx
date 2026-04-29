@@ -1,6 +1,11 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import {
+  getDownloadURL,
+  ref,
+  uploadBytesResumable,
+  type UploadTaskSnapshot,
+} from "firebase/storage";
 import {
   Camera,
   CheckCircle2,
@@ -67,6 +72,30 @@ const statusClasses: Record<ChecklistItemStatus, string> = {
   nao_testado: "border-border bg-secondary/30",
 };
 
+const uploadWithTimeout = (storageRef: ReturnType<typeof ref>, file: File) =>
+  new Promise<UploadTaskSnapshot>((resolve, reject) => {
+    const uploadTask = uploadBytesResumable(storageRef, file, {
+      contentType: file.type,
+    });
+    const timeoutId = window.setTimeout(() => {
+      uploadTask.cancel();
+      reject(new Error("Tempo limite excedido ao enviar a foto."));
+    }, 120000);
+
+    uploadTask.on(
+      "state_changed",
+      undefined,
+      (error) => {
+        window.clearTimeout(timeoutId);
+        reject(error);
+      },
+      () => {
+        window.clearTimeout(timeoutId);
+        resolve(uploadTask.snapshot);
+      },
+    );
+  });
+
 const Checklist = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -80,6 +109,7 @@ const Checklist = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   const ordensQuery = useQuery({
     queryKey: ["ordens-servico", "checklist"],
@@ -221,6 +251,19 @@ const Checklist = () => {
       return;
     }
 
+    const token = await firebaseAuth.currentUser.getIdTokenResult(true);
+    const role = token.claims.role;
+    const hasStorageRole =
+      typeof role === "string" &&
+      ["admin", "atendente", "tecnico"].includes(role);
+
+    if (!hasStorageRole) {
+      setUploadError(
+        "Seu usuario Firebase nao tem a claim role necessaria para enviar fotos. Defina role como admin, atendente ou tecnico e faca login novamente.",
+      );
+      return;
+    }
+
     const imageFiles = Array.from(files).filter((file) =>
       file.type.startsWith("image/"),
     );
@@ -231,36 +274,27 @@ const Checklist = () => {
     }
 
     setIsUploading(true);
+    setUploadProgress(0);
 
     try {
-      const uploadedFotos = await Promise.all(
-        imageFiles.map(async (file) => {
-          const safeName = file.name.replace(/[^\w.-]/g, "_");
-          const path = `ordensServico/${selectedOrdem.id}/${Date.now()}-${safeName}`;
-          const storageRef = ref(firebaseStorage, path);
-          const snapshot = await Promise.race([
-            uploadBytes(storageRef, file, {
-              contentType: file.type,
-            }),
-            new Promise<never>((_, reject) => {
-              window.setTimeout(
-                () =>
-                  reject(new Error("Tempo limite excedido ao enviar a foto.")),
-                30000,
-              );
-            }),
-          ]);
-          const url = await getDownloadURL(snapshot.ref);
+      const uploadedFotos: ChecklistFoto[] = [];
 
-          return {
-            nome: file.name,
-            url,
-            path,
-            contentType: file.type,
-            uploadedAt: new Date().toISOString(),
-          };
-        }),
-      );
+      for (const [index, file] of imageFiles.entries()) {
+        const safeName = file.name.replace(/[^\w.-]/g, "_");
+        const path = `ordensServico/${selectedOrdem.id}/${Date.now()}-${safeName}`;
+        const storageRef = ref(firebaseStorage, path);
+        const snapshot = await uploadWithTimeout(storageRef, file);
+        const url = await getDownloadURL(snapshot.ref);
+
+        uploadedFotos.push({
+          nome: file.name,
+          url,
+          path,
+          contentType: file.type,
+          uploadedAt: new Date().toISOString(),
+        });
+        setUploadProgress(Math.round(((index + 1) / imageFiles.length) * 100));
+      }
 
       setFotos((current) => [...current, ...uploadedFotos]);
     } catch (error) {
@@ -271,6 +305,7 @@ const Checklist = () => {
       );
     } finally {
       setIsUploading(false);
+      setUploadProgress(null);
     }
   };
 
@@ -521,6 +556,14 @@ const Checklist = () => {
                   }}
                 />
               </label>
+              {uploadProgress !== null && (
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-secondary">
+                  <div
+                    className="h-full bg-primary transition-all"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              )}
               {uploadError && (
                 <p className="mt-3 text-xs text-destructive">{uploadError}</p>
               )}
