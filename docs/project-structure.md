@@ -27,6 +27,11 @@ Responsabilidades:
 - Integracao com API.
 - Integracao com Firebase client quando necessario.
 
+Telas integradas com API:
+
+- `src/pages/Clientes.tsx`
+- `src/pages/Aparelhos.tsx`
+
 ## Backend
 
 Contem a API Node/Express base do MVP.

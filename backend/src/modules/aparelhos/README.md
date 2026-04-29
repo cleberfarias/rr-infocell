@@ -82,5 +82,4 @@ npm test
 
 ## Proximos passos
 
-- Integrar tela de aparelhos no frontend.
 - Usar aparelhos na abertura de ordem de servico.

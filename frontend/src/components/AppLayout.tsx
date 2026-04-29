@@ -1,7 +1,20 @@
 import { NavLink, Outlet, useLocation, Navigate } from "react-router-dom";
 import {
-  LayoutDashboard, Wrench, ClipboardCheck, Activity, FileCheck2,
-  Package, ShoppingCart, LineChart, Receipt, Users, LogOut, Bell, Search, Plus,
+  LayoutDashboard,
+  Wrench,
+  ClipboardCheck,
+  Activity,
+  FileCheck2,
+  Package,
+  ShoppingCart,
+  LineChart,
+  Receipt,
+  Users,
+  LogOut,
+  Bell,
+  Search,
+  Plus,
+  Smartphone,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -10,21 +23,58 @@ import { useAuth } from "@/lib/auth";
 import { canAccess, roleLabels, roleHome } from "@/lib/roles";
 
 const allNav = [
-  { to: "/app",            label: "Dashboard",         icon: LayoutDashboard, key: "" },
-  { to: "/app/ordens",     label: "Ordens de Serviço", icon: Wrench,          key: "ordens" },
-  { to: "/app/checklist",  label: "Checklist",         icon: ClipboardCheck,  key: "checklist" },
-  { to: "/app/manutencao", label: "Manutenção",        icon: Activity,        key: "manutencao" },
-  { to: "/app/orcamento",  label: "Orçamentos",        icon: FileCheck2,      key: "orcamento" },
-  { to: "/app/estoque",    label: "Estoque",           icon: Package,         key: "estoque" },
-  { to: "/app/pdv",        label: "PDV / Caixa",       icon: ShoppingCart,    key: "pdv" },
-  { to: "/app/financeiro", label: "Financeiro",        icon: LineChart,       key: "financeiro" },
-  { to: "/app/despesas",   label: "Despesas",          icon: Receipt,         key: "despesas" },
-  { to: "/app/clientes",   label: "Clientes",          icon: Users,           key: "clientes" },
+  { to: "/app", label: "Dashboard", icon: LayoutDashboard, key: "" },
+  {
+    to: "/app/ordens",
+    label: "Ordens de Serviço",
+    icon: Wrench,
+    key: "ordens",
+  },
+  {
+    to: "/app/checklist",
+    label: "Checklist",
+    icon: ClipboardCheck,
+    key: "checklist",
+  },
+  {
+    to: "/app/manutencao",
+    label: "Manutenção",
+    icon: Activity,
+    key: "manutencao",
+  },
+  {
+    to: "/app/orcamento",
+    label: "Orçamentos",
+    icon: FileCheck2,
+    key: "orcamento",
+  },
+  { to: "/app/estoque", label: "Estoque", icon: Package, key: "estoque" },
+  { to: "/app/pdv", label: "PDV / Caixa", icon: ShoppingCart, key: "pdv" },
+  {
+    to: "/app/financeiro",
+    label: "Financeiro",
+    icon: LineChart,
+    key: "financeiro",
+  },
+  { to: "/app/despesas", label: "Despesas", icon: Receipt, key: "despesas" },
+  { to: "/app/clientes", label: "Clientes", icon: Users, key: "clientes" },
+  {
+    to: "/app/aparelhos",
+    label: "Aparelhos",
+    icon: Smartphone,
+    key: "aparelhos",
+  },
 ];
 
 export const AppLayout = () => {
   const location = useLocation();
-  const { displayName: nome, isAuthenticated, isLoading, logout, role } = useAuth();
+  const {
+    displayName: nome,
+    isAuthenticated,
+    isLoading,
+    logout,
+    role,
+  } = useAuth();
 
   if (isLoading) {
     return (
@@ -45,7 +95,9 @@ export const AppLayout = () => {
 
   const nav = allNav.filter((n) => canAccess(role, n.to));
   const current = nav.find((n) =>
-    n.to === "/app" ? location.pathname === "/app" : location.pathname.startsWith(n.to)
+    n.to === "/app"
+      ? location.pathname === "/app"
+      : location.pathname.startsWith(n.to),
   );
 
   const podeNovaOS = canAccess(role, "/app/ordens/nova");
@@ -93,10 +145,18 @@ export const AppLayout = () => {
               {inicial}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-sidebar-accent-foreground">{nome}</p>
-              <p className="truncate text-xs text-muted-foreground">{roleLabels[role]}</p>
+              <p className="truncate text-sm font-medium text-sidebar-accent-foreground">
+                {nome}
+              </p>
+              <p className="truncate text-xs text-muted-foreground">
+                {roleLabels[role]}
+              </p>
             </div>
-            <NavLink to="/" onClick={sair} className="rounded-md p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-foreground">
+            <NavLink
+              to="/"
+              onClick={sair}
+              className="rounded-md p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
+            >
               <LogOut className="h-4 w-4" />
             </NavLink>
           </div>
@@ -132,7 +192,10 @@ export const AppLayout = () => {
               <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-primary animate-pulse-glow" />
             </Button>
             {podeNovaOS && (
-              <Button asChild className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90">
+              <Button
+                asChild
+                className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
+              >
                 <NavLink to="/app/ordens/nova">
                   <Plus className="h-4 w-4" /> Nova OS
                 </NavLink>

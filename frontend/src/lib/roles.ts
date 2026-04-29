@@ -18,15 +18,30 @@ export const roleNames: Record<Role, string> = {
 // Rotas permitidas por perfil (sem o prefixo /app)
 export const rolePermissions: Record<Role, string[]> = {
   admin: [
-    "", "ordens", "ordens/nova", "checklist", "manutencao",
-    "orcamento", "estoque", "pdv", "financeiro", "despesas", "clientes",
+    "",
+    "ordens",
+    "ordens/nova",
+    "checklist",
+    "manutencao",
+    "orcamento",
+    "estoque",
+    "pdv",
+    "financeiro",
+    "despesas",
+    "clientes",
+    "aparelhos",
   ],
   atendente: [
-    "", "ordens", "ordens/nova", "checklist", "orcamento", "pdv", "clientes",
+    "",
+    "ordens",
+    "ordens/nova",
+    "checklist",
+    "orcamento",
+    "pdv",
+    "clientes",
+    "aparelhos",
   ],
-  tecnico: [
-    "", "ordens", "checklist", "manutencao", "orcamento", "estoque",
-  ],
+  tecnico: ["", "ordens", "checklist", "manutencao", "orcamento", "estoque"],
 };
 
 export const roleHome: Record<Role, string> = {
@@ -36,7 +51,8 @@ export const roleHome: Record<Role, string> = {
 };
 
 export const getRole = (): Role => {
-  const r = (typeof window !== "undefined" && localStorage.getItem(ROLE_KEY)) as Role | null;
+  const r = (typeof window !== "undefined" &&
+    localStorage.getItem(ROLE_KEY)) as Role | null;
   return r && ["admin", "atendente", "tecnico"].includes(r) ? r : "admin";
 };
 

@@ -14,6 +14,7 @@ O objetivo do projeto e centralizar o fluxo operacional da RR Infocell: clientes
 - Backend base criado em `backend/`.
 - Modulo de clientes implementado com API REST, tela integrada, Firestore/fallback local e testes.
 - Modulo de aparelhos implementado no backend com API REST, validacao, Firestore/fallback local e testes.
+- Tela de aparelhos integrada no frontend com listagem, busca, filtro por cliente e CRUD.
 - Firestore real ativo no projeto `rr-infocell` e modulo de clientes validado gravando no banco real.
 - Base de Firebase Auth preparada no frontend com `AuthProvider`, login/logout e protecao de rotas por perfil.
 
