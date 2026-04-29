@@ -8,7 +8,11 @@ import { clientesService } from "./clientes.service.js";
 
 export const clientesRoutes = Router();
 
-type AsyncRouteHandler = (request: Request, response: Response, next: NextFunction) => Promise<void>;
+type AsyncRouteHandler = (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => Promise<void>;
 
 const asyncHandler =
   (handler: AsyncRouteHandler) => (request: Request, response: Response, next: NextFunction) => {
@@ -27,48 +31,63 @@ const parseOrThrow = <T>(parse: () => T) => {
   }
 };
 
-clientesRoutes.get("/", asyncHandler(async (request, response) => {
-  const { q } = parseOrThrow(() => clienteSearchSchema.parse(request.query));
-  const clientes = await clientesService.list(q);
+clientesRoutes.get(
+  "/",
+  asyncHandler(async (request, response) => {
+    const { q } = parseOrThrow(() => clienteSearchSchema.parse(request.query));
+    const clientes = await clientesService.list(q);
 
-  response.status(httpStatus.ok).json({
-    data: clientes,
-    meta: {
-      total: clientes.length,
-      query: q,
-    },
-  });
-}));
+    response.status(httpStatus.ok).json({
+      data: clientes,
+      meta: {
+        total: clientes.length,
+        query: q,
+      },
+    });
+  }),
+);
 
-clientesRoutes.get("/:id", asyncHandler(async (request, response) => {
-  const id = String(request.params.id);
+clientesRoutes.get(
+  "/:id",
+  asyncHandler(async (request, response) => {
+    const id = String(request.params.id);
 
-  response.status(httpStatus.ok).json({
-    data: await clientesService.getById(id),
-  });
-}));
+    response.status(httpStatus.ok).json({
+      data: await clientesService.getById(id),
+    });
+  }),
+);
 
-clientesRoutes.post("/", asyncHandler(async (request, response) => {
-  const input = parseOrThrow(() => clienteInputSchema.parse(request.body));
+clientesRoutes.post(
+  "/",
+  asyncHandler(async (request, response) => {
+    const input = parseOrThrow(() => clienteInputSchema.parse(request.body));
 
-  response.status(httpStatus.created).json({
-    data: await clientesService.create(input),
-  });
-}));
+    response.status(httpStatus.created).json({
+      data: await clientesService.create(input),
+    });
+  }),
+);
 
-clientesRoutes.put("/:id", asyncHandler(async (request, response) => {
-  const id = String(request.params.id);
-  const input = parseOrThrow(() => clienteInputSchema.parse(request.body));
+clientesRoutes.put(
+  "/:id",
+  asyncHandler(async (request, response) => {
+    const id = String(request.params.id);
+    const input = parseOrThrow(() => clienteInputSchema.parse(request.body));
 
-  response.status(httpStatus.ok).json({
-    data: await clientesService.update(id, input),
-  });
-}));
+    response.status(httpStatus.ok).json({
+      data: await clientesService.update(id, input),
+    });
+  }),
+);
 
-clientesRoutes.delete("/:id", asyncHandler(async (request, response) => {
-  const id = String(request.params.id);
+clientesRoutes.delete(
+  "/:id",
+  asyncHandler(async (request, response) => {
+    const id = String(request.params.id);
 
-  await clientesService.delete(id);
+    await clientesService.delete(id);
 
-  response.status(204).send();
-}));
+    response.status(204).send();
+  }),
+);

@@ -13,6 +13,7 @@ O objetivo do projeto e centralizar o fluxo operacional da RR Infocell: clientes
 - Frontend reorganizado em `frontend/`.
 - Backend base criado em `backend/`.
 - Modulo de clientes implementado com API REST, tela integrada, Firestore/fallback local e testes.
+- Modulo de aparelhos implementado no backend com API REST, validacao, Firestore/fallback local e testes.
 - Firestore real ativo no projeto `rr-infocell` e modulo de clientes validado gravando no banco real.
 - Base de Firebase Auth preparada no frontend com `AuthProvider`, login/logout e protecao de rotas por perfil.
 
@@ -176,6 +177,7 @@ npm test
 - [Regra de atualizacao do Notion](docs/notion-update-rule.md)
 - [Backend](backend/README.md)
 - [Modulo clientes](backend/src/modules/clientes/README.md)
+- [Modulo aparelhos](backend/src/modules/aparelhos/README.md)
 
 ## Funcionalidades do MVP
 

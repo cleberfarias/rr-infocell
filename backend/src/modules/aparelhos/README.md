@@ -6,7 +6,7 @@ Gerenciar os aparelhos vinculados aos clientes. Este modulo sera usado para mant
 
 ## Status atual
 
-Scaffold inicial.
+CRUD implementado com validacao, service, repository em memoria/Firestore e testes de rotas.
 
 Endpoint disponivel:
 
@@ -14,16 +14,42 @@ Endpoint disponivel:
 GET /api/aparelhos
 ```
 
-Resposta atual:
+Resposta de listagem:
 
 ```json
 {
-  "data": [],
+  "data": [
+    {
+      "id": "apa_iphone_11_marcos",
+      "clienteId": "cli_marcos_almeida",
+      "marca": "Apple",
+      "modelo": "iPhone 11",
+      "cor": "Preto",
+      "imeiSerial": "356789012345678",
+      "estadoFisico": "Tela com riscos leves",
+      "acessorios": "Sem carregador",
+      "createdAt": "2026-04-29T00:00:00.000Z",
+      "updatedAt": "2026-04-29T00:00:00.000Z"
+    }
+  ],
   "meta": {
-    "module": "aparelhos",
-    "status": "scaffold"
+    "total": 1,
+    "query": "",
+    "clienteId": ""
   }
 }
+```
+
+Endpoints disponiveis:
+
+```text
+GET /api/aparelhos
+GET /api/aparelhos?q=iphone
+GET /api/aparelhos?clienteId=cli_marcos_almeida
+GET /api/aparelhos/:id
+POST /api/aparelhos
+PUT /api/aparelhos/:id
+DELETE /api/aparelhos/:id
 ```
 
 ## Campos previstos
@@ -47,10 +73,14 @@ Resposta atual:
 - Um cliente pode ter varios aparelhos.
 - Aparelhos devem poder ser reutilizados em novas ordens de servico.
 
+## Validacao
+
+```bash
+npm run build
+npm test
+```
+
 ## Proximos passos
 
-- Criar schema de validacao.
-- Criar service e repository.
-- Implementar CRUD.
-- Integrar com Firestore.
-- Criar testes de rotas.
+- Integrar tela de aparelhos no frontend.
+- Usar aparelhos na abertura de ordem de servico.

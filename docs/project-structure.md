@@ -49,12 +49,15 @@ Arquivos principais:
 - `src/modules/clientes/clientes.routes.ts`
 - `src/modules/clientes/clientes.service.ts`
 - `src/modules/clientes/clientes.repository.ts`
+- `src/modules/aparelhos/aparelhos.routes.ts`
+- `src/modules/aparelhos/aparelhos.service.ts`
+- `src/modules/aparelhos/aparelhos.repository.ts`
 
 Modulos atuais:
 
 - `health`: status da API.
 - `clientes`: CRUD implementado com busca, validacao, Firestore/fallback local e testes.
-- `aparelhos`: scaffold.
+- `aparelhos`: CRUD implementado com busca, filtro por cliente, validacao, Firestore/fallback local e testes.
 - `ordens-servico`: scaffold.
 - `checklists`: scaffold.
 
