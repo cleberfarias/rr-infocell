@@ -57,13 +57,16 @@ Arquivos principais:
 - `src/modules/aparelhos/aparelhos.routes.ts`
 - `src/modules/aparelhos/aparelhos.service.ts`
 - `src/modules/aparelhos/aparelhos.repository.ts`
+- `src/modules/ordens-servico/ordens-servico.routes.ts`
+- `src/modules/ordens-servico/ordens-servico.service.ts`
+- `src/modules/ordens-servico/ordens-servico.repository.ts`
 
 Modulos atuais:
 
 - `health`: status da API.
 - `clientes`: CRUD implementado com busca, validacao, Firestore/fallback local e testes.
 - `aparelhos`: CRUD implementado com busca, filtro por cliente, validacao, Firestore/fallback local e testes.
-- `ordens-servico`: scaffold.
+- `ordens-servico`: CRUD implementado com numero sequencial, status, filtros, validacao de vinculos, Firestore/fallback local e testes.
 - `checklists`: scaffold.
 
 Cada modulo possui documentacao propria em `backend/src/modules/<modulo>/README.md`.

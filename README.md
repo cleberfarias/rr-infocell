@@ -15,6 +15,7 @@ O objetivo do projeto e centralizar o fluxo operacional da RR Infocell: clientes
 - Modulo de clientes implementado com API REST, tela integrada, Firestore/fallback local e testes.
 - Modulo de aparelhos implementado no backend com API REST, validacao, Firestore/fallback local e testes.
 - Tela de aparelhos integrada no frontend com listagem, busca, filtro por cliente e CRUD.
+- Modulo de ordens de servico implementado no backend com API REST, numero sequencial, validacao de vinculos, Firestore/fallback local e testes.
 - Firestore real ativo no projeto `rr-infocell` e modulo de clientes validado gravando no banco real.
 - Base de Firebase Auth preparada no frontend com `AuthProvider`, login/logout e protecao de rotas por perfil.
 
@@ -179,6 +180,7 @@ npm test
 - [Backend](backend/README.md)
 - [Modulo clientes](backend/src/modules/clientes/README.md)
 - [Modulo aparelhos](backend/src/modules/aparelhos/README.md)
+- [Modulo ordens de servico](backend/src/modules/ordens-servico/README.md)
 
 ## Funcionalidades do MVP
 

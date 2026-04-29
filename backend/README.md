@@ -25,7 +25,7 @@ API base do MVP do RR Infocell.
 - `health`: endpoint de status da API e Firebase Admin SDK.
 - `clientes`: CRUD de clientes com busca, validacao e testes.
 - `aparelhos`: CRUD de aparelhos vinculados a clientes com busca, validacao e testes.
-- `ordens-servico`: scaffold do fluxo central de OS.
+- `ordens-servico`: CRUD de OS com numero sequencial, status, validacao de vinculos e testes.
 - `checklists`: scaffold do checklist tecnico vinculado a OS.
 
 Cada modulo tem um `README.md` proprio em `src/modules/<modulo>/README.md`.
@@ -101,4 +101,4 @@ npm test
 
 ## Status
 
-Base implementada com Express, TypeScript, middlewares globais, tratamento padronizado de erros, health check, modulos de clientes e aparelhos funcionais com Firestore real/fallback local, rotas scaffold de ordens de servico e checklists, e Firebase Admin SDK.
+Base implementada com Express, TypeScript, middlewares globais, tratamento padronizado de erros, health check, modulos de clientes, aparelhos e ordens de servico funcionais com Firestore real/fallback local, rota scaffold de checklists, e Firebase Admin SDK.
