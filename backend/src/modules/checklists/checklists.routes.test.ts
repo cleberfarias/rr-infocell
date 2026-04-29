@@ -34,17 +34,29 @@ describe("checklists routes", () => {
   it("creates, filters, updates and deletes a checklist", async () => {
     const ordem = await createOrdem();
 
-    const createResponse = await request(app).post("/api/checklists").send({
-      ordemServicoId: ordem.id,
-      aparelhoId: ordem.aparelhoId,
-      itens: checklistItens,
-      observacoesGerais: "Aparelho recebido sem carregador.",
-      criadoPor: "Camila O.",
-    });
+    const createResponse = await request(app)
+      .post("/api/checklists")
+      .send({
+        ordemServicoId: ordem.id,
+        aparelhoId: ordem.aparelhoId,
+        itens: checklistItens,
+        fotos: [
+          {
+            nome: "frente.jpg",
+            url: "https://example.com/frente.jpg",
+            path: `ordensServico/${ordem.id}/frente.jpg`,
+            contentType: "image/jpeg",
+            uploadedAt: new Date().toISOString(),
+          },
+        ],
+        observacoesGerais: "Aparelho recebido sem carregador.",
+        criadoPor: "Camila O.",
+      });
 
     expect(createResponse.status).toBe(201);
     expect(createResponse.body.data.id).toEqual(expect.any(String));
     expect(createResponse.body.data.itens).toHaveLength(3);
+    expect(createResponse.body.data.fotos).toHaveLength(1);
 
     const checklistId = createResponse.body.data.id;
     const filterResponse = await request(app).get(`/api/checklists?ordemServicoId=${ordem.id}`);
@@ -58,6 +70,7 @@ describe("checklists routes", () => {
         ordemServicoId: ordem.id,
         aparelhoId: ordem.aparelhoId,
         itens: [{ nome: "Tela", status: "com_defeito", observacao: "Trincada" }],
+        fotos: [],
         observacoesGerais: "Tela trincada na entrada.",
         criadoPor: "Camila O.",
       });

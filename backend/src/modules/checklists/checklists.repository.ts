@@ -1,7 +1,12 @@
 import { randomUUID } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 
-import type { Checklist, ChecklistInput, ChecklistItem } from "./checklists.types.js";
+import type {
+  Checklist,
+  ChecklistFoto,
+  ChecklistInput,
+  ChecklistItem,
+} from "./checklists.types.js";
 
 const now = () => new Date().toISOString();
 const checklistsCollection = "checklists";
@@ -31,6 +36,9 @@ const filterChecklists = (
 const normalizeItens = (itens: ChecklistItem[]) =>
   itens.map((item) => withoutUndefined({ ...item }));
 
+const normalizeFotos = (fotos: ChecklistFoto[] = []) =>
+  fotos.map((foto) => withoutUndefined({ ...foto }));
+
 export class MemoryChecklistsRepository implements ChecklistsRepository {
   private readonly checklists = new Map<string, Checklist>();
 
@@ -52,6 +60,7 @@ export class MemoryChecklistsRepository implements ChecklistsRepository {
       id: randomUUID(),
       ...input,
       itens: normalizeItens(input.itens),
+      fotos: normalizeFotos(input.fotos),
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -72,6 +81,7 @@ export class MemoryChecklistsRepository implements ChecklistsRepository {
       ...current,
       ...input,
       itens: normalizeItens(input.itens),
+      fotos: normalizeFotos(input.fotos),
       updatedAt: now(),
     };
 
@@ -123,6 +133,7 @@ export class FirestoreChecklistsRepository implements ChecklistsRepository {
       id: document.id,
       ...input,
       itens: normalizeItens(input.itens),
+      fotos: normalizeFotos(input.fotos),
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -143,6 +154,7 @@ export class FirestoreChecklistsRepository implements ChecklistsRepository {
       ...current,
       ...input,
       itens: normalizeItens(input.itens),
+      fotos: normalizeFotos(input.fotos),
       updatedAt: now(),
     };
 
@@ -173,6 +185,15 @@ export class FirestoreChecklistsRepository implements ChecklistsRepository {
             nome: String(item.nome ?? ""),
             status: String(item.status ?? "nao_testado") as ChecklistItem["status"],
             observacao: item.observacao ? String(item.observacao) : undefined,
+          }))
+        : [],
+      fotos: Array.isArray(data.fotos)
+        ? data.fotos.map((foto) => ({
+            nome: String(foto.nome ?? ""),
+            url: String(foto.url ?? ""),
+            path: String(foto.path ?? ""),
+            contentType: foto.contentType ? String(foto.contentType) : undefined,
+            uploadedAt: String(foto.uploadedAt ?? ""),
           }))
         : [],
       observacoesGerais: data.observacoesGerais ? String(data.observacoesGerais) : undefined,

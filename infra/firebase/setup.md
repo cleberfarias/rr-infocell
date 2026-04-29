@@ -45,7 +45,7 @@ Itens pendentes:
 
 1. Ativar o provedor Email/Password no Firebase Auth quando for testar acesso real.
 2. Criar usuarios iniciais no Firebase Auth.
-3. Configurar Firebase Storage quando upload de arquivos entrar no MVP.
+3. Publicar/validar fluxo de upload de fotos no Firebase Storage com usuarios reais.
 4. Definir claims de perfil nos usuarios: `admin`, `atendente` ou `tecnico`.
 
 ## Configuracao local
@@ -210,6 +210,28 @@ Storage:
 - `ordensServico/{ordemId}` aceita imagens de usuarios operacionais autenticados.
 - `comprovantes/{ordemId}` aceita escrita de `admin` e `atendente`.
 - Qualquer outro caminho fica bloqueado.
+
+## Upload de fotos no checklist
+
+A tela de checklist envia imagens para o Firebase Storage no caminho:
+
+```text
+ordensServico/{ordemId}/{timestamp}-{nome-do-arquivo}
+```
+
+Depois do upload, o checklist salva os metadados da foto no Firestore via API:
+
+```json
+{
+  "nome": "frente.jpg",
+  "url": "https://firebasestorage.googleapis.com/...",
+  "path": "ordensServico/{ordemId}/...",
+  "contentType": "image/jpeg",
+  "uploadedAt": "2026-04-29T00:00:00.000Z"
+}
+```
+
+As regras atuais exigem usuario autenticado com claim `role` em `admin`, `atendente` ou `tecnico`. Em `VITE_AUTH_DEV_MODE=true`, o upload real pode ser bloqueado pelas regras do Storage ate os usuarios reais e custom claims estarem configurados.
 
 ## Emuladores
 

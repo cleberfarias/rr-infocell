@@ -35,6 +35,15 @@ Resposta de listagem:
           "status": "funcionando"
         }
       ],
+      "fotos": [
+        {
+          "nome": "frente.jpg",
+          "url": "https://firebasestorage.googleapis.com/...",
+          "path": "ordensServico/ordem-id/frente.jpg",
+          "contentType": "image/jpeg",
+          "uploadedAt": "2026-04-29T00:00:00.000Z"
+        }
+      ],
       "observacoesGerais": "Aparelho recebido sem carregador.",
       "criadoPor": "Camila O.",
       "createdAt": "2026-04-29T00:00:00.000Z",
@@ -84,6 +93,7 @@ Cada item do checklist deve ter:
 - Um checklist deve estar vinculado a uma ordem de servico existente.
 - O aparelho do checklist deve ser o mesmo aparelho vinculado a OS.
 - Cada item deve registrar um status tecnico.
+- Fotos enviadas ao Storage devem ser persistidas no checklist como metadados.
 - Checklist deve ser criado na entrada do aparelho e poder ser revisado durante a manutencao.
 
 ## Validacao
@@ -95,5 +105,5 @@ npm test
 
 ## Proximos passos
 
-- Integrar tela de checklist com OS real.
-- Abrir checklist pelo botao da listagem de ordens.
+- Validar upload real de fotos com usuarios Firebase Auth e custom claims.
+- Implementar exclusao fisica da imagem no Storage quando remover foto do checklist.

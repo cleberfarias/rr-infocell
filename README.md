@@ -19,6 +19,7 @@ O objetivo do projeto e centralizar o fluxo operacional da RR Infocell: clientes
 - Telas de ordens de servico integradas com API real para abertura e listagem de OS.
 - Modulo de checklist tecnico implementado no backend com API REST, vinculo com OS/aparelho, Firestore/fallback local e testes.
 - Tela de checklist tecnico integrada com OS real e API de checklists.
+- Upload de fotos no checklist preparado com Firebase Storage e metadados salvos no checklist.
 - Firestore real ativo no projeto `rr-infocell` e modulo de clientes validado gravando no banco real.
 - Base de Firebase Auth preparada no frontend com `AuthProvider`, login/logout e protecao de rotas por perfil.
 

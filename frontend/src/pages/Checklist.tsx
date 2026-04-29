@@ -1,11 +1,13 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import {
   Camera,
   CheckCircle2,
   Loader2,
   PenLine,
   Save,
+  Trash2,
   Upload,
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -23,11 +25,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { firebaseStorage, isFirebaseClientConfigured } from "@/lib/firebase";
 import { listAparelhos } from "@/services/aparelhos";
 import {
   createChecklist,
   listChecklists,
   updateChecklist,
+  type ChecklistFoto,
   type ChecklistItem,
   type ChecklistItemStatus,
 } from "@/services/checklists";
@@ -66,9 +70,12 @@ const Checklist = () => {
     searchParams.get("ordemId") ?? "",
   );
   const [itens, setItens] = useState<ChecklistItem[]>(initialItems);
+  const [fotos, setFotos] = useState<ChecklistFoto[]>([]);
   const [observacoesGerais, setObservacoesGerais] = useState("");
   const [criadoPor, setCriadoPor] = useState("Camila O.");
   const [formError, setFormError] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const ordensQuery = useQuery({
     queryKey: ["ordens-servico", "checklist"],
@@ -129,12 +136,14 @@ const Checklist = () => {
           ? existingChecklist.itens
           : initialItems,
       );
+      setFotos(existingChecklist.fotos ?? []);
       setObservacoesGerais(existingChecklist.observacoesGerais ?? "");
       setCriadoPor(existingChecklist.criadoPor ?? "Camila O.");
       return;
     }
 
     setItens(initialItems);
+    setFotos([]);
     setObservacoesGerais("");
     setCriadoPor("Camila O.");
   }, [existingChecklist]);
@@ -149,6 +158,7 @@ const Checklist = () => {
         ordemServicoId: selectedOrdem.id,
         aparelhoId: selectedOrdem.aparelhoId,
         itens,
+        fotos,
         observacoesGerais,
         criadoPor,
       };
@@ -186,6 +196,66 @@ const Checklist = () => {
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     saveMutation.mutate();
+  };
+
+  const handleUpload = async (files: FileList | null) => {
+    if (!files?.length || !selectedOrdem) {
+      return;
+    }
+
+    setUploadError(null);
+
+    if (!isFirebaseClientConfigured || !firebaseStorage) {
+      setUploadError("Firebase Storage nao esta configurado no frontend.");
+      return;
+    }
+
+    const imageFiles = Array.from(files).filter((file) =>
+      file.type.startsWith("image/"),
+    );
+
+    if (imageFiles.length === 0) {
+      setUploadError("Selecione apenas arquivos de imagem.");
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const uploadedFotos = await Promise.all(
+        imageFiles.map(async (file) => {
+          const safeName = file.name.replace(/[^\w.-]/g, "_");
+          const path = `ordensServico/${selectedOrdem.id}/${Date.now()}-${safeName}`;
+          const storageRef = ref(firebaseStorage, path);
+          const snapshot = await uploadBytes(storageRef, file, {
+            contentType: file.type,
+          });
+          const url = await getDownloadURL(snapshot.ref);
+
+          return {
+            nome: file.name,
+            url,
+            path,
+            contentType: file.type,
+            uploadedAt: new Date().toISOString(),
+          };
+        }),
+      );
+
+      setFotos((current) => [...current, ...uploadedFotos]);
+    } catch (error) {
+      setUploadError(
+        error instanceof Error
+          ? error.message
+          : "Nao foi possivel enviar as fotos para o Firebase Storage.",
+      );
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const removeFoto = (path: string) => {
+    setFotos((current) => current.filter((foto) => foto.path !== path));
   };
 
   const isLoading =
@@ -377,25 +447,69 @@ const Checklist = () => {
                 Fotos do aparelho
               </h3>
               <p className="mb-4 text-xs text-muted-foreground">
-                Upload de fotos fica preparado para a etapa de Storage.
+                Envie imagens da frente, verso, laterais e detalhes do dano.
               </p>
               <div className="grid grid-cols-2 gap-3">
-                {[1, 2, 3, 4].map((index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    className="group relative flex aspect-square flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-secondary/30 transition-colors hover:border-primary/50 hover:bg-secondary/50"
+                {fotos.map((foto) => (
+                  <div
+                    key={foto.path}
+                    className="group relative overflow-hidden rounded-md border border-border bg-secondary/30"
                   >
-                    <Camera className="h-5 w-5 text-muted-foreground group-hover:text-primary" />
-                    <span className="font-mono text-[10px] uppercase text-muted-foreground">
-                      Foto {index}
-                    </span>
-                  </button>
+                    <img
+                      src={foto.url}
+                      alt={foto.nome}
+                      className="aspect-square w-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-2 top-2 rounded-md bg-background/90 p-1.5 text-destructive opacity-0 shadow transition-opacity group-hover:opacity-100"
+                      title="Remover foto do checklist"
+                      onClick={() => removeFoto(foto.path)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                    <p className="truncate px-2 py-1.5 text-[10px] text-muted-foreground">
+                      {foto.nome}
+                    </p>
+                  </div>
                 ))}
+                {fotos.length === 0 && (
+                  <div className="flex aspect-square flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-secondary/30">
+                    <Camera className="h-5 w-5 text-muted-foreground" />
+                    <span className="font-mono text-[10px] uppercase text-muted-foreground">
+                      Sem fotos
+                    </span>
+                  </div>
+                )}
               </div>
-              <Button type="button" variant="outline" className="mt-3 w-full">
-                <Upload className="h-4 w-4" /> Anexar arquivo
-              </Button>
+              <label className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground">
+                {isUploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4" />
+                )}
+                {isUploading ? "Enviando..." : "Anexar fotos"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="sr-only"
+                  disabled={isUploading || !selectedOrdem}
+                  onChange={(event) => {
+                    handleUpload(event.target.files);
+                    event.target.value = "";
+                  }}
+                />
+              </label>
+              {uploadError && (
+                <p className="mt-3 text-xs text-destructive">{uploadError}</p>
+              )}
+              {!isFirebaseClientConfigured && (
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Configure as variaveis VITE_FIREBASE_* para habilitar upload
+                  real.
+                </p>
+              )}
             </Card>
 
             <Card className="surface-panel p-6">

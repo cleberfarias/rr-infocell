@@ -8,11 +8,20 @@ export type ChecklistItem = {
   observacao?: string;
 };
 
+export type ChecklistFoto = {
+  nome: string;
+  url: string;
+  path: string;
+  contentType?: string;
+  uploadedAt: string;
+};
+
 export type Checklist = {
   id: string;
   ordemServicoId: string;
   aparelhoId: string;
   itens: ChecklistItem[];
+  fotos: ChecklistFoto[];
   observacoesGerais?: string;
   criadoPor?: string;
   createdAt: string;
@@ -23,6 +32,7 @@ export type ChecklistInput = {
   ordemServicoId: string;
   aparelhoId: string;
   itens: ChecklistItem[];
+  fotos?: ChecklistFoto[];
   observacoesGerais?: string;
   criadoPor?: string;
 };
