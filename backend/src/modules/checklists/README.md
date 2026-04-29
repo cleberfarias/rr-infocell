@@ -6,22 +6,45 @@ Registrar o estado tecnico do aparelho na entrada da ordem de servico. O checkli
 
 ## Status atual
 
-Scaffold inicial.
+CRUD implementado com validacao, service, repository em memoria/Firestore e testes de rotas.
 
-Endpoint disponivel:
+Endpoints disponiveis:
 
 ```text
 GET /api/checklists
+GET /api/checklists?ordemServicoId=<id>
+GET /api/checklists?aparelhoId=<id>
+GET /api/checklists/:id
+POST /api/checklists
+PUT /api/checklists/:id
+DELETE /api/checklists/:id
 ```
 
-Resposta atual:
+Resposta de listagem:
 
 ```json
 {
-  "data": [],
+  "data": [
+    {
+      "id": "checklist-id",
+      "ordemServicoId": "ordem-id",
+      "aparelhoId": "aparelho-id",
+      "itens": [
+        {
+          "nome": "Tela",
+          "status": "funcionando"
+        }
+      ],
+      "observacoesGerais": "Aparelho recebido sem carregador.",
+      "criadoPor": "Camila O.",
+      "createdAt": "2026-04-29T00:00:00.000Z",
+      "updatedAt": "2026-04-29T00:00:00.000Z"
+    }
+  ],
   "meta": {
-    "module": "checklists",
-    "status": "scaffold"
+    "total": 1,
+    "ordemServicoId": "",
+    "aparelhoId": ""
   }
 }
 ```
@@ -58,14 +81,19 @@ Cada item do checklist deve ter:
 
 ## Regras previstas
 
-- Um checklist deve estar vinculado a uma ordem de servico.
+- Um checklist deve estar vinculado a uma ordem de servico existente.
+- O aparelho do checklist deve ser o mesmo aparelho vinculado a OS.
 - Cada item deve registrar um status tecnico.
 - Checklist deve ser criado na entrada do aparelho e poder ser revisado durante a manutencao.
 
+## Validacao
+
+```bash
+npm run build
+npm test
+```
+
 ## Proximos passos
 
-- Criar schema de validacao.
-- Criar modelo dos itens.
-- Implementar CRUD vinculado a OS.
-- Integrar com Firestore.
-- Criar testes de rotas.
+- Integrar tela de checklist com OS real.
+- Abrir checklist pelo botao da listagem de ordens.

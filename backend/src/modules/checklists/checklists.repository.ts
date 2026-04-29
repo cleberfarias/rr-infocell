@@ -1,0 +1,192 @@
+import { randomUUID } from "node:crypto";
+import type { Firestore } from "firebase-admin/firestore";
+
+import type { Checklist, ChecklistInput, ChecklistItem } from "./checklists.types.js";
+
+const now = () => new Date().toISOString();
+const checklistsCollection = "checklists";
+const withoutUndefined = <T extends Record<string, unknown>>(data: T) =>
+  Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as T;
+
+export interface ChecklistsRepository {
+  list(filters?: { ordemServicoId?: string; aparelhoId?: string }): Promise<Checklist[]>;
+  findById(id: string): Promise<Checklist | null>;
+  create(input: ChecklistInput): Promise<Checklist>;
+  update(id: string, input: ChecklistInput): Promise<Checklist | null>;
+  delete(id: string): Promise<boolean>;
+}
+
+const filterChecklists = (
+  checklists: Checklist[],
+  filters: { ordemServicoId?: string; aparelhoId?: string } = {},
+) =>
+  checklists.filter((checklist) => {
+    const matchesOrdem =
+      !filters.ordemServicoId || checklist.ordemServicoId === filters.ordemServicoId;
+    const matchesAparelho = !filters.aparelhoId || checklist.aparelhoId === filters.aparelhoId;
+
+    return matchesOrdem && matchesAparelho;
+  });
+
+const normalizeItens = (itens: ChecklistItem[]) =>
+  itens.map((item) => withoutUndefined({ ...item }));
+
+export class MemoryChecklistsRepository implements ChecklistsRepository {
+  private readonly checklists = new Map<string, Checklist>();
+
+  async list(filters: { ordemServicoId?: string; aparelhoId?: string } = {}) {
+    const checklists = Array.from(this.checklists.values()).sort((a, b) =>
+      b.createdAt.localeCompare(a.createdAt),
+    );
+
+    return filterChecklists(checklists, filters);
+  }
+
+  async findById(id: string) {
+    return this.checklists.get(id) ?? null;
+  }
+
+  async create(input: ChecklistInput) {
+    const timestamp = now();
+    const checklist: Checklist = {
+      id: randomUUID(),
+      ...input,
+      itens: normalizeItens(input.itens),
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+
+    this.checklists.set(checklist.id, checklist);
+
+    return checklist;
+  }
+
+  async update(id: string, input: ChecklistInput) {
+    const current = await this.findById(id);
+
+    if (!current) {
+      return null;
+    }
+
+    const checklist: Checklist = {
+      ...current,
+      ...input,
+      itens: normalizeItens(input.itens),
+      updatedAt: now(),
+    };
+
+    this.checklists.set(id, checklist);
+
+    return checklist;
+  }
+
+  async delete(id: string) {
+    return this.checklists.delete(id);
+  }
+}
+
+export class FirestoreChecklistsRepository implements ChecklistsRepository {
+  constructor(private readonly firestore: Firestore) {}
+
+  async list(filters: { ordemServicoId?: string; aparelhoId?: string } = {}) {
+    let query: FirebaseFirestore.Query = this.firestore.collection(checklistsCollection);
+
+    if (filters.ordemServicoId) {
+      query = query.where("ordemServicoId", "==", filters.ordemServicoId);
+    }
+
+    if (filters.aparelhoId) {
+      query = query.where("aparelhoId", "==", filters.aparelhoId);
+    }
+
+    const snapshot = await query.get();
+
+    return snapshot.docs
+      .map((document) => this.fromDocument(document.id, document.data()))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async findById(id: string) {
+    const document = await this.firestore.collection(checklistsCollection).doc(id).get();
+
+    if (!document.exists) {
+      return null;
+    }
+
+    return this.fromDocument(document.id, document.data() ?? {});
+  }
+
+  async create(input: ChecklistInput) {
+    const timestamp = now();
+    const document = this.firestore.collection(checklistsCollection).doc();
+    const checklist: Checklist = {
+      id: document.id,
+      ...input,
+      itens: normalizeItens(input.itens),
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+
+    await document.set(withoutUndefined(checklist));
+
+    return checklist;
+  }
+
+  async update(id: string, input: ChecklistInput) {
+    const current = await this.findById(id);
+
+    if (!current) {
+      return null;
+    }
+
+    const checklist: Checklist = {
+      ...current,
+      ...input,
+      itens: normalizeItens(input.itens),
+      updatedAt: now(),
+    };
+
+    await this.firestore.collection(checklistsCollection).doc(id).set(withoutUndefined(checklist));
+
+    return checklist;
+  }
+
+  async delete(id: string) {
+    const current = await this.findById(id);
+
+    if (!current) {
+      return false;
+    }
+
+    await this.firestore.collection(checklistsCollection).doc(id).delete();
+
+    return true;
+  }
+
+  private fromDocument(id: string, data: FirebaseFirestore.DocumentData): Checklist {
+    return {
+      id,
+      ordemServicoId: String(data.ordemServicoId ?? ""),
+      aparelhoId: String(data.aparelhoId ?? ""),
+      itens: Array.isArray(data.itens)
+        ? data.itens.map((item) => ({
+            nome: String(item.nome ?? ""),
+            status: String(item.status ?? "nao_testado") as ChecklistItem["status"],
+            observacao: item.observacao ? String(item.observacao) : undefined,
+          }))
+        : [],
+      observacoesGerais: data.observacoesGerais ? String(data.observacoesGerais) : undefined,
+      criadoPor: data.criadoPor ? String(data.criadoPor) : undefined,
+      createdAt: String(data.createdAt ?? ""),
+      updatedAt: String(data.updatedAt ?? ""),
+    };
+  }
+}
+
+export const createChecklistsRepository = (firestore: Firestore | null): ChecklistsRepository => {
+  if (firestore) {
+    return new FirestoreChecklistsRepository(firestore);
+  }
+
+  return new MemoryChecklistsRepository();
+};
