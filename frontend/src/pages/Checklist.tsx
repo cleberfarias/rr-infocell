@@ -25,7 +25,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { firebaseStorage, isFirebaseClientConfigured } from "@/lib/firebase";
+import {
+  firebaseAuth,
+  firebaseStorage,
+  isFirebaseClientConfigured,
+} from "@/lib/firebase";
 import { listAparelhos } from "@/services/aparelhos";
 import {
   createChecklist,
@@ -210,6 +214,13 @@ const Checklist = () => {
       return;
     }
 
+    if (!firebaseAuth?.currentUser) {
+      setUploadError(
+        "Para anexar fotos, entre com um usuario real do Firebase Auth. O modo de desenvolvimento por perfil nao autentica no Storage.",
+      );
+      return;
+    }
+
     const imageFiles = Array.from(files).filter((file) =>
       file.type.startsWith("image/"),
     );
@@ -227,9 +238,18 @@ const Checklist = () => {
           const safeName = file.name.replace(/[^\w.-]/g, "_");
           const path = `ordensServico/${selectedOrdem.id}/${Date.now()}-${safeName}`;
           const storageRef = ref(firebaseStorage, path);
-          const snapshot = await uploadBytes(storageRef, file, {
-            contentType: file.type,
-          });
+          const snapshot = await Promise.race([
+            uploadBytes(storageRef, file, {
+              contentType: file.type,
+            }),
+            new Promise<never>((_, reject) => {
+              window.setTimeout(
+                () =>
+                  reject(new Error("Tempo limite excedido ao enviar a foto.")),
+                30000,
+              );
+            }),
+          ]);
           const url = await getDownloadURL(snapshot.ref);
 
           return {
