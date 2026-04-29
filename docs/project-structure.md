@@ -33,6 +33,7 @@ Telas integradas com API:
 - `src/pages/Aparelhos.tsx`
 - `src/pages/NovaOS.tsx`
 - `src/pages/Ordens.tsx`
+- `src/pages/Checklist.tsx`
 
 ## Backend
 

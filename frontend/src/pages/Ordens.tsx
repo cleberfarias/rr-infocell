@@ -235,7 +235,7 @@ const Ordens = () => {
             </Link>
           </Button>
           <Button variant="ghost" size="icon" asChild title="Checklist">
-            <Link to="/app/checklist">
+            <Link to={`/app/checklist?ordemId=${ordem.id}`}>
               <ClipboardCheck className="h-4 w-4" />
             </Link>
           </Button>
