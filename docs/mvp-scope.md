@@ -29,6 +29,13 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 - Comprovante simples da OS implementado com impressao pelo navegador.
 - Dashboard inicial usa dados reais de OS e exibe relatorio basico por status.
 
+## Estado atual do estoque
+
+- Backend de produtos/estoque basico implementado com CRUD, filtros, Firestore/fallback local e testes.
+- Tela de estoque integrada com API real.
+- Indicadores de SKUs ativos, estoque baixo e valor em estoque calculados a partir dos dados reais.
+- Movimentacoes de estoque e baixa automatica por OS ficam para a proxima etapa.
+
 ## Fora do MVP
 
 - PDV completo.
