@@ -25,6 +25,7 @@ O objetivo do projeto e centralizar o fluxo operacional da RR Infocell: clientes
 - Impressao do checklist tecnico implementada com versao limpa para papel contendo OS, cliente, aparelho, itens, fotos e assinaturas.
 - Firestore real ativo no projeto `rr-infocell` e modulo de clientes validado gravando no banco real.
 - Base de Firebase Auth preparada no frontend com `AuthProvider`, login/logout e protecao de rotas por perfil.
+- Tela administrativa de usuarios implementada para criar usuarios internos e definir nivel de acesso.
 
 ## Stack definida
 
@@ -117,12 +118,12 @@ Por padrao, o backend local usa Firestore real quando `backend/.env` aponta para
 
 O frontend ja tem base para Firebase Auth. Em desenvolvimento, `VITE_AUTH_DEV_MODE=true` permite entrar escolhendo o perfil na tela de login sem precisar criar usuarios reais ainda.
 
-Para testar com usuarios reais do Firebase Auth depois:
+Para testar com usuarios reais do Firebase Auth:
 
-1. Crie os usuarios no Firebase Console.
-2. Configure `frontend/.env` com as variaveis `VITE_FIREBASE_*`.
-3. Altere `VITE_AUTH_DEV_MODE=false`.
-4. Entre com e-mail e senha reais.
+1. Configure `frontend/.env` com as variaveis `VITE_FIREBASE_*`.
+2. Altere `VITE_AUTH_DEV_MODE=false`.
+3. Crie o primeiro admin pelo script `npm run auth:set-role`.
+4. Entre com o admin real e use `/app/usuarios` para cadastrar os demais usuarios.
 
 As permissoes finas por usuario usam custom claim `role` com os valores `admin`, `atendente` ou `tecnico`.
 
@@ -196,10 +197,12 @@ npm test
 - [Modulo aparelhos](backend/src/modules/aparelhos/README.md)
 - [Modulo ordens de servico](backend/src/modules/ordens-servico/README.md)
 - [Modulo checklists](backend/src/modules/checklists/README.md)
+- [Modulo usuarios](backend/src/modules/usuarios/README.md)
 
 ## Funcionalidades do MVP
 
 - Login com base preparada para Firebase Auth.
+- Cadastro de usuarios internos por perfil.
 - Dashboard inicial.
 - Cadastro de clientes.
 - Cadastro de aparelhos.

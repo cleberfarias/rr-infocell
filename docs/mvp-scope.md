@@ -7,17 +7,18 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 ## Dentro do MVP
 
 1. Login simples para usuarios internos.
-2. Dashboard inicial com indicadores operacionais.
-3. Cadastro de clientes.
-4. Cadastro de aparelhos.
-5. Criacao de ordem de servico.
-6. Checklist tecnico de entrada.
-7. Upload de fotos no checklist tecnico.
-8. Impressao do checklist tecnico.
-9. Controle de status da OS.
-10. Estoque basico de pecas e produtos.
-11. Relatorio basico de ordens de servico.
-12. Visualizacao ou impressao simples de comprovante da OS.
+2. Cadastro de usuarios internos e nivel de acesso.
+3. Dashboard inicial com indicadores operacionais.
+4. Cadastro de clientes.
+5. Cadastro de aparelhos.
+6. Criacao de ordem de servico.
+7. Checklist tecnico de entrada.
+8. Upload de fotos no checklist tecnico.
+9. Impressao do checklist tecnico.
+10. Controle de status da OS.
+11. Estoque basico de pecas e produtos.
+12. Relatorio basico de ordens de servico.
+13. Visualizacao ou impressao simples de comprovante da OS.
 
 ## Estado atual do fluxo de OS
 

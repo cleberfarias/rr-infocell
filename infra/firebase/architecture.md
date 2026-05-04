@@ -17,7 +17,9 @@ O MVP usara Firebase como base principal:
 - Regiao do Firestore: `nam5`.
 - Colecao `clientes` validada com escrita/leitura pelo backend.
 - Backend local usa service account via `GOOGLE_APPLICATION_CREDENTIALS`.
-- Auth e custom claims ainda precisam ser finalizados para controle de acesso por perfil.
+- Frontend possui login Firebase Auth real e protecao de rotas por perfil.
+- Backend possui endpoint administrativo para criar usuarios Firebase Auth e definir custom claim `role`.
+- Tela administrativa de usuarios permite ao `admin` cadastrar usuarios internos e nivel de acesso.
 
 ## Por que Firebase
 
@@ -72,7 +74,8 @@ Fluxo recomendado:
 - Usuarios autenticados podem ler dados operacionais conforme perfil.
 - Escritas sensiveis devem passar pelo backend.
 - Dados financeiros e configuracoes devem ser restritos a `admin`.
-- Storage deve exigir usuario autenticado e vinculo com OS quando fotos forem implementadas.
+- Gerenciamento de usuarios exige token Firebase Auth com custom claim `role=admin`.
+- Storage exige usuario autenticado e perfil operacional para fotos do checklist.
 - Regras iniciais ficam em `infra/firebase/firestore.rules` e `infra/firebase/storage.rules`.
 - Configuracao de Hosting, regras e emuladores fica em `firebase.json`.
 

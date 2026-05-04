@@ -29,6 +29,7 @@ O backend ja esta preparado para usar Firestore no modulo de clientes quando o F
 - Service account local criada para desenvolvimento em `backend/firebase-service-account.local.json`.
 - Frontend preparado com Firebase Auth client, `AuthProvider`, login/logout e protecao de rotas por perfil.
 - Upload real de fotos do checklist validado com usuario Firebase Auth e custom claim `role`.
+- Tela administrativa de usuarios disponivel em `/app/usuarios` para usuarios com `role=admin`.
 
 ## Passos no Firebase Console
 
@@ -45,8 +46,8 @@ Itens ja preparados parcialmente:
 
 Itens pendentes:
 
-1. Criar os demais usuarios operacionais no Firebase Auth.
-2. Definir claims de perfil nos demais usuarios: `admin`, `atendente` ou `tecnico`.
+1. Criar ou revisar os usuarios operacionais definitivos da loja.
+2. Confirmar os perfis finais de cada usuario: `admin`, `atendente` ou `tecnico`.
 
 ## Configuracao local
 
@@ -131,6 +132,7 @@ Arquivos principais:
 - `frontend/src/lib/auth.tsx`: centraliza sessao, login, logout, modo desenvolvimento e leitura futura de custom claims.
 - `frontend/src/pages/Login.tsx`: usa o provider de auth e permite escolher o perfil localmente.
 - `frontend/src/components/AppLayout.tsx`: protege as rotas internas e redireciona conforme o perfil.
+- `frontend/src/pages/Usuarios.tsx`: tela administrativa para listar, criar e atualizar usuarios e claims.
 
 Fluxo atual:
 
@@ -144,6 +146,8 @@ O fallback por perfil deve ser removido quando os custom claims estiverem defini
 ## Custom claims de perfil
 
 O backend possui um script administrativo para criar ou atualizar usuarios do Firebase Auth e definir a claim `role`.
+
+Tambem existe a tela `/app/usuarios`, visivel apenas para `admin`, que usa os endpoints protegidos em `/api/usuarios`.
 
 Pre-requisitos:
 
@@ -310,6 +314,5 @@ firebase deploy --only hosting,firestore:rules,storage
 
 ## Pendencias operacionais
 
-- Criar usuarios iniciais no Firebase Auth.
-- Definir custom claims de perfil nos usuarios: `admin`, `atendente` ou `tecnico`.
-- Rodar o script `npm run auth:set-role` para cada usuario operacional.
+- Cadastrar ou revisar os usuarios reais da loja.
+- Confirmar e aplicar o perfil correto de cada usuario na tela `/app/usuarios` ou pelo script `npm run auth:set-role`.

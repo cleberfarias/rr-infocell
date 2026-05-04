@@ -30,6 +30,7 @@ export const rolePermissions: Record<Role, string[]> = {
     "despesas",
     "clientes",
     "aparelhos",
+    "usuarios",
   ],
   atendente: [
     "",

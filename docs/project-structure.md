@@ -36,6 +36,7 @@ Telas integradas com API:
 - `src/pages/Ordens.tsx`
 - `src/pages/OrdemDetalhe.tsx`
 - `src/pages/Checklist.tsx`
+- `src/pages/Usuarios.tsx`
 
 ## Backend
 
@@ -68,6 +69,8 @@ Arquivos principais:
 - `src/modules/checklists/checklists.routes.ts`
 - `src/modules/checklists/checklists.service.ts`
 - `src/modules/checklists/checklists.repository.ts`
+- `src/modules/usuarios/usuarios.routes.ts`
+- `src/modules/usuarios/usuarios.service.ts`
 
 Modulos atuais:
 
@@ -76,6 +79,7 @@ Modulos atuais:
 - `aparelhos`: CRUD implementado com busca, filtro por cliente, validacao, Firestore/fallback local e testes.
 - `ordens-servico`: CRUD implementado com numero sequencial, status, filtros, validacao de vinculos, Firestore/fallback local e testes.
 - `checklists`: CRUD implementado com vinculo a OS/aparelho, validacao, Firestore/fallback local e testes.
+- `usuarios`: gerenciamento administrativo de usuarios Firebase Auth e custom claim `role`, protegido por token admin.
 
 Cada modulo possui documentacao propria em `backend/src/modules/<modulo>/README.md`.
 

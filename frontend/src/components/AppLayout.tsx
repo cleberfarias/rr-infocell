@@ -15,6 +15,7 @@ import {
   Search,
   Plus,
   Smartphone,
+  UserCog,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -63,6 +64,12 @@ const allNav = [
     label: "Aparelhos",
     icon: Smartphone,
     key: "aparelhos",
+  },
+  {
+    to: "/app/usuarios",
+    label: "Usuarios",
+    icon: UserCog,
+    key: "usuarios",
   },
 ];
 
