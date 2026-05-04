@@ -8,6 +8,8 @@ Registrar o estado tecnico do aparelho na entrada da ordem de servico. O checkli
 
 CRUD implementado com validacao, service, repository em memoria/Firestore e testes de rotas.
 
+A tela frontend de checklist esta integrada com OS real, upload de fotos no Firebase Storage e impressao limpa para papel.
+
 Endpoints disponiveis:
 
 ```text
@@ -96,6 +98,18 @@ Cada item do checklist deve ter:
 - Fotos enviadas ao Storage devem ser persistidas no checklist como metadados.
 - Checklist deve ser criado na entrada do aparelho e poder ser revisado durante a manutencao.
 
+## Upload e impressao
+
+Fotos do checklist sao enviadas pelo frontend para o caminho:
+
+```text
+ordensServico/{ordemId}/{timestamp}-{nome-do-arquivo}
+```
+
+O upload exige usuario autenticado no Firebase Auth com custom claim `role` igual a `admin`, `atendente` ou `tecnico`. O bucket tambem precisa estar com CORS liberado para o frontend local e para o Firebase Hosting.
+
+O botao `Imprimir` da tela de checklist chama a impressao do navegador e usa uma versao propria para papel, sem menu lateral, botoes ou campos interativos.
+
 ## Validacao
 
 ```bash
@@ -105,5 +119,5 @@ npm test
 
 ## Proximos passos
 
-- Validar upload real de fotos com usuarios Firebase Auth e custom claims.
 - Implementar exclusao fisica da imagem no Storage quando remover foto do checklist.
+- Melhorar assinatura do cliente/atendente com captura digital.

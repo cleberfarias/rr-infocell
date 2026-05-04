@@ -126,6 +126,13 @@ Para testar com usuarios reais do Firebase Auth depois:
 
 As permissoes finas por usuario usam custom claim `role` com os valores `admin`, `atendente` ou `tecnico`.
 
+Para definir a claim de perfil via backend:
+
+```bash
+cd backend
+npm run auth:set-role -- --email atendente@rrinfocell.com --role atendente
+```
+
 ## Como rodar o frontend
 
 ```bash

@@ -23,9 +23,12 @@ O backend ja esta preparado para usar Firestore no modulo de clientes quando o F
 - Regiao do Firestore: `nam5`.
 - Cloud Firestore API habilitada.
 - Regras do Firestore publicadas.
+- Regras do Storage publicadas para imagens em `ordensServico/{ordemId}`.
+- CORS do bucket configurado para frontend local e Firebase Hosting.
 - Backend local validado gravando e lendo da colecao `clientes` no Firestore real.
 - Service account local criada para desenvolvimento em `backend/firebase-service-account.local.json`.
 - Frontend preparado com Firebase Auth client, `AuthProvider`, login/logout e protecao de rotas por perfil.
+- Upload real de fotos do checklist validado com usuario Firebase Auth e custom claim `role`.
 
 ## Passos no Firebase Console
 
@@ -38,15 +41,12 @@ Itens ja executados:
 
 Itens ja preparados parcialmente:
 
-1. Base do Firebase Auth no frontend.
-2. Modo local de desenvolvimento com `VITE_AUTH_DEV_MODE=true`, sem exigir usuarios reais.
+1. Modo local de desenvolvimento com `VITE_AUTH_DEV_MODE=true`, sem exigir usuarios reais.
 
 Itens pendentes:
 
-1. Ativar o provedor Email/Password no Firebase Auth quando for testar acesso real.
-2. Criar usuarios iniciais no Firebase Auth.
-3. Publicar/validar fluxo de upload de fotos no Firebase Storage com usuarios reais.
-4. Definir claims de perfil nos usuarios: `admin`, `atendente` ou `tecnico`.
+1. Criar os demais usuarios operacionais no Firebase Auth.
+2. Definir claims de perfil nos demais usuarios: `admin`, `atendente` ou `tecnico`.
 
 ## Configuracao local
 
@@ -141,6 +141,44 @@ Fluxo atual:
 
 O fallback por perfil deve ser removido quando os custom claims estiverem definidos para todos os usuarios reais.
 
+## Custom claims de perfil
+
+O backend possui um script administrativo para criar ou atualizar usuarios do Firebase Auth e definir a claim `role`.
+
+Pre-requisitos:
+
+- `backend/.env` com `FIREBASE_PROJECT_ID`.
+- `GOOGLE_APPLICATION_CREDENTIALS` apontando para a service account local, ou `FIREBASE_CLIENT_EMAIL` e `FIREBASE_PRIVATE_KEY` preenchidos.
+
+Definir perfil de um usuario existente:
+
+```bash
+cd backend
+npm run auth:set-role -- --email atendente@rrinfocell.com --role atendente
+```
+
+Criar usuario e definir perfil no mesmo comando:
+
+```bash
+cd backend
+npm run auth:set-role -- --email tecnico@rrinfocell.com --password senhaInicial --display-name "Tecnico" --role tecnico
+```
+
+Tambem e possivel usar UID:
+
+```bash
+cd backend
+npm run auth:set-role -- --uid firebase-uid --role admin
+```
+
+Roles permitidas:
+
+- `admin`
+- `atendente`
+- `tecnico`
+
+Depois de alterar a claim, o usuario precisa sair e entrar novamente para receber um token novo.
+
 ## Firestore real
 
 Status atual:
@@ -233,6 +271,12 @@ Depois do upload, o checklist salva os metadados da foto no Firestore via API:
 
 As regras atuais exigem usuario autenticado com claim `role` em `admin`, `atendente` ou `tecnico`. Em `VITE_AUTH_DEV_MODE=true`, o upload real pode ser bloqueado pelas regras do Storage ate os usuarios reais e custom claims estarem configurados.
 
+Para permitir upload pelo frontend local e pelo Hosting, aplique o CORS do bucket:
+
+```bash
+gcloud storage buckets update gs://rr-infocell.firebasestorage.app --cors-file=infra/firebase/storage-cors.json
+```
+
 ## Emuladores
 
 Depois de instalar o Firebase CLI:
@@ -268,4 +312,4 @@ firebase deploy --only hosting,firestore:rules,storage
 
 - Criar usuarios iniciais no Firebase Auth.
 - Definir custom claims de perfil nos usuarios: `admin`, `atendente` ou `tecnico`.
-- Criar rotina segura para setar claims pelo backend ou script administrativo.
+- Rodar o script `npm run auth:set-role` para cada usuario operacional.

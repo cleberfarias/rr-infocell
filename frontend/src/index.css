@@ -176,10 +176,14 @@
     visibility: visible !important;
   }
 
+  .checklist-page > :not(.checklist-print-area) {
+    display: none !important;
+  }
+
   .checklist-print-area {
     display: block !important;
-    position: absolute;
-    inset: 0 auto auto 0;
+    position: static;
+    inset: auto;
     width: 100%;
     background: #fff;
     color: #111827;

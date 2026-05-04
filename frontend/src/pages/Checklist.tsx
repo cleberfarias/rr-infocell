@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Loader2,
   PenLine,
+  Printer,
   Save,
   Trash2,
   Upload,
@@ -258,8 +259,14 @@ const Checklist = () => {
     saveMutation.mutate();
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   const handleUpload = async (files: FileList | null) => {
-    if (!files?.length || !selectedOrdem) {
+    const selectedFiles = Array.from(files ?? []);
+
+    if (!selectedFiles.length || !selectedOrdem) {
       return;
     }
 
@@ -290,7 +297,7 @@ const Checklist = () => {
       return;
     }
 
-    const imageFiles = Array.from(files)
+    const imageFiles = selectedFiles
       .map((file) => ({ file, contentType: getImageContentType(file) }))
       .filter((item): item is { file: File; contentType: string } =>
         Boolean(item.contentType),
@@ -356,14 +363,20 @@ const Checklist = () => {
     checklistsQuery.isError;
 
   return (
-    <form className="space-y-5" onSubmit={handleSubmit}>
+    <form className="checklist-page space-y-5" onSubmit={handleSubmit}>
       <PageHeader
         eyebrow={selectedOrdem ? `OS-${selectedOrdem.numero}` : "Checklist"}
         title="Checklist de entrada"
         description="Registre o estado fisico e funcional do aparelho antes do diagnostico."
         actions={
           <div className="flex gap-2">
-            <Button type="button" variant="outline">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handlePrint}
+              disabled={!selectedOrdem}
+            >
+              <Printer className="h-4 w-4" />
               Imprimir
             </Button>
             <Button
@@ -381,6 +394,90 @@ const Checklist = () => {
           </div>
         }
       />
+
+      {selectedOrdem && (
+        <section className="checklist-print-area">
+          <header className="print-header">
+            <div>
+              <p className="print-kicker">RR Infocell</p>
+              <h1>Checklist de entrada</h1>
+              <p>Ordem de servico OS-{selectedOrdem.numero}</p>
+            </div>
+            <div className="print-meta">
+              <span>Data: {new Date().toLocaleDateString("pt-BR")}</span>
+              <span>Responsavel: {criadoPor || "-"}</span>
+            </div>
+          </header>
+
+          <div className="print-grid print-summary">
+            <div>
+              <span>Cliente</span>
+              <strong>{cliente?.nome ?? selectedOrdem.clienteId}</strong>
+              <p>{cliente?.telefone ?? "-"}</p>
+            </div>
+            <div>
+              <span>Aparelho</span>
+              <strong>
+                {aparelho
+                  ? `${aparelho.marca} ${aparelho.modelo}`
+                  : selectedOrdem.aparelhoId}
+              </strong>
+              <p>{aparelho?.imeiSerial ?? "-"}</p>
+            </div>
+            <div>
+              <span>Status da OS</span>
+              <strong>{selectedOrdem.status}</strong>
+              <p>Checklist tecnico</p>
+            </div>
+          </div>
+
+          <h2>Inspecao do aparelho</h2>
+          <table className="print-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Status</th>
+                <th>Observacao</th>
+              </tr>
+            </thead>
+            <tbody>
+              {itens.map((item) => (
+                <tr key={item.nome}>
+                  <td>{item.nome}</td>
+                  <td>{statusLabels[item.status]}</td>
+                  <td>{item.observacao || "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <h2>Observacoes gerais</h2>
+          <p className="print-notes">{observacoesGerais || "-"}</p>
+
+          <h2>Fotos anexadas</h2>
+          {fotos.length > 0 ? (
+            <div className="print-photos">
+              {fotos.map((foto) => (
+                <figure key={foto.path}>
+                  <img src={foto.url} alt={foto.nome} />
+                  <figcaption>{foto.nome}</figcaption>
+                </figure>
+              ))}
+            </div>
+          ) : (
+            <p className="print-notes">Nenhuma foto anexada.</p>
+          )}
+
+          <div className="print-signatures">
+            <div>
+              <span>Cliente</span>
+            </div>
+            <div>
+              <span>Atendente</span>
+            </div>
+          </div>
+        </section>
+      )}
 
       {isLoading ? (
         <Card className="surface-panel flex min-h-[260px] items-center justify-center">
