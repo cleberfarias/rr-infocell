@@ -78,6 +78,12 @@ export const listAparelhos = async (
   return response.data;
 };
 
+export const getAparelho = async (id: string) => {
+  const response = await request<ApiResponse<Aparelho>>(`/aparelhos/${id}`);
+
+  return response.data;
+};
+
 export const createAparelho = async (input: AparelhoInput) => {
   const response = await request<ApiResponse<Aparelho>>("/aparelhos", {
     method: "POST",

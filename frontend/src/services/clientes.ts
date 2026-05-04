@@ -63,6 +63,12 @@ export const listClientes = async (query: string) => {
   return response.data;
 };
 
+export const getCliente = async (id: string) => {
+  const response = await request<ApiResponse<Cliente>>(`/clientes/${id}`);
+
+  return response.data;
+};
+
 export const createCliente = async (input: ClienteInput) => {
   const response = await request<ApiResponse<Cliente>>("/clientes", {
     method: "POST",

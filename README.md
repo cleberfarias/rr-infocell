@@ -17,9 +17,12 @@ O objetivo do projeto e centralizar o fluxo operacional da RR Infocell: clientes
 - Tela de aparelhos integrada no frontend com listagem, busca, filtro por cliente e CRUD.
 - Modulo de ordens de servico implementado no backend com API REST, numero sequencial, validacao de vinculos, Firestore/fallback local e testes.
 - Telas de ordens de servico integradas com API real para abertura e listagem de OS.
+- Detalhe da OS implementado com consulta real de cliente/aparelho, comprovante simples e impressao.
+- Dashboard inicial integrado com dados reais de OS, relatorio por status e resumo financeiro previsto.
 - Modulo de checklist tecnico implementado no backend com API REST, vinculo com OS/aparelho, Firestore/fallback local e testes.
 - Tela de checklist tecnico integrada com OS real e API de checklists.
-- Upload de fotos no checklist preparado com Firebase Storage e metadados salvos no checklist.
+- Upload de fotos no checklist funcionando com Firebase Storage, regras por custom claim e metadados salvos no checklist.
+- Impressao do checklist tecnico implementada com versao limpa para papel contendo OS, cliente, aparelho, itens, fotos e assinaturas.
 - Firestore real ativo no projeto `rr-infocell` e modulo de clientes validado gravando no banco real.
 - Base de Firebase Auth preparada no frontend com `AuthProvider`, login/logout e protecao de rotas por perfil.
 
@@ -48,7 +51,7 @@ O objetivo do projeto e centralizar o fluxo operacional da RR Infocell: clientes
 
 - Firebase Hosting para o frontend.
 - Firestore como banco principal.
-- Firebase Storage para arquivos futuros.
+- Firebase Storage para fotos e comprovantes.
 - Cloud Run, Render ou Railway para API Node/Express.
 
 ## Estrutura do repositorio
@@ -121,7 +124,7 @@ Para testar com usuarios reais do Firebase Auth depois:
 3. Altere `VITE_AUTH_DEV_MODE=false`.
 4. Entre com e-mail e senha reais.
 
-As permissoes finas por usuario ainda dependem dos custom claims `admin`, `atendente` e `tecnico`, que ficaram para a fase em que todas as telas e acessos estiverem definidos.
+As permissoes finas por usuario usam custom claim `role` com os valores `admin`, `atendente` ou `tecnico`.
 
 ## Como rodar o frontend
 
@@ -196,16 +199,17 @@ npm test
 - Ordem de servico.
 - Checklist tecnico.
 - Controle de status da OS.
+- Upload de fotos no checklist.
+- Impressao do checklist tecnico.
+- Relatorio basico de OS por status no dashboard.
+- Visualizacao e impressao simples de comprovante da OS.
 - Estoque basico.
-- Relatorio basico de OS.
-- Comprovante simples da OS.
 
 ## Fora do MVP inicial
 
 - PDV completo.
 - DRE completo.
 - Integracao com MarketUP.
-- Upload de fotos.
 - Assinatura digital.
 - Envio automatico por WhatsApp.
 - App mobile.

@@ -114,6 +114,14 @@ export const listOrdensServico = async (
   return response.data;
 };
 
+export const getOrdemServico = async (id: string) => {
+  const response = await request<ApiResponse<OrdemServico>>(
+    `/ordens-servico/${id}`,
+  );
+
+  return response.data;
+};
+
 export const createOrdemServico = async (input: OrdemServicoInput) => {
   const response = await request<ApiResponse<OrdemServico>>("/ordens-servico", {
     method: "POST",

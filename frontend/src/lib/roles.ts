@@ -69,5 +69,7 @@ export const clearRole = () => {
 export const canAccess = (role: Role, pathname: string): boolean => {
   // remove /app ou /app/
   const sub = pathname.replace(/^\/app\/?/, "");
-  return rolePermissions[role].includes(sub);
+  return rolePermissions[role].some(
+    (permission) => sub === permission || sub.startsWith(`${permission}/`),
+  );
 };

@@ -12,10 +12,21 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 4. Cadastro de aparelhos.
 5. Criacao de ordem de servico.
 6. Checklist tecnico de entrada.
-7. Controle de status da OS.
-8. Estoque basico de pecas e produtos.
-9. Relatorio basico de ordens de servico.
-10. Visualizacao ou impressao simples de comprovante da OS.
+7. Upload de fotos no checklist tecnico.
+8. Impressao do checklist tecnico.
+9. Controle de status da OS.
+10. Estoque basico de pecas e produtos.
+11. Relatorio basico de ordens de servico.
+12. Visualizacao ou impressao simples de comprovante da OS.
+
+## Estado atual do fluxo de OS
+
+- Backend de ordens de servico concluido com CRUD, status, numero sequencial, validacao de cliente/aparelho e testes.
+- Frontend de abertura e listagem de OS integrado com API real.
+- Checklist tecnico vinculado a OS real.
+- Detalhe da OS implementado com dados reais de cliente/aparelho.
+- Comprovante simples da OS implementado com impressao pelo navegador.
+- Dashboard inicial usa dados reais de OS e exibe relatorio basico por status.
 
 ## Fora do MVP
 
@@ -23,7 +34,6 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 - DRE completo.
 - Relatorios avancados.
 - Integracao com MarketUP.
-- Upload de fotos do aparelho.
 - Assinatura digital.
 - Envio automatico por WhatsApp.
 - Controle avancado de permissoes.
@@ -37,6 +47,8 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 - Aparelhos.
 - Ordens de servico.
 - Checklist tecnico.
+- Upload de fotos do checklist.
+- Impressao do checklist.
 - Status da OS.
 - Historico do cliente.
 

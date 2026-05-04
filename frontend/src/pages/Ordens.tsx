@@ -227,10 +227,10 @@ const Ordens = () => {
       key: "actions",
       header: "Acoes",
       headerClassName: "text-right",
-      cell: () => (
+      cell: (ordem) => (
         <div className="flex justify-end gap-1">
           <Button variant="ghost" size="icon" asChild title="Detalhes">
-            <Link to="/app/manutencao">
+            <Link to={`/app/ordens/${ordem.id}`}>
               <Eye className="h-4 w-4" />
             </Link>
           </Button>

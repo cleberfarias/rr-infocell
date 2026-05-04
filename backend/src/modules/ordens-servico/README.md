@@ -8,6 +8,8 @@ Gerenciar o fluxo central do sistema: abertura, acompanhamento, manutencao, conc
 
 CRUD implementado com validacao, service, repository em memoria/Firestore, numero sequencial e testes de rotas.
 
+No frontend, o fluxo de OS esta integrado com API real para abertura, listagem, detalhe, relatorio basico no dashboard e comprovante simples para impressao.
+
 Endpoints disponiveis:
 
 ```text
@@ -103,6 +105,5 @@ npm test
 
 ## Proximos passos
 
-- Integrar tela de Nova OS com a API.
-- Trocar listagem de ordens do frontend de mock para dados reais.
-- Vincular checklist tecnico a uma OS real.
+- Implementar edicao operacional detalhada da OS quando o fluxo de manutencao for refinado.
+- Integrar baixa de pecas do estoque ao atualizar manutencao/valores da OS.

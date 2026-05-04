@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound.tsx";
 import AppLayout from "./components/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Ordens from "./pages/Ordens";
+import OrdemDetalhe from "./pages/OrdemDetalhe";
 import NovaOS from "./pages/NovaOS";
 import Checklist from "./pages/Checklist";
 import Manutencao from "./pages/Manutencao";
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/app" element={<AppLayout />}>
               <Route index element={<Dashboard />} />
               <Route path="ordens" element={<Ordens />} />
+              <Route path="ordens/:ordemId" element={<OrdemDetalhe />} />
               <Route path="ordens/nova" element={<NovaOS />} />
               <Route path="checklist" element={<Checklist />} />
               <Route path="manutencao" element={<Manutencao />} />

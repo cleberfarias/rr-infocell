@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -56,14 +56,33 @@
     --sidebar-ring: 205 95% 55%;
 
     /* Gradients & metallic effects */
-    --gradient-primary: linear-gradient(135deg, hsl(205 95% 55%), hsl(195 100% 50%));
-    --gradient-metal: linear-gradient(135deg, hsl(220 10% 28%), hsl(220 8% 16%));
-    --gradient-surface: linear-gradient(180deg, hsl(220 14% 11%), hsl(220 16% 8%));
-    --gradient-glow: radial-gradient(60% 60% at 50% 0%, hsl(205 95% 55% / 0.18), transparent 70%);
+    --gradient-primary: linear-gradient(
+      135deg,
+      hsl(205 95% 55%),
+      hsl(195 100% 50%)
+    );
+    --gradient-metal: linear-gradient(
+      135deg,
+      hsl(220 10% 28%),
+      hsl(220 8% 16%)
+    );
+    --gradient-surface: linear-gradient(
+      180deg,
+      hsl(220 14% 11%),
+      hsl(220 16% 8%)
+    );
+    --gradient-glow: radial-gradient(
+      60% 60% at 50% 0%,
+      hsl(205 95% 55% / 0.18),
+      transparent 70%
+    );
 
     /* Shadows */
-    --shadow-card: 0 1px 0 0 hsl(220 10% 25% / 0.4) inset, 0 8px 24px -12px hsl(0 0% 0% / 0.6);
-    --shadow-glow: 0 0 0 1px hsl(205 95% 55% / 0.3), 0 8px 32px -8px hsl(205 95% 55% / 0.4);
+    --shadow-card:
+      0 1px 0 0 hsl(220 10% 25% / 0.4) inset,
+      0 8px 24px -12px hsl(0 0% 0% / 0.6);
+    --shadow-glow:
+      0 0 0 1px hsl(205 95% 55% / 0.3), 0 8px 32px -8px hsl(205 95% 55% / 0.4);
     --shadow-elevated: 0 20px 60px -20px hsl(0 0% 0% / 0.8);
 
     --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -74,23 +93,36 @@
   * {
     @apply border-border;
   }
-  html, body, #root {
+  html,
+  body,
+  #root {
     @apply h-full;
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-feature-settings: "cv11", "ss01";
     background-image:
-      radial-gradient(1200px 600px at 80% -10%, hsl(205 95% 55% / 0.08), transparent 60%),
-      radial-gradient(800px 500px at -10% 100%, hsl(195 100% 50% / 0.05), transparent 60%);
+      radial-gradient(
+        1200px 600px at 80% -10%,
+        hsl(205 95% 55% / 0.08),
+        transparent 60%
+      ),
+      radial-gradient(
+        800px 500px at -10% 100%,
+        hsl(195 100% 50% / 0.05),
+        transparent 60%
+      );
     background-attachment: fixed;
   }
-  h1, h2, h3, h4 {
-    font-family: 'Space Grotesk', system-ui, sans-serif;
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: "Space Grotesk", system-ui, sans-serif;
     @apply tracking-tight;
   }
   .font-mono {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
   }
 }
 
@@ -101,16 +133,209 @@
     @apply border border-border rounded-lg;
   }
   .metal-border {
-    background: linear-gradient(135deg, hsl(220 10% 22%), hsl(220 14% 14%)) border-box;
+    background: linear-gradient(135deg, hsl(220 10% 22%), hsl(220 14% 14%))
+      border-box;
   }
   .glow-text {
     text-shadow: 0 0 24px hsl(205 95% 55% / 0.5);
   }
   .scan-line::before {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, transparent, hsl(205 95% 55% / 0.04), transparent);
+    background: linear-gradient(
+      180deg,
+      transparent,
+      hsl(205 95% 55% / 0.04),
+      transparent
+    );
     pointer-events: none;
+  }
+
+  .checklist-print-area {
+    display: none;
+  }
+}
+
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  body {
+    background: #fff !important;
+    color: #111827 !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .checklist-print-area,
+  .checklist-print-area * {
+    visibility: visible !important;
+  }
+
+  .checklist-print-area {
+    display: block !important;
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    background: #fff;
+    color: #111827;
+    font-family: Inter, Arial, sans-serif;
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
+  .print-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    border-bottom: 2px solid #111827;
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+  }
+
+  .print-header h1 {
+    margin: 0;
+    color: #111827;
+    font-size: 24px;
+    letter-spacing: 0;
+  }
+
+  .print-header p,
+  .print-meta span,
+  .print-summary p,
+  .print-notes {
+    margin: 0;
+    color: #374151;
+  }
+
+  .print-kicker {
+    color: #0284c7 !important;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .print-meta {
+    display: grid;
+    gap: 4px;
+    min-width: 170px;
+    text-align: right;
+  }
+
+  .print-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .print-summary {
+    margin-bottom: 14px;
+  }
+
+  .print-summary div {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 8px;
+  }
+
+  .print-summary span,
+  .print-signatures span {
+    display: block;
+    color: #6b7280;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .print-summary strong {
+    display: block;
+    margin-top: 2px;
+    color: #111827;
+    font-size: 12px;
+  }
+
+  .checklist-print-area h2 {
+    margin: 14px 0 6px;
+    color: #111827;
+    font-size: 14px;
+    letter-spacing: 0;
+  }
+
+  .print-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .print-table th,
+  .print-table td {
+    border: 1px solid #d1d5db;
+    padding: 6px 8px;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .print-table th {
+    background: #f3f4f6;
+    color: #111827;
+    font-size: 10px;
+    text-transform: uppercase;
+  }
+
+  .print-notes {
+    min-height: 34px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 8px;
+  }
+
+  .print-photos {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .print-photos figure {
+    break-inside: avoid;
+    margin: 0;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 5px;
+  }
+
+  .print-photos img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+  }
+
+  .print-photos figcaption {
+    margin-top: 4px;
+    overflow: hidden;
+    color: #4b5563;
+    font-size: 9px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .print-signatures {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px;
+    margin-top: 32px;
+  }
+
+  .print-signatures div {
+    min-height: 48px;
+    border-top: 1px solid #111827;
+    padding-top: 6px;
+    text-align: center;
   }
 }
