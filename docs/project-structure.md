@@ -74,6 +74,8 @@ Arquivos principais:
 - `src/modules/usuarios/usuarios.service.ts`
 - `src/modules/produtos/produtos.routes.ts`
 - `src/modules/produtos/produtos.service.ts`
+- `src/modules/movimentacoes-estoque/movimentacoes-estoque.routes.ts`
+- `src/modules/movimentacoes-estoque/movimentacoes-estoque.service.ts`
 
 Modulos atuais:
 
@@ -84,6 +86,7 @@ Modulos atuais:
 - `checklists`: CRUD implementado com vinculo a OS/aparelho, validacao, Firestore/fallback local e testes.
 - `usuarios`: gerenciamento administrativo de usuarios Firebase Auth e custom claim `role`, protegido por token admin.
 - `produtos`: CRUD de estoque basico com busca, categoria, ativo, custos, precos e ponto minimo.
+- `movimentacoes-estoque`: entrada, saida e ajuste manual de estoque com historico por produto.
 
 Cada modulo possui documentacao propria em `backend/src/modules/<modulo>/README.md`.
 

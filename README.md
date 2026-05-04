@@ -2,7 +2,7 @@
 
 Sistema web para gestao de assistencia tecnica e loja de celulares.
 
-O objetivo do projeto e centralizar o fluxo operacional da RR Infocell: clientes, aparelhos, ordens de servico, checklist tecnico, estoque basico, comprovantes e relatorios iniciais.
+O objetivo do projeto e centralizar o fluxo operacional da RR Infocell: clientes, aparelhos, ordens de servico, checklist tecnico, estoque, comprovantes e relatorios iniciais.
 
 ## Status do projeto
 
@@ -22,6 +22,7 @@ O objetivo do projeto e centralizar o fluxo operacional da RR Infocell: clientes
 - Modulo de checklist tecnico implementado no backend com API REST, vinculo com OS/aparelho, Firestore/fallback local e testes.
 - Tela de checklist tecnico integrada com OS real e API de checklists.
 - Modulo de produtos/estoque implementado com API REST, Firestore/fallback local, testes e tela integrada.
+- Movimentacoes manuais de estoque implementadas com entrada, saida, ajuste, historico por produto e bloqueio de estoque negativo.
 - Upload de fotos no checklist funcionando com Firebase Storage, regras por custom claim e metadados salvos no checklist.
 - Impressao do checklist tecnico implementada com versao limpa para papel contendo OS, cliente, aparelho, itens, fotos e assinaturas.
 - Firestore real ativo no projeto `rr-infocell` e modulo de clientes validado gravando no banco real.
@@ -200,6 +201,7 @@ npm test
 - [Modulo checklists](backend/src/modules/checklists/README.md)
 - [Modulo usuarios](backend/src/modules/usuarios/README.md)
 - [Modulo produtos e estoque](backend/src/modules/produtos/README.md)
+- [Modulo movimentacoes de estoque](backend/src/modules/movimentacoes-estoque/README.md)
 
 ## Funcionalidades do MVP
 
@@ -215,7 +217,7 @@ npm test
 - Impressao do checklist tecnico.
 - Relatorio basico de OS por status no dashboard.
 - Visualizacao e impressao simples de comprovante da OS.
-- Estoque basico integrado com API real.
+- Estoque integrado com API real, CRUD de produtos e movimentacoes manuais.
 
 ## Fora do MVP inicial
 

@@ -16,7 +16,7 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 8. Upload de fotos no checklist tecnico.
 9. Impressao do checklist tecnico.
 10. Controle de status da OS.
-11. Estoque basico de pecas e produtos.
+11. Estoque de pecas e produtos com movimentacoes manuais.
 12. Relatorio basico de ordens de servico.
 13. Visualizacao ou impressao simples de comprovante da OS.
 
@@ -34,7 +34,8 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 - Backend de produtos/estoque basico implementado com CRUD, filtros, Firestore/fallback local e testes.
 - Tela de estoque integrada com API real.
 - Indicadores de SKUs ativos, estoque baixo e valor em estoque calculados a partir dos dados reais.
-- Movimentacoes de estoque e baixa automatica por OS ficam para a proxima etapa.
+- Movimentacoes manuais implementadas com entrada, saida, ajuste, historico por produto e bloqueio de estoque negativo.
+- Baixa automatica por OS fica para a proxima etapa.
 
 ## Fora do MVP
 
@@ -62,7 +63,7 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 
 ### Media
 
-- Estoque basico.
+- Estoque e movimentacoes manuais.
 - Dashboard.
 - Relatorio basico.
 - Comprovante simples.

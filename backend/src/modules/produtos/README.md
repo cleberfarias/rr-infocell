@@ -7,6 +7,7 @@ Gerenciar o estoque basico de pecas, produtos e acessorios usados pela assistenc
 ## Status atual
 
 CRUD implementado com validacao, service, repository em memoria/Firestore e testes de rotas.
+Movimentacoes manuais ficam no modulo `movimentacoes-estoque`.
 
 Endpoints disponiveis:
 
@@ -35,5 +36,4 @@ DELETE /api/produtos/:id
 
 ## Proximos passos
 
-- Criar movimentacoes de estoque.
 - Integrar baixa de pecas usadas na OS/manutencao.

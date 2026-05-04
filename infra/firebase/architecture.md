@@ -16,7 +16,8 @@ O MVP usara Firebase como base principal:
 - Firestore database: `(default)`.
 - Regiao do Firestore: `nam5`.
 - Colecao `clientes` validada com escrita/leitura pelo backend.
-- Colecao `produtos` preparada para estoque basico via backend.
+- Colecao `produtos` preparada para estoque via backend.
+- Colecao `movimentacoesEstoque` preparada para historico de entrada, saida e ajuste.
 - Backend local usa service account via `GOOGLE_APPLICATION_CREDENTIALS`.
 - Frontend possui login Firebase Auth real e protecao de rotas por perfil.
 - Backend possui endpoint administrativo para criar usuarios Firebase Auth e definir custom claim `role`.
@@ -52,6 +53,7 @@ counters
 - `checklists/{checklistId}` referencia `ordemServicoId`.
 - `movimentacoesEstoque/{movimentacaoId}` referencia `produtoId` e, quando existir, `ordemServicoId`.
 - `produtos/{produtoId}` armazena SKU, nome, categoria, estoque atual, minimo, custo, venda e status ativo.
+- `movimentacoesEstoque/{movimentacaoId}` armazena tipo, quantidade, estoque anterior/posterior, origem e motivo.
 
 ## Numero automatico de OS
 

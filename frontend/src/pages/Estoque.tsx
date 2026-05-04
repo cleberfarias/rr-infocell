@@ -2,7 +2,11 @@ import { FormEvent, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   Edit,
+  History,
   Loader2,
   Package,
   Plus,
@@ -33,6 +37,12 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { formatBRL } from "@/data/mock";
 import {
+  createMovimentacaoEstoque,
+  listMovimentacoesEstoque,
+  type MovimentacaoEstoque,
+  type MovimentacaoEstoqueTipo,
+} from "@/services/movimentacoes-estoque";
+import {
   createProduto,
   deleteProduto,
   listProdutos,
@@ -53,6 +63,13 @@ type ProdutoForm = {
   sku: string;
 };
 
+type MovimentacaoForm = {
+  tipo: MovimentacaoEstoqueTipo;
+  quantidade: string;
+  estoqueFinal: string;
+  motivo: string;
+};
+
 const emptyForm: ProdutoForm = {
   ativo: true,
   categoria: "peca",
@@ -63,6 +80,13 @@ const emptyForm: ProdutoForm = {
   observacoes: "",
   precoVenda: "0",
   sku: "",
+};
+
+const emptyMovimentacaoForm: MovimentacaoForm = {
+  tipo: "entrada",
+  quantidade: "1",
+  estoqueFinal: "0",
+  motivo: "",
 };
 
 const categoriaLabels: Record<ProdutoCategoria, string> = {
@@ -80,6 +104,12 @@ const categoriaOptions: Array<ProdutoCategoria | "todos"> = [
   "servico",
 ];
 
+const movimentacaoLabels: Record<MovimentacaoEstoqueTipo, string> = {
+  ajuste: "Ajuste",
+  entrada: "Entrada",
+  saida: "Saida",
+};
+
 const parseNumber = (value: string) => Number(value.replace(",", ".")) || 0;
 
 const Estoque = () => {
@@ -92,6 +122,11 @@ const Estoque = () => {
   const [editingProduto, setEditingProduto] = useState<Produto | null>(null);
   const [form, setForm] = useState<ProdutoForm>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
+  const [movimentacaoDialogOpen, setMovimentacaoDialogOpen] = useState(false);
+  const [selectedProduto, setSelectedProduto] = useState<Produto | null>(null);
+  const [movimentacaoForm, setMovimentacaoForm] =
+    useState<MovimentacaoForm>(emptyMovimentacaoForm);
+  const [movimentacaoError, setMovimentacaoError] = useState<string | null>(null);
 
   const produtosQuery = useQuery({
     queryKey: ["produtos", search, categoriaFilter],
@@ -107,6 +142,13 @@ const Estoque = () => {
     () => produtosQuery.data ?? [],
     [produtosQuery.data],
   );
+
+  const movimentacoesQuery = useQuery({
+    queryKey: ["movimentacoes-estoque", selectedProduto?.id],
+    queryFn: () =>
+      listMovimentacoesEstoque({ produtoId: selectedProduto?.id ?? "" }),
+    enabled: Boolean(selectedProduto?.id && movimentacaoDialogOpen),
+  });
 
   const stats = useMemo(
     () => ({
@@ -124,6 +166,13 @@ const Estoque = () => {
 
   const invalidateProdutos = async () => {
     await queryClient.invalidateQueries({ queryKey: ["produtos"] });
+  };
+
+  const invalidateEstoque = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["produtos"] }),
+      queryClient.invalidateQueries({ queryKey: ["movimentacoes-estoque"] }),
+    ]);
   };
 
   const saveMutation = useMutation({
@@ -165,6 +214,49 @@ const Estoque = () => {
     onSuccess: invalidateProdutos,
   });
 
+  const movimentacaoMutation = useMutation({
+    mutationFn: (input: MovimentacaoForm) => {
+      if (!selectedProduto) {
+        throw new Error("Selecione um produto para movimentar.");
+      }
+
+      if (input.tipo === "ajuste") {
+        return createMovimentacaoEstoque({
+          produtoId: selectedProduto.id,
+          tipo: "ajuste",
+          estoqueFinal: Math.max(
+            0,
+            Math.trunc(parseNumber(input.estoqueFinal)),
+          ),
+          motivo: input.motivo || undefined,
+        });
+      }
+
+      return createMovimentacaoEstoque({
+        produtoId: selectedProduto.id,
+        tipo: input.tipo,
+        quantidade: Math.max(1, Math.trunc(parseNumber(input.quantidade))),
+        motivo: input.motivo || undefined,
+      });
+    },
+    onSuccess: async (movimentacao) => {
+      await invalidateEstoque();
+      setSelectedProduto((current) =>
+        current
+          ? { ...current, estoqueAtual: movimentacao.estoquePosterior }
+          : current,
+      );
+      setMovimentacaoError(null);
+    },
+    onError: (error) => {
+      setMovimentacaoError(
+        error instanceof Error
+          ? error.message
+          : "Nao foi possivel registrar a movimentacao.",
+      );
+    },
+  });
+
   const openCreateDialog = () => {
     setEditingProduto(null);
     setForm(emptyForm);
@@ -189,6 +281,16 @@ const Estoque = () => {
     setDialogOpen(true);
   };
 
+  const openMovimentacaoDialog = (produto: Produto) => {
+    setSelectedProduto(produto);
+    setMovimentacaoForm({
+      ...emptyMovimentacaoForm,
+      estoqueFinal: String(produto.estoqueAtual),
+    });
+    setMovimentacaoError(null);
+    setMovimentacaoDialogOpen(true);
+  };
+
   const updateForm = <TKey extends keyof ProdutoForm>(
     field: TKey,
     value: ProdutoForm[TKey],
@@ -196,10 +298,23 @@ const Estoque = () => {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
+  const updateMovimentacaoForm = <TKey extends keyof MovimentacaoForm>(
+    field: TKey,
+    value: MovimentacaoForm[TKey],
+  ) => {
+    setMovimentacaoForm((current) => ({ ...current, [field]: value }));
+  };
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError(null);
     saveMutation.mutate(form);
+  };
+
+  const handleMovimentacaoSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setMovimentacaoError(null);
+    movimentacaoMutation.mutate(movimentacaoForm);
   };
 
   const handleDelete = (produto: Produto) => {
@@ -209,6 +324,26 @@ const Estoque = () => {
       deleteMutation.mutate(produto.id);
     }
   };
+
+  const renderMovimentacaoIcon = (tipo: MovimentacaoEstoqueTipo) => {
+    if (tipo === "entrada") {
+      return <ArrowUp className="h-3.5 w-3.5 text-success" />;
+    }
+
+    if (tipo === "saida") {
+      return <ArrowDown className="h-3.5 w-3.5 text-destructive" />;
+    }
+
+    return <ArrowUpDown className="h-3.5 w-3.5 text-primary" />;
+  };
+
+  const formatDateTime = (value: string) =>
+    new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(new Date(value));
+
+  const movimentacoes = (movimentacoesQuery.data ?? []).slice(0, 6);
 
   return (
     <div className="space-y-5">
@@ -409,6 +544,14 @@ const Estoque = () => {
                           <Button
                             variant="ghost"
                             size="icon"
+                            title="Movimentar estoque"
+                            onClick={() => openMovimentacaoDialog(produto)}
+                          >
+                            <ArrowUpDown className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             title="Editar"
                             onClick={() => openEditDialog(produto)}
                           >
@@ -571,6 +714,172 @@ const Estoque = () => {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={movimentacaoDialogOpen}
+        onOpenChange={setMovimentacaoDialogOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Movimentar estoque</DialogTitle>
+          </DialogHeader>
+          {selectedProduto && (
+            <div className="space-y-4">
+              <div className="rounded-md border border-border bg-secondary/30 p-3">
+                <p className="text-sm font-medium">{selectedProduto.nome}</p>
+                <p className="font-mono text-xs text-muted-foreground">
+                  {selectedProduto.sku} - estoque atual:{" "}
+                  {selectedProduto.estoqueAtual}
+                </p>
+              </div>
+              <form className="space-y-4" onSubmit={handleMovimentacaoSubmit}>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <FormField id="movimentacao-tipo" label="Tipo">
+                    <Select
+                      value={movimentacaoForm.tipo}
+                      onValueChange={(value) =>
+                        updateMovimentacaoForm(
+                          "tipo",
+                          value as MovimentacaoEstoqueTipo,
+                        )
+                      }
+                    >
+                      <SelectTrigger id="movimentacao-tipo">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(movimentacaoLabels).map(
+                          ([value, label]) => (
+                            <SelectItem key={value} value={value}>
+                              {label}
+                            </SelectItem>
+                          ),
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </FormField>
+                  {movimentacaoForm.tipo === "ajuste" ? (
+                    <FormField
+                      id="movimentacao-estoque-final"
+                      label="Estoque final"
+                    >
+                      <Input
+                        id="movimentacao-estoque-final"
+                        min="0"
+                        step="1"
+                        type="number"
+                        value={movimentacaoForm.estoqueFinal}
+                        onChange={(event) =>
+                          updateMovimentacaoForm(
+                            "estoqueFinal",
+                            event.target.value,
+                          )
+                        }
+                        required
+                      />
+                    </FormField>
+                  ) : (
+                    <FormField id="movimentacao-quantidade" label="Quantidade">
+                      <Input
+                        id="movimentacao-quantidade"
+                        min="1"
+                        step="1"
+                        type="number"
+                        value={movimentacaoForm.quantidade}
+                        onChange={(event) =>
+                          updateMovimentacaoForm(
+                            "quantidade",
+                            event.target.value,
+                          )
+                        }
+                        required
+                      />
+                    </FormField>
+                  )}
+                  <FormField
+                    id="movimentacao-motivo"
+                    label="Motivo"
+                    className="sm:col-span-2"
+                  >
+                    <Textarea
+                      id="movimentacao-motivo"
+                      value={movimentacaoForm.motivo}
+                      onChange={(event) =>
+                        updateMovimentacaoForm("motivo", event.target.value)
+                      }
+                      placeholder="Ex.: compra, uso em OS, contagem fisica..."
+                    />
+                  </FormField>
+                </div>
+                {movimentacaoError && (
+                  <p className="text-sm text-destructive">
+                    {movimentacaoError}
+                  </p>
+                )}
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setMovimentacaoDialogOpen(false)}
+                  >
+                    Fechar
+                  </Button>
+                  <Button type="submit" disabled={movimentacaoMutation.isPending}>
+                    {movimentacaoMutation.isPending && (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    )}
+                    Registrar
+                  </Button>
+                </DialogFooter>
+              </form>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <History className="h-4 w-4" />
+                  Historico recente
+                </div>
+                {movimentacoesQuery.isLoading ? (
+                  <div className="flex min-h-[88px] items-center justify-center rounded-md border border-border">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                ) : movimentacoes.length === 0 ? (
+                  <p className="rounded-md border border-border p-3 text-sm text-muted-foreground">
+                    Nenhuma movimentacao registrada para este item.
+                  </p>
+                ) : (
+                  <div className="max-h-56 overflow-y-auto rounded-md border border-border">
+                    {movimentacoes.map((movimentacao: MovimentacaoEstoque) => (
+                      <div
+                        key={movimentacao.id}
+                        className="flex items-start justify-between gap-3 border-b border-border/50 p-3 last:border-b-0"
+                      >
+                        <div className="flex min-w-0 items-start gap-2">
+                          {renderMovimentacaoIcon(movimentacao.tipo)}
+                          <div>
+                            <p className="text-sm font-medium">
+                              {movimentacaoLabels[movimentacao.tipo]} de{" "}
+                              {movimentacao.quantidade}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {movimentacao.estoqueAnterior} -&gt;{" "}
+                              {movimentacao.estoquePosterior}
+                              {movimentacao.motivo
+                                ? ` - ${movimentacao.motivo}`
+                                : ""}
+                            </p>
+                          </div>
+                        </div>
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {formatDateTime(movimentacao.createdAt)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
