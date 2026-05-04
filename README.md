@@ -23,6 +23,7 @@ O objetivo do projeto e centralizar o fluxo operacional da RR Infocell: clientes
 - Tela de checklist tecnico integrada com OS real e API de checklists.
 - Modulo de produtos/estoque implementado com API REST, Firestore/fallback local, testes e tela integrada.
 - Movimentacoes manuais de estoque implementadas com entrada, saida, ajuste, historico por produto e bloqueio de estoque negativo.
+- Baixa automatica de pecas usadas na OS integrada ao estoque.
 - Upload de fotos no checklist funcionando com Firebase Storage, regras por custom claim e metadados salvos no checklist.
 - Impressao do checklist tecnico implementada com versao limpa para papel contendo OS, cliente, aparelho, itens, fotos e assinaturas.
 - Firestore real ativo no projeto `rr-infocell` e modulo de clientes validado gravando no banco real.
@@ -217,7 +218,7 @@ npm test
 - Impressao do checklist tecnico.
 - Relatorio basico de OS por status no dashboard.
 - Visualizacao e impressao simples de comprovante da OS.
-- Estoque integrado com API real, CRUD de produtos e movimentacoes manuais.
+- Estoque integrado com API real, CRUD de produtos, movimentacoes manuais e baixa por OS.
 
 ## Fora do MVP inicial
 

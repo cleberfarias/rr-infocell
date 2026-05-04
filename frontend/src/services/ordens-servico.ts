@@ -21,6 +21,7 @@ export type OrdemServico = {
   diagnostico?: string;
   status: OrdemServicoStatus;
   tecnicoResponsavel?: string;
+  pecasUsadas: OrdemServicoPeca[];
   valorPecas: number;
   valorMaoObra: number;
   valorTotal: number;
@@ -32,6 +33,15 @@ export type OrdemServico = {
   updatedAt: string;
 };
 
+export type OrdemServicoPeca = {
+  produtoId: string;
+  sku: string;
+  nome: string;
+  quantidade: number;
+  valorUnitario: number;
+  valorTotal: number;
+};
+
 export type OrdemServicoInput = {
   clienteId: string;
   aparelhoId: string;
@@ -40,10 +50,17 @@ export type OrdemServicoInput = {
   diagnostico?: string;
   status?: OrdemServicoStatus;
   tecnicoResponsavel?: string;
+  pecasUsadas?: OrdemServicoPecaInput[];
   valorPecas?: number;
   valorMaoObra?: number;
   entradaEm?: string;
   previsaoEntregaEm?: string;
+};
+
+export type OrdemServicoPecaInput = {
+  produtoId: string;
+  quantidade: number;
+  valorUnitario?: number;
 };
 
 type ApiResponse<T> = {

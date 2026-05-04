@@ -4,6 +4,7 @@ import type { Firestore } from "firebase-admin/firestore";
 import type {
   OrdemServico,
   OrdemServicoInput,
+  OrdemServicoPeca,
   OrdemServicoStatus,
 } from "./ordens-servico.types.js";
 
@@ -22,7 +23,26 @@ const buildOrdem = (
 ): OrdemServico => {
   const timestamp = now();
   const status = input.status ?? current?.status ?? "recebido";
-  const valorPecas = input.valorPecas ?? current?.valorPecas ?? 0;
+  const pecasUsadas = input.pecasUsadas
+    ? input.pecasUsadas.map((peca) => ({
+        produtoId: peca.produtoId,
+        sku:
+          peca.sku ??
+          current?.pecasUsadas.find((currentPeca) => currentPeca.produtoId === peca.produtoId)?.sku ??
+          "",
+        nome:
+          peca.nome ??
+          current?.pecasUsadas.find((currentPeca) => currentPeca.produtoId === peca.produtoId)?.nome ??
+          "",
+        quantidade: peca.quantidade,
+        valorUnitario: peca.valorUnitario ?? 0,
+        valorTotal: peca.quantidade * (peca.valorUnitario ?? 0),
+      }))
+    : current?.pecasUsadas ?? [];
+  const valorPecas =
+    input.pecasUsadas !== undefined
+      ? pecasUsadas.reduce((total, peca) => total + peca.valorTotal, 0)
+      : input.valorPecas ?? current?.valorPecas ?? 0;
   const valorMaoObra = input.valorMaoObra ?? current?.valorMaoObra ?? 0;
   const statusChanged = current ? current.status !== status : false;
 
@@ -36,6 +56,7 @@ const buildOrdem = (
     diagnostico: input.diagnostico,
     status,
     tecnicoResponsavel: input.tecnicoResponsavel,
+    pecasUsadas,
     valorPecas,
     valorMaoObra,
     valorTotal: valorPecas + valorMaoObra,
@@ -274,6 +295,7 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
       diagnostico: data.diagnostico ? String(data.diagnostico) : undefined,
       status: String(data.status ?? "recebido") as OrdemServicoStatus,
       tecnicoResponsavel: data.tecnicoResponsavel ? String(data.tecnicoResponsavel) : undefined,
+      pecasUsadas: this.fromPecasUsadas(data.pecasUsadas),
       valorPecas,
       valorMaoObra,
       valorTotal: Number(data.valorTotal ?? valorPecas + valorMaoObra),
@@ -284,6 +306,21 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
       createdAt: String(data.createdAt ?? ""),
       updatedAt: String(data.updatedAt ?? ""),
     };
+  }
+
+  private fromPecasUsadas(value: unknown): OrdemServicoPeca[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value.map((peca) => ({
+      produtoId: String(peca?.produtoId ?? ""),
+      sku: String(peca?.sku ?? ""),
+      nome: String(peca?.nome ?? ""),
+      quantidade: Number(peca?.quantidade ?? 0),
+      valorUnitario: Number(peca?.valorUnitario ?? 0),
+      valorTotal: Number(peca?.valorTotal ?? 0),
+    }));
   }
 }
 

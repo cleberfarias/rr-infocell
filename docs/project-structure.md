@@ -82,7 +82,7 @@ Modulos atuais:
 - `health`: status da API.
 - `clientes`: CRUD implementado com busca, validacao, Firestore/fallback local e testes.
 - `aparelhos`: CRUD implementado com busca, filtro por cliente, validacao, Firestore/fallback local e testes.
-- `ordens-servico`: CRUD implementado com numero sequencial, status, filtros, validacao de vinculos, Firestore/fallback local e testes.
+- `ordens-servico`: CRUD implementado com numero sequencial, status, filtros, pecas usadas, baixa de estoque por OS, validacao de vinculos, Firestore/fallback local e testes.
 - `checklists`: CRUD implementado com vinculo a OS/aparelho, validacao, Firestore/fallback local e testes.
 - `usuarios`: gerenciamento administrativo de usuarios Firebase Auth e custom claim `role`, protegido por token admin.
 - `produtos`: CRUD de estoque basico com busca, categoria, ativo, custos, precos e ponto minimo.

@@ -14,6 +14,14 @@ const optionalDateText = optionalText.refine(
 );
 
 const money = z.coerce.number().min(0, "Valor nao pode ser negativo.").optional();
+const pecaSchema = z.object({
+  produtoId: z.string().trim().min(1, "Produto da peca e obrigatorio."),
+  quantidade: z.coerce
+    .number()
+    .int("Quantidade da peca deve ser um numero inteiro.")
+    .positive("Quantidade da peca deve ser maior que zero."),
+  valorUnitario: money,
+});
 
 export const ordemServicoInputSchema = z.object({
   clienteId: z.string().trim().min(1, "Cliente e obrigatorio."),
@@ -23,6 +31,7 @@ export const ordemServicoInputSchema = z.object({
   diagnostico: optionalText,
   status: z.enum(ordemServicoStatus).optional(),
   tecnicoResponsavel: optionalText,
+  pecasUsadas: z.array(pecaSchema).optional(),
   valorPecas: money,
   valorMaoObra: money,
   entradaEm: optionalDateText,

@@ -3,12 +3,18 @@ import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
 import { aparelhosService } from "../aparelhos/aparelhos.service.js";
 import { clientesService } from "../clientes/clientes.service.js";
+import { movimentacoesEstoqueService } from "../movimentacoes-estoque/movimentacoes-estoque.service.js";
+import { produtosService } from "../produtos/produtos.service.js";
 import {
   createOrdensServicoRepository,
   isTerminalStatus,
   type OrdensServicoRepository,
 } from "./ordens-servico.repository.js";
-import type { OrdemServicoInput, OrdemServicoStatus } from "./ordens-servico.types.js";
+import type {
+  OrdemServico,
+  OrdemServicoInput,
+  OrdemServicoStatus,
+} from "./ordens-servico.types.js";
 
 export class OrdensServicoService {
   constructor(
@@ -40,8 +46,13 @@ export class OrdensServicoService {
 
   async create(input: OrdemServicoInput) {
     await this.ensureClienteAndAparelho(input);
+    const enrichedInput = await this.enrichPecasInput(input);
+    await this.ensurePositiveDeltasStock(enrichedInput);
 
-    return this.repository.create(input);
+    const ordem = await this.repository.create(enrichedInput);
+    await this.applyPecasDeltas(ordem);
+
+    return ordem;
   }
 
   async update(id: string, input: OrdemServicoInput) {
@@ -56,8 +67,10 @@ export class OrdensServicoService {
     }
 
     await this.ensureClienteAndAparelho(input);
+    const enrichedInput = await this.enrichPecasInput(input);
+    await this.ensurePositiveDeltasStock(enrichedInput, current);
 
-    const ordem = await this.repository.update(id, input);
+    const ordem = await this.repository.update(id, enrichedInput);
 
     if (!ordem) {
       throw new AppError(
@@ -66,6 +79,8 @@ export class OrdensServicoService {
         httpStatus.notFound,
       );
     }
+
+    await this.applyPecasDeltas(ordem, current);
 
     return ordem;
   }
@@ -95,6 +110,87 @@ export class OrdensServicoService {
         httpStatus.badRequest,
       );
     }
+  }
+
+  private async enrichPecasInput(input: OrdemServicoInput): Promise<OrdemServicoInput> {
+    if (!input.pecasUsadas) {
+      return input;
+    }
+
+    const pecasUsadas = await Promise.all(
+      input.pecasUsadas.map(async (peca) => {
+        const produto = await produtosService.getById(peca.produtoId);
+
+        return {
+          produtoId: produto.id,
+          sku: produto.sku,
+          nome: produto.nome,
+          quantidade: peca.quantidade,
+          valorUnitario: peca.valorUnitario ?? produto.precoVenda,
+        };
+      }),
+    );
+
+    return {
+      ...input,
+      pecasUsadas,
+    };
+  }
+
+  private async ensurePositiveDeltasStock(
+    input: OrdemServicoInput,
+    current?: OrdemServico,
+  ) {
+    const deltas = this.calculatePecasDeltas(input.pecasUsadas ?? [], current);
+
+    await Promise.all(
+      deltas.map(async (delta) => {
+        const produto = await produtosService.getById(delta.produtoId);
+
+        if (produto.estoqueAtual < delta.quantidade) {
+          throw new AppError(
+            "estoque_insuficiente",
+            `Estoque insuficiente para ${produto.nome}.`,
+            httpStatus.badRequest,
+          );
+        }
+      }),
+    );
+  }
+
+  private async applyPecasDeltas(ordem: OrdemServico, current?: OrdemServico) {
+    const deltas = this.calculatePecasDeltas(ordem.pecasUsadas, current);
+
+    for (const delta of deltas) {
+      await movimentacoesEstoqueService.create({
+        produtoId: delta.produtoId,
+        tipo: "saida",
+        quantidade: delta.quantidade,
+        motivo: `Baixa automatica OS-${ordem.numero}`,
+        origem: "ordem_servico",
+        ordemServicoId: ordem.id,
+      });
+    }
+  }
+
+  private calculatePecasDeltas(
+    nextPecas: { produtoId: string; quantidade: number }[],
+    current?: OrdemServico,
+  ) {
+    return nextPecas
+      .map((peca) => {
+        const currentQuantidade =
+          current?.pecasUsadas.find(
+            (currentPeca) => currentPeca.produtoId === peca.produtoId,
+          )?.quantidade ?? 0;
+        const quantidade = peca.quantidade - currentQuantidade;
+
+        return {
+          produtoId: peca.produtoId,
+          quantidade,
+        };
+      })
+      .filter((delta) => delta.quantidade > 0);
   }
 }
 

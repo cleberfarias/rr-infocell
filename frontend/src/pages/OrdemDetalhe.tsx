@@ -1,22 +1,41 @@
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { FormEvent, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   ClipboardCheck,
   ClipboardList,
   Loader2,
+  PackagePlus,
   Printer,
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 
-import { EmptyState, PageHeader, SectionPanel } from "@/components/design-system";
+import {
+  EmptyState,
+  FormField,
+  PageHeader,
+  SectionPanel,
+} from "@/components/design-system";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatBRL } from "@/data/mock";
 import { getAparelho } from "@/services/aparelhos";
 import { getCliente } from "@/services/clientes";
-import { getOrdemServico } from "@/services/ordens-servico";
+import {
+  getOrdemServico,
+  updateOrdemServico,
+  type OrdemServicoPecaInput,
+} from "@/services/ordens-servico";
+import { listProdutos } from "@/services/produtos";
 
 const formatDate = (value?: string) => {
   if (!value) {
@@ -34,6 +53,10 @@ const formatDate = (value?: string) => {
 
 const OrdemDetalhe = () => {
   const { ordemId } = useParams();
+  const queryClient = useQueryClient();
+  const [pecaProdutoId, setPecaProdutoId] = useState("");
+  const [pecaQuantidade, setPecaQuantidade] = useState("1");
+  const [pecaError, setPecaError] = useState<string | null>(null);
 
   const ordemQuery = useQuery({
     queryKey: ["ordem-servico", ordemId],
@@ -55,6 +78,11 @@ const OrdemDetalhe = () => {
     enabled: Boolean(ordem?.aparelhoId),
   });
 
+  const produtosQuery = useQuery({
+    queryKey: ["produtos", "os-pecas"],
+    queryFn: () => listProdutos({ ativo: true, categoria: "peca" }),
+  });
+
   const cliente = clienteQuery.data;
   const aparelho = aparelhoQuery.data;
 
@@ -70,6 +98,95 @@ const OrdemDetalhe = () => {
 
     return `${aparelho.marca} ${aparelho.modelo}`;
   }, [aparelho]);
+
+  const produtos = produtosQuery.data ?? [];
+  const selectedProduto = produtos.find((produto) => produto.id === pecaProdutoId);
+
+  const updatePecasMutation = useMutation({
+    mutationFn: (pecasUsadas: OrdemServicoPecaInput[]) => {
+      if (!ordem) {
+        throw new Error("OS nao carregada.");
+      }
+
+      return updateOrdemServico(ordem.id, {
+        clienteId: ordem.clienteId,
+        aparelhoId: ordem.aparelhoId,
+        checklistId: ordem.checklistId,
+        defeitoRelatado: ordem.defeitoRelatado,
+        diagnostico: ordem.diagnostico,
+        status: ordem.status,
+        tecnicoResponsavel: ordem.tecnicoResponsavel,
+        pecasUsadas,
+        valorMaoObra: ordem.valorMaoObra,
+        entradaEm: ordem.entradaEm,
+        previsaoEntregaEm: ordem.previsaoEntregaEm,
+      });
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["ordem-servico", ordemId] }),
+        queryClient.invalidateQueries({ queryKey: ["produtos"] }),
+        queryClient.invalidateQueries({ queryKey: ["movimentacoes-estoque"] }),
+      ]);
+      setPecaProdutoId("");
+      setPecaQuantidade("1");
+      setPecaError(null);
+    },
+    onError: (error) => {
+      setPecaError(
+        error instanceof Error
+          ? error.message
+          : "Nao foi possivel adicionar a peca.",
+      );
+    },
+  });
+
+  const handleAddPeca = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setPecaError(null);
+
+    if (!ordem || !selectedProduto) {
+      setPecaError("Selecione uma peca do estoque.");
+      return;
+    }
+
+    const quantidade = Math.max(
+      1,
+      Math.trunc(Number(pecaQuantidade.replace(",", ".")) || 1),
+    );
+    const currentPecas = ordem.pecasUsadas ?? [];
+    const existingPeca = currentPecas.find(
+      (peca) => peca.produtoId === selectedProduto.id,
+    );
+    const pecasUsadas = existingPeca
+      ? currentPecas.map((peca) =>
+          peca.produtoId === selectedProduto.id
+            ? {
+                produtoId: peca.produtoId,
+                quantidade: peca.quantidade + quantidade,
+                valorUnitario: peca.valorUnitario,
+              }
+            : {
+                produtoId: peca.produtoId,
+                quantidade: peca.quantidade,
+                valorUnitario: peca.valorUnitario,
+              },
+        )
+      : [
+          ...currentPecas.map((peca) => ({
+            produtoId: peca.produtoId,
+            quantidade: peca.quantidade,
+            valorUnitario: peca.valorUnitario,
+          })),
+          {
+            produtoId: selectedProduto.id,
+            quantidade,
+            valorUnitario: selectedProduto.precoVenda,
+          },
+        ];
+
+    updatePecasMutation.mutate(pecasUsadas);
+  };
 
   if (isLoading) {
     return (
@@ -214,6 +331,108 @@ const OrdemDetalhe = () => {
         </div>
       </SectionPanel>
 
+      <SectionPanel title="Pecas usadas">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
+          <div className="overflow-x-auto rounded-md border border-border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
+                  <th className="px-4 py-3 text-left font-medium">Peca</th>
+                  <th className="px-4 py-3 text-center font-medium">Qtd.</th>
+                  <th className="px-4 py-3 text-right font-medium">Unitario</th>
+                  <th className="px-4 py-3 text-right font-medium">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(ordem.pecasUsadas ?? []).length === 0 ? (
+                  <tr>
+                    <td
+                      className="px-4 py-5 text-center text-muted-foreground"
+                      colSpan={4}
+                    >
+                      Nenhuma peca vinculada a esta OS.
+                    </td>
+                  </tr>
+                ) : (
+                  ordem.pecasUsadas.map((peca) => (
+                    <tr
+                      key={peca.produtoId}
+                      className="border-b border-border/40 last:border-b-0"
+                    >
+                      <td className="px-4 py-3">
+                        <p className="font-medium">{peca.nome}</p>
+                        <p className="font-mono text-xs text-muted-foreground">
+                          {peca.sku}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3 text-center font-mono">
+                        {peca.quantidade}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono">
+                        {formatBRL(peca.valorUnitario)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono font-semibold">
+                        {formatBRL(peca.valorTotal)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <form className="space-y-3" onSubmit={handleAddPeca}>
+            <FormField id="os-peca-produto" label="Peca do estoque">
+              <Select
+                value={pecaProdutoId}
+                onValueChange={setPecaProdutoId}
+                disabled={produtosQuery.isLoading}
+              >
+                <SelectTrigger id="os-peca-produto">
+                  <SelectValue placeholder="Selecione a peca" />
+                </SelectTrigger>
+                <SelectContent>
+                  {produtos.map((produto) => (
+                    <SelectItem key={produto.id} value={produto.id}>
+                      {produto.nome} ({produto.estoqueAtual})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+            <FormField id="os-peca-quantidade" label="Quantidade">
+              <Input
+                id="os-peca-quantidade"
+                min="1"
+                step="1"
+                type="number"
+                value={pecaQuantidade}
+                onChange={(event) => setPecaQuantidade(event.target.value)}
+              />
+            </FormField>
+            {selectedProduto && (
+              <p className="text-xs text-muted-foreground">
+                Estoque atual: {selectedProduto.estoqueAtual} - venda:{" "}
+                {formatBRL(selectedProduto.precoVenda)}
+              </p>
+            )}
+            {pecaError && <p className="text-sm text-destructive">{pecaError}</p>}
+            <Button
+              className="w-full"
+              disabled={updatePecasMutation.isPending || !pecaProdutoId}
+              type="submit"
+            >
+              {updatePecasMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <PackagePlus className="h-4 w-4" />
+              )}
+              Adicionar e baixar
+            </Button>
+          </form>
+        </div>
+      </SectionPanel>
+
       <section className="checklist-print-area">
         <header className="print-header">
           <div>
@@ -265,6 +484,36 @@ const OrdemDetalhe = () => {
               <th>Tecnico responsavel</th>
               <td>{ordem.tecnicoResponsavel ?? "-"}</td>
             </tr>
+          </tbody>
+        </table>
+
+        <h2>Pecas usadas</h2>
+        <table className="print-table">
+          <thead>
+            <tr>
+              <th>Peca</th>
+              <th>Qtd.</th>
+              <th>Unitario</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(ordem.pecasUsadas ?? []).length === 0 ? (
+              <tr>
+                <td colSpan={4}>Nenhuma peca vinculada.</td>
+              </tr>
+            ) : (
+              ordem.pecasUsadas.map((peca) => (
+                <tr key={peca.produtoId}>
+                  <td>
+                    {peca.nome} ({peca.sku})
+                  </td>
+                  <td>{peca.quantidade}</td>
+                  <td>{formatBRL(peca.valorUnitario)}</td>
+                  <td>{formatBRL(peca.valorTotal)}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
 

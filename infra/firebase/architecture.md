@@ -54,6 +54,7 @@ counters
 - `movimentacoesEstoque/{movimentacaoId}` referencia `produtoId` e, quando existir, `ordemServicoId`.
 - `produtos/{produtoId}` armazena SKU, nome, categoria, estoque atual, minimo, custo, venda e status ativo.
 - `movimentacoesEstoque/{movimentacaoId}` armazena tipo, quantidade, estoque anterior/posterior, origem e motivo.
+- `ordensServico/{ordemId}.pecasUsadas` armazena as pecas vinculadas e dispara baixas de origem `ordem_servico`.
 
 ## Numero automatico de OS
 

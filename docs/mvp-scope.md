@@ -35,7 +35,7 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 - Tela de estoque integrada com API real.
 - Indicadores de SKUs ativos, estoque baixo e valor em estoque calculados a partir dos dados reais.
 - Movimentacoes manuais implementadas com entrada, saida, ajuste, historico por produto e bloqueio de estoque negativo.
-- Baixa automatica por OS fica para a proxima etapa.
+- Baixa automatica por OS implementada a partir das pecas usadas no detalhe da OS.
 
 ## Fora do MVP
 

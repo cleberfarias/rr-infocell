@@ -109,4 +109,56 @@ describe("ordens-servico routes", () => {
     expect(updateResponse.status).toBe(400);
     expect(updateResponse.body.error.code).toBe("ordem_servico_locked");
   });
+
+  it("deducts stock when adding pecas usadas to ordem", async () => {
+    const produtoResponse = await request(app).post("/api/produtos").send({
+      sku: "OS-FLX-01",
+      nome: "Flex de carga para OS",
+      categoria: "peca",
+      estoqueAtual: 4,
+      estoqueMinimo: 1,
+      custo: 20,
+      precoVenda: 50,
+    });
+    const produto = produtoResponse.body.data;
+    const createResponse = await request(app).post("/api/ordens-servico").send({
+      clienteId: "cli_marcos_almeida",
+      aparelhoId: "apa_iphone_11_marcos",
+      defeitoRelatado: "Conector com mau contato",
+      status: "em_manutencao",
+      valorMaoObra: 80,
+    });
+    const ordem = createResponse.body.data;
+
+    const updateResponse = await request(app)
+      .put(`/api/ordens-servico/${ordem.id}`)
+      .send({
+        clienteId: ordem.clienteId,
+        aparelhoId: ordem.aparelhoId,
+        defeitoRelatado: ordem.defeitoRelatado,
+        status: ordem.status,
+        valorMaoObra: ordem.valorMaoObra,
+        pecasUsadas: [
+          {
+            produtoId: produto.id,
+            quantidade: 2,
+          },
+        ],
+      });
+
+    expect(updateResponse.status).toBe(200);
+    expect(updateResponse.body.data.pecasUsadas).toHaveLength(1);
+    expect(updateResponse.body.data.pecasUsadas[0].sku).toBe("OS-FLX-01");
+    expect(updateResponse.body.data.valorPecas).toBe(100);
+    expect(updateResponse.body.data.valorTotal).toBe(180);
+
+    const produtoAfterResponse = await request(app).get(`/api/produtos/${produto.id}`);
+    expect(produtoAfterResponse.body.data.estoqueAtual).toBe(2);
+
+    const movimentacoesResponse = await request(app).get(
+      `/api/movimentacoes-estoque?produtoId=${produto.id}`,
+    );
+    expect(movimentacoesResponse.body.data[0].origem).toBe("ordem_servico");
+    expect(movimentacoesResponse.body.data[0].ordemServicoId).toBe(ordem.id);
+  });
 });

@@ -6,7 +6,7 @@ Gerenciar o fluxo central do sistema: abertura, acompanhamento, manutencao, conc
 
 ## Status atual
 
-CRUD implementado com validacao, service, repository em memoria/Firestore, numero sequencial e testes de rotas.
+CRUD implementado com validacao, service, repository em memoria/Firestore, numero sequencial, pecas usadas, baixa de estoque por OS e testes de rotas.
 
 No frontend, o fluxo de OS esta integrado com API real para abertura, listagem, detalhe, relatorio basico no dashboard e comprovante simples para impressao.
 
@@ -65,6 +65,7 @@ Resposta de listagem:
 - `diagnostico`
 - `status`
 - `tecnicoResponsavel`
+- `pecasUsadas`
 - `valorPecas`
 - `valorMaoObra`
 - `valorTotal`
@@ -92,6 +93,8 @@ Resposta de listagem:
 - O aparelho deve pertencer ao cliente informado.
 - Numero da OS e sequencial e gerado pelo backend.
 - `valorTotal` e calculado pelo backend a partir de pecas e mao de obra.
+- Pecas adicionadas em `pecasUsadas` geram movimentacao de estoque do tipo `saida` com origem `ordem_servico`.
+- O backend baixa apenas o aumento de quantidade de cada peca, evitando duplicar baixa em edicoes posteriores.
 - Ao marcar como `pronto_para_retirada`, o backend registra `concluidaEm`.
 - Ao marcar como `entregue`, o backend registra `entregueEm`.
 - OS entregue ou cancelada nao aceita edicoes operacionais.
@@ -106,4 +109,4 @@ npm test
 ## Proximos passos
 
 - Implementar edicao operacional detalhada da OS quando o fluxo de manutencao for refinado.
-- Integrar baixa de pecas do estoque ao atualizar manutencao/valores da OS.
+- Refinar estorno/devolucao de pecas quando o fluxo operacional for definido.
