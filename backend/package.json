@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "auth:set-role": "tsx src/scripts/set-user-role.ts",
+    "script:normalizar-telefones": "tsx src/scripts/normalizar-telefones.ts",
+    "script:limpar-conversas": "tsx src/scripts/limpar-conversas-invalidas.ts",
+    "script:migrar-9digito": "tsx src/scripts/migrar-conversa-9digito.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "lint": "eslint .",
@@ -15,18 +18,21 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@whiskeysockets/baileys": "^7.0.0-rc.9",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "firebase-admin": "^13.0.2",
+    "qrcode": "^1.5.4",
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@eslint/js": "^9.32.0",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/node": "^22.16.5",
+    "@types/qrcode": "^1.5.6",
     "@types/supertest": "^6.0.2",
-    "@eslint/js": "^9.32.0",
     "eslint": "^9.32.0",
     "globals": "^15.15.0",
     "prettier": "^3.4.2",

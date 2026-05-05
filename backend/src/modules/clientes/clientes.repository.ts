@@ -32,6 +32,7 @@ const seedClientes: Cliente[] = [
 export interface ClientesRepository {
   list(search?: string): Promise<Cliente[]>;
   findById(id: string): Promise<Cliente | null>;
+  findByTelefone(telefone: string): Promise<Cliente | null>;
   create(input: ClienteInput): Promise<Cliente>;
   update(id: string, input: ClienteInput): Promise<Cliente | null>;
   delete(id: string): Promise<boolean>;
@@ -61,6 +62,10 @@ export class MemoryClientesRepository implements ClientesRepository {
 
   async findById(id: string) {
     return this.clientes.get(id) ?? null;
+  }
+
+  async findByTelefone(telefone: string) {
+    return Array.from(this.clientes.values()).find((c) => c.telefone === telefone) ?? null;
   }
 
   async create(input: ClienteInput) {
@@ -130,6 +135,19 @@ export class FirestoreClientesRepository implements ClientesRepository {
     }
 
     return this.fromDocument(document.id, document.data() ?? {});
+  }
+
+  async findByTelefone(telefone: string) {
+    const snapshot = await this.firestore
+      .collection(clientesCollection)
+      .where("telefone", "==", telefone)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) return null;
+
+    const doc = snapshot.docs[0];
+    return this.fromDocument(doc.id, doc.data());
   }
 
   async create(input: ClienteInput) {

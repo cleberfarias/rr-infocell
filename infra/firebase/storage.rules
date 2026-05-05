@@ -31,6 +31,10 @@ service firebase.storage {
       allow write: if hasRole("admin") || hasRole("atendente");
     }
 
+    match /whatsapp/{telefone}/{fileName} {
+      allow read, write: if isOperationalUser();
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

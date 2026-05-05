@@ -43,4 +43,9 @@ export const initializeFirebaseAdmin = (): App | null => {
 
 export const firebaseApp = initializeFirebaseAdmin();
 export const auth = firebaseApp ? getAuth(firebaseApp) : null;
-export const db = firebaseApp ? getFirestore(firebaseApp) : null;
+
+const firestoreInstance = firebaseApp ? getFirestore(firebaseApp) : null;
+if (firestoreInstance) {
+  firestoreInstance.settings({ ignoreUndefinedProperties: true });
+}
+export const db = firestoreInstance;

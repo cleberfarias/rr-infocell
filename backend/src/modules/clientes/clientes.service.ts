@@ -1,5 +1,6 @@
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
+import { normalizarTelefone } from "../../shared/normalizar-telefone.js";
 import { db } from "../../firebase/admin.js";
 import { createClientesRepository, type ClientesRepository } from "./clientes.repository.js";
 import type { ClienteInput } from "./clientes.types.js";
@@ -22,11 +23,14 @@ export class ClientesService {
   }
 
   async create(input: ClienteInput) {
-    return this.repository.create(input);
+    return this.repository.create({ ...input, telefone: normalizarTelefone(input.telefone) });
   }
 
   async update(id: string, input: ClienteInput) {
-    const cliente = await this.repository.update(id, input);
+    const cliente = await this.repository.update(id, {
+      ...input,
+      telefone: normalizarTelefone(input.telefone),
+    });
 
     if (!cliente) {
       throw new AppError("cliente_not_found", "Cliente nao encontrado.", httpStatus.notFound);

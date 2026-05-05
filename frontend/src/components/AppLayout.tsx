@@ -16,6 +16,7 @@ import {
   Plus,
   Smartphone,
   UserCog,
+  MessageSquare,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -71,6 +72,12 @@ const allNav = [
     icon: UserCog,
     key: "usuarios",
   },
+  {
+    to: "/app/atendimento",
+    label: "Atendimento",
+    icon: MessageSquare,
+    key: "atendimento",
+  },
 ];
 
 const navOrder: Record<string, number> = {
@@ -82,10 +89,11 @@ const navOrder: Record<string, number> = {
   manutencao: 5,
   orcamento: 6,
   pdv: 7,
-  estoque: 8,
-  financeiro: 9,
-  despesas: 10,
-  usuarios: 11,
+  atendimento: 8,
+  estoque: 9,
+  financeiro: 10,
+  despesas: 11,
+  usuarios: 12,
 };
 
 export const AppLayout = () => {

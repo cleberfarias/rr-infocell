@@ -18,6 +18,7 @@ dist-ssr
 !.firebaserc.example
 *service-account*.json
 *.service-account.json
+backend/whatsapp-auth/
 
 # Editor directories and files
 .vscode/*

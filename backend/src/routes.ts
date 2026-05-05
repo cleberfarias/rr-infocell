@@ -12,6 +12,7 @@ import { ordensServicoRoutes } from "./modules/ordens-servico/ordens-servico.rou
 import { produtosRoutes } from "./modules/produtos/produtos.routes.js";
 import { usuariosRoutes } from "./modules/usuarios/usuarios.routes.js";
 import { vendasRoutes } from "./modules/vendas/vendas.routes.js";
+import { whatsappRoutes } from "./modules/whatsapp/whatsapp.router.js";
 
 export const routes = Router();
 
@@ -27,3 +28,4 @@ routes.use("/vendas", vendasRoutes);
 routes.use("/produtos", produtosRoutes);
 routes.use("/movimentacoes-estoque", movimentacoesEstoqueRoutes);
 routes.use("/usuarios", usuariosRoutes);
+routes.use("/whatsapp", whatsappRoutes);
