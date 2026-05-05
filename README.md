@@ -18,6 +18,7 @@ O objetivo do projeto e centralizar o fluxo operacional da RR Infocell: clientes
 - Modulo de ordens de servico implementado no backend com API REST, numero sequencial, validacao de vinculos, Firestore/fallback local e testes.
 - Telas de ordens de servico integradas com API real para abertura e listagem de OS.
 - Detalhe da OS implementado com consulta real de cliente/aparelho, comprovante simples e impressao.
+- Tela de manutencao integrada com OS reais para diagnostico, status tecnico, mao de obra e pecas usadas.
 - Dashboard inicial integrado com dados reais de OS, relatorio por status e resumo financeiro previsto.
 - Modulo de checklist tecnico implementado no backend com API REST, vinculo com OS/aparelho, Firestore/fallback local e testes.
 - Tela de checklist tecnico integrada com OS real e API de checklists.

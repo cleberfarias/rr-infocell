@@ -240,7 +240,7 @@ const Ordens = () => {
             </Link>
           </Button>
           <Button variant="ghost" size="icon" asChild title="Manutencao">
-            <Link to="/app/manutencao">
+            <Link to={`/app/manutencao?ordemId=${ordem.id}`}>
               <Wrench className="h-4 w-4" />
             </Link>
           </Button>

@@ -35,6 +35,7 @@ Telas integradas com API:
 - `src/pages/NovaOS.tsx`
 - `src/pages/Ordens.tsx`
 - `src/pages/OrdemDetalhe.tsx`
+- `src/pages/Manutencao.tsx`
 - `src/pages/Checklist.tsx`
 - `src/pages/Usuarios.tsx`
 - `src/pages/Estoque.tsx`
