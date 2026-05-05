@@ -1,8 +1,10 @@
 import makeWASocket, {
   DisconnectReason,
   fetchLatestBaileysVersion,
+  jidNormalizedUser,
   makeCacheableSignalKeyStore,
   useMultiFileAuthState,
+  type WAMessage,
   type WASocket,
 } from "@whiskeysockets/baileys";
 import { Boom } from "@hapi/boom";
@@ -22,6 +24,10 @@ type ConexaoStatus = "conectando" | "qr_pendente" | "conectado" | "desconectado"
 function montarJidWhatsApp(telefone: string): string {
   const telefoneNormalizado = normalizarTelefone(telefone);
   return `55${telefoneNormalizado}@s.whatsapp.net`;
+}
+
+function isLidJid(jid: string): boolean {
+  return jid.endsWith("@lid") || jid.endsWith("@hosted.lid");
 }
 
 type DiagnosticoWhatsApp = {
@@ -162,9 +168,17 @@ class ConexaoService {
         }
 
         try {
-          await mensagemService.processarMensagemRecebida(msg);
-          this.diagnostico.ultimaMensagemRecebidaEm = new Date().toISOString();
-          this.diagnostico.ultimaMensagemRecebidaDe = msg.key.remoteJid ?? null;
+          const msgResolvida = await this.resolverMensagemLid(msg);
+          if (!msgResolvida) continue;
+
+          const resultado = await mensagemService.processarMensagemRecebida(msgResolvida);
+          if (resultado.processada) {
+            this.diagnostico.ultimaMensagemRecebidaEm = new Date().toISOString();
+            this.diagnostico.ultimaMensagemRecebidaDe = msgResolvida.key.remoteJid ?? null;
+          } else {
+            this.diagnostico.ultimaMensagemIgnoradaEm = new Date().toISOString();
+            this.diagnostico.ultimaMensagemIgnoradaMotivo = resultado.motivo ?? "nao processada";
+          }
         } catch (err) {
           this.diagnostico.ultimaMensagemIgnoradaEm = new Date().toISOString();
           this.diagnostico.ultimaMensagemIgnoradaMotivo = err instanceof Error ? err.message : "erro ao processar";
@@ -196,6 +210,26 @@ class ConexaoService {
 
   getSocket(): WASocket | null {
     return this.socket;
+  }
+
+  private async resolverMensagemLid(msg: WAMessage): Promise<WAMessage | null> {
+    const jid = msg.key.remoteJid ?? "";
+    if (!isLidJid(jid)) return msg;
+
+    const jidTelefone = await this.socket?.signalRepository.lidMapping.getPNForLID(jid);
+    if (!jidTelefone) {
+      this.diagnostico.ultimaMensagemIgnoradaEm = new Date().toISOString();
+      this.diagnostico.ultimaMensagemIgnoradaMotivo = `sem mapeamento LID para ${jid}`;
+      return null;
+    }
+
+    return {
+      ...msg,
+      key: {
+        ...msg.key,
+        remoteJid: jidNormalizedUser(jidTelefone),
+      },
+    };
   }
 
   async enviarTexto(telefone: string, texto: string) {

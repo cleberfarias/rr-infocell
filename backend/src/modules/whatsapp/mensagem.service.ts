@@ -30,6 +30,12 @@ export type Conversa = {
   osIdPendente: string | null;
 };
 
+export type ResultadoProcessamentoMensagem = {
+  processada: boolean;
+  motivo?: string;
+  telefone?: string;
+};
+
 const colMensagens = "whatsapp_mensagens";
 const colConversas = "whatsapp_conversas";
 type ConteudoMensagem = NonNullable<WAMessage["message"]>;
@@ -96,25 +102,29 @@ function extrairTexto(conteudo: ConteudoMensagem): string {
 }
 
 class MensagemService {
-  async processarMensagemRecebida(msg: WAMessage) {
-    if (!db) return;
+  async processarMensagemRecebida(msg: WAMessage): Promise<ResultadoProcessamentoMensagem> {
+    if (!db) return { processada: false, motivo: "firebase indisponivel" };
 
     const jid = msg.key.remoteJid ?? "";
 
     // ignorar grupos, broadcasts, status e channels — só chats individuais
-    if (!jid.endsWith("@s.whatsapp.net")) return;
+    if (!jid.endsWith("@s.whatsapp.net")) {
+      return { processada: false, motivo: `jid nao suportado: ${jid}` };
+    }
 
     const telefone = normalizarTelefone(jid.replace("@s.whatsapp.net", ""));
 
     // E.164 sem código de país: máximo 13 dígitos; mínimo 8 (válido para qualquer país)
     // IDs de canais/newsletters do WhatsApp têm 15+ dígitos após normalização
-    if (telefone.length < 8 || telefone.length > 13) return;
+    if (telefone.length < 8 || telefone.length > 13) {
+      return { processada: false, motivo: `telefone invalido: ${telefone}` };
+    }
 
     // ignorar mensagens sem conteúdo ou mensagens de protocolo interno
     const conteudo = extrairConteudoMensagem(msg);
-    if (!conteudo) return;
-    if (conteudo.protocolMessage) return;
-    if (conteudo.reactionMessage) return;
+    if (!conteudo) return { processada: false, motivo: "sem conteudo", telefone };
+    if (conteudo.protocolMessage) return { processada: false, motivo: "protocolMessage", telefone };
+    if (conteudo.reactionMessage) return { processada: false, motivo: "reactionMessage", telefone };
 
     const tipo = extrairTipo(conteudo);
     const texto = extrairTexto(conteudo);
@@ -161,6 +171,7 @@ class MensagemService {
     );
 
     await botService.processarResposta(telefone, texto);
+    return { processada: true, telefone };
   }
 
   private async getNaoLidas(telefone: string): Promise<number> {
