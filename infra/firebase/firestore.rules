@@ -29,6 +29,10 @@ service cloud.firestore {
       allow write: if isAdmin() || hasRole("atendente");
     }
 
+    match /despesas/{despesaId} {
+      allow read, write: if isAdmin();
+    }
+
     match /aparelhos/{aparelhoId} {
       allow read: if isOperationalUser();
       allow write: if isAdmin() || hasRole("atendente");
@@ -49,6 +53,16 @@ service cloud.firestore {
     match /produtos/{produtoId} {
       allow read: if isOperationalUser();
       allow write: if isAdmin();
+    }
+
+    match /ordemEventos/{eventoId} {
+      allow read: if isOperationalUser();
+      allow write: if false;
+    }
+
+    match /orcamentos/{orcamentoId} {
+      allow read: if isOperationalUser();
+      allow write: if false;
     }
 
     match /vendas/{vendaId} {

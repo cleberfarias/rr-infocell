@@ -41,10 +41,16 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 - Movimentacoes manuais implementadas com entrada, saida, ajuste, historico por produto e bloqueio de estoque negativo.
 - Baixa automatica por OS implementada a partir das pecas usadas no detalhe da OS.
 
+## Estado atual do financeiro
+
+- Backend de despesas implementado com CRUD, filtros, Firestore/fallback local e testes.
+- Tela de despesas integrada com API real para cadastrar, editar, remover, filtrar e marcar pagamento.
+- Tela financeira integrada com vendas, OS, produtos e despesas reais para DRE simplificado, receita semanal e impacto de pecas.
+
 ## Fora do MVP
 
 - PDV fiscal completo.
-- DRE completo.
+- DRE completo com competencia, centros de custo e exportacao.
 - Relatorios avancados.
 - Integracao com MarketUP.
 - Assinatura digital.

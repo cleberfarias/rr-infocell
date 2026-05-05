@@ -3,6 +3,7 @@ import { Router } from "express";
 import { aparelhosRoutes } from "./modules/aparelhos/aparelhos.routes.js";
 import { checklistsRoutes } from "./modules/checklists/checklists.routes.js";
 import { clientesRoutes } from "./modules/clientes/clientes.routes.js";
+import { despesasRoutes } from "./modules/despesas/despesas.routes.js";
 import { healthRoutes } from "./modules/health/health.routes.js";
 import { movimentacoesEstoqueRoutes } from "./modules/movimentacoes-estoque/movimentacoes-estoque.routes.js";
 import { orcamentosRoutes } from "./modules/orcamentos/orcamentos.routes.js";
@@ -16,6 +17,7 @@ export const routes = Router();
 
 routes.use("/health", healthRoutes);
 routes.use("/clientes", clientesRoutes);
+routes.use("/despesas", despesasRoutes);
 routes.use("/aparelhos", aparelhosRoutes);
 routes.use("/ordens-servico", ordensServicoRoutes);
 routes.use("/checklists", checklistsRoutes);

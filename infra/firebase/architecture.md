@@ -16,6 +16,7 @@ O MVP usara Firebase como base principal:
 - Firestore database: `(default)`.
 - Regiao do Firestore: `nam5`.
 - Colecao `clientes` validada com escrita/leitura pelo backend.
+- Colecao `despesas` preparada para despesas operacionais e financeiro simples.
 - Colecao `produtos` preparada para estoque via backend.
 - Colecao `movimentacoesEstoque` preparada para historico de entrada, saida e ajuste.
 - Colecao `ordemEventos` preparada para linha do tempo e comentarios de OS.
@@ -38,6 +39,7 @@ O MVP usara Firebase como base principal:
 ```text
 users
 clientes
+despesas
 aparelhos
 ordensServico
 checklists
@@ -53,6 +55,7 @@ counters
 ## Modelo de relacionamento
 
 - `clientes/{clienteId}` armazena dados do cliente.
+- `despesas/{despesaId}` armazena custos operacionais, vencimento, recorrencia e status de pagamento.
 - `aparelhos/{aparelhoId}` referencia `clienteId`.
 - `ordensServico/{ordemId}` referencia `clienteId` e `aparelhoId`.
 - `ordensServico/{ordemId}` tambem pode armazenar dados de pagamento simples no fechamento de caixa.

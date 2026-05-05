@@ -34,6 +34,6 @@ DELETE /api/produtos/:id
 - `ativo`
 - `observacoes`
 
-## Proximos passos
+## Integracoes
 
-- Integrar baixa de pecas usadas na OS/manutencao.
+- Pecas usadas em OS disparam baixa automatica de estoque via modulo `movimentacoes-estoque`.
