@@ -8,7 +8,7 @@ import { normalizarTelefone } from "../../shared/normalizar-telefone.js";
 export const whatsappRoutes = Router();
 
 whatsappRoutes.get("/status", (_req, res) => {
-  res.json({ status: conexaoService.getStatus() });
+  res.json(conexaoService.getStatus());
 });
 
 whatsappRoutes.get("/qrcode", (_req, res) => {

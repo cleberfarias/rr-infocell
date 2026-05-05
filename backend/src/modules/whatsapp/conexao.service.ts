@@ -24,14 +24,45 @@ function montarJidWhatsApp(telefone: string): string {
   return `55${telefoneNormalizado}@s.whatsapp.net`;
 }
 
+type DiagnosticoWhatsApp = {
+  conectadoComo: string | null;
+  ultimoEventoEm: string | null;
+  ultimoEventoTipo: string | null;
+  ultimaMensagemRecebidaEm: string | null;
+  ultimaMensagemRecebidaDe: string | null;
+  ultimaMensagemIgnoradaEm: string | null;
+  ultimaMensagemIgnoradaMotivo: string | null;
+  ultimoEnvioEm: string | null;
+  ultimoEnvioPara: string | null;
+  ultimoEnvioId: string | null;
+};
+
 class ConexaoService {
   private socket: WASocket | null = null;
   private status: ConexaoStatus = "desconectado";
   private qrBase64: string | null = null;
   private authDir = "./whatsapp-auth";
+  private diagnostico: DiagnosticoWhatsApp = {
+    conectadoComo: null,
+    ultimoEventoEm: null,
+    ultimoEventoTipo: null,
+    ultimaMensagemRecebidaEm: null,
+    ultimaMensagemRecebidaDe: null,
+    ultimaMensagemIgnoradaEm: null,
+    ultimaMensagemIgnoradaMotivo: null,
+    ultimoEnvioEm: null,
+    ultimoEnvioPara: null,
+    ultimoEnvioId: null,
+  };
 
   getStatus() {
-    return this.status;
+    return {
+      status: this.status,
+      diagnostico: {
+        ...this.diagnostico,
+        conectadoComo: this.socket?.user?.id ?? this.diagnostico.conectadoComo,
+      },
+    };
   }
 
   getQR() {
@@ -70,6 +101,7 @@ class ConexaoService {
       if (connection === "open") {
         this.status = "conectado";
         this.qrBase64 = null;
+        this.diagnostico.conectadoComo = this.socket?.user?.id ?? null;
         console.log("[WhatsApp] Conectado!");
       }
 
@@ -90,11 +122,31 @@ class ConexaoService {
     });
 
     this.socket.ev.on("messages.upsert", async ({ messages, type }) => {
-      if (type !== "notify") return;
+      this.diagnostico.ultimoEventoEm = new Date().toISOString();
+      this.diagnostico.ultimoEventoTipo = `messages.upsert:${type}`;
+
+      if (type !== "notify") {
+        this.diagnostico.ultimaMensagemIgnoradaEm = new Date().toISOString();
+        this.diagnostico.ultimaMensagemIgnoradaMotivo = `tipo ${type}`;
+        return;
+      }
 
       for (const msg of messages) {
-        if (msg.key.fromMe) continue;
-        await mensagemService.processarMensagemRecebida(msg);
+        if (msg.key.fromMe) {
+          this.diagnostico.ultimaMensagemIgnoradaEm = new Date().toISOString();
+          this.diagnostico.ultimaMensagemIgnoradaMotivo = "mensagem propria";
+          continue;
+        }
+
+        try {
+          await mensagemService.processarMensagemRecebida(msg);
+          this.diagnostico.ultimaMensagemRecebidaEm = new Date().toISOString();
+          this.diagnostico.ultimaMensagemRecebidaDe = msg.key.remoteJid ?? null;
+        } catch (err) {
+          this.diagnostico.ultimaMensagemIgnoradaEm = new Date().toISOString();
+          this.diagnostico.ultimaMensagemIgnoradaMotivo = err instanceof Error ? err.message : "erro ao processar";
+          console.error("[WhatsApp] Erro ao processar mensagem:", err);
+        }
       }
     });
   }
@@ -115,7 +167,10 @@ class ConexaoService {
       throw new Error(`Numero ${telefone} nao encontrado no WhatsApp.`);
     }
 
-    await this.socket.sendMessage(jid, { text: texto });
+    const enviada = await this.socket.sendMessage(jid, { text: texto });
+    this.diagnostico.ultimoEnvioEm = new Date().toISOString();
+    this.diagnostico.ultimoEnvioPara = jid;
+    this.diagnostico.ultimoEnvioId = enviada?.key.id ?? null;
   }
 }
 
