@@ -24,12 +24,13 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 
 - Backend de ordens de servico concluido com CRUD, status, numero sequencial, validacao de cliente/aparelho e testes.
 - Frontend de abertura e listagem de OS integrado com API real.
-- Tela de manutencao integrada com OS reais para atualizar diagnostico, status tecnico, responsavel e mao de obra.
-- Tela de orcamentos integrada com OS reais para enviar proposta, aprovar e reprovar alterando status da OS.
-- PDV/Caixa integrado com OS reais para registrar pagamento e marcar entrega.
+- Tela de manutencao integrada com OS reais para atualizar diagnostico, status tecnico, responsavel, mao de obra, comentarios e linha do tempo.
+- Tela de orcamentos integrada com OS reais para enviar proposta, aprovar e reprovar, gravando snapshot do orcamento e alterando status da OS.
+- PDV/Caixa integrado com OS reais para registrar venda, pagamento, troco, evento de entrega e marcar OS como entregue.
 - Checklist tecnico vinculado a OS real.
 - Detalhe da OS implementado com dados reais de cliente/aparelho.
 - Comprovante simples da OS implementado com impressao pelo navegador.
+- Historico operacional de OS implementado via eventos de manutencao, orcamento e venda.
 - Dashboard inicial usa dados reais de OS e exibe relatorio basico por status.
 
 ## Estado atual do estoque
@@ -42,7 +43,7 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 
 ## Fora do MVP
 
-- PDV completo.
+- PDV fiscal completo.
 - DRE completo.
 - Relatorios avancados.
 - Integracao com MarketUP.

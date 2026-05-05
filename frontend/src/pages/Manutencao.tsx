@@ -4,6 +4,7 @@ import {
   ClipboardList,
   Eye,
   Loader2,
+  MessageSquare,
   Package,
   Save,
   Send,
@@ -39,6 +40,10 @@ import {
   type OrdemServico,
   type OrdemServicoStatus,
 } from "@/services/ordens-servico";
+import {
+  createOrdemEvento,
+  listOrdemEventos,
+} from "@/services/ordem-eventos";
 
 type ManutencaoForm = {
   diagnostico: string;
@@ -109,6 +114,8 @@ const Manutencao = () => {
   );
   const [form, setForm] = useState<ManutencaoForm | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [comentario, setComentario] = useState("");
+  const [comentarioError, setComentarioError] = useState<string | null>(null);
 
   const ordensQuery = useQuery({
     queryKey: ["ordens-servico", "manutencao"],
@@ -123,6 +130,12 @@ const Manutencao = () => {
   const aparelhosQuery = useQuery({
     queryKey: ["aparelhos", "manutencao"],
     queryFn: () => listAparelhos(),
+  });
+
+  const eventosQuery = useQuery({
+    queryKey: ["ordem-eventos", selectedOrdemId],
+    queryFn: () => listOrdemEventos({ ordemServicoId: selectedOrdemId }),
+    enabled: Boolean(selectedOrdemId),
   });
 
   const ordens = useMemo(
@@ -171,6 +184,8 @@ const Manutencao = () => {
 
     setForm(buildForm(selectedOrdem));
     setFormError(null);
+    setComentario("");
+    setComentarioError(null);
   }, [selectedOrdem]);
 
   const updateMutation = useMutation({
@@ -193,10 +208,20 @@ const Manutencao = () => {
         previsaoEntregaEm: selectedOrdem.previsaoEntregaEm,
       });
     },
-    onSuccess: async (ordem) => {
+    onSuccess: async (ordem, input) => {
+      await createOrdemEvento({
+        ordemServicoId: ordem.id,
+        tipo: "diagnostico",
+        titulo: "Manutencao atualizada",
+        descricao: `Status: ${input.status}. Diagnostico: ${
+          input.diagnostico || "nao informado"
+        }`,
+        criadoPor: input.tecnicoResponsavel || undefined,
+      });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["ordens-servico"] }),
         queryClient.invalidateQueries({ queryKey: ["ordem-servico", ordem.id] }),
+        queryClient.invalidateQueries({ queryKey: ["ordem-eventos"] }),
       ]);
       setSelectedOrdemId(ordem.id);
       setForm(buildForm(ordem));
@@ -207,6 +232,38 @@ const Manutencao = () => {
         error instanceof Error
           ? error.message
           : "Nao foi possivel atualizar a manutencao.",
+      );
+    },
+  });
+
+  const comentarioMutation = useMutation({
+    mutationFn: () => {
+      if (!selectedOrdem) {
+        throw new Error("Selecione uma OS.");
+      }
+
+      if (!comentario.trim()) {
+        throw new Error("Informe o comentario.");
+      }
+
+      return createOrdemEvento({
+        ordemServicoId: selectedOrdem.id,
+        tipo: "comentario",
+        titulo: "Comentario tecnico",
+        descricao: comentario.trim(),
+        criadoPor: form?.tecnicoResponsavel || selectedOrdem.tecnicoResponsavel,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["ordem-eventos"] });
+      setComentario("");
+      setComentarioError(null);
+    },
+    onError: (error) => {
+      setComentarioError(
+        error instanceof Error
+          ? error.message
+          : "Nao foi possivel registrar o comentario.",
       );
     },
   });
@@ -633,8 +690,57 @@ const Manutencao = () => {
                     </p>
                   </li>
                 )}
+                {(eventosQuery.data ?? []).map((evento) => (
+                  <li key={evento.id} className="relative">
+                    <span className="absolute -left-[26px] top-1 h-3 w-3 rounded-full border-2 border-primary bg-primary shadow-glow" />
+                    <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                      {formatDateTime(evento.createdAt)}
+                    </p>
+                    <p className="text-sm font-semibold">{evento.titulo}</p>
+                    {evento.descricao && (
+                      <p className="text-xs text-muted-foreground">
+                        {evento.descricao}
+                      </p>
+                    )}
+                    {evento.criadoPor && (
+                      <p className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                        {evento.criadoPor}
+                      </p>
+                    )}
+                  </li>
+                ))}
               </ol>
               <div className="mt-5 space-y-3">
+                <div className="rounded-md border border-border bg-secondary/30 p-3">
+                  <FormField id="manutencao-comentario" label="Comentario">
+                    <Textarea
+                      id="manutencao-comentario"
+                      rows={3}
+                      value={comentario}
+                      onChange={(event) => setComentario(event.target.value)}
+                      placeholder="Registre uma observacao tecnica."
+                    />
+                  </FormField>
+                  {comentarioError && (
+                    <p className="mt-2 text-sm text-destructive">
+                      {comentarioError}
+                    </p>
+                  )}
+                  <Button
+                    className="mt-3 w-full"
+                    disabled={comentarioMutation.isPending}
+                    type="button"
+                    variant="outline"
+                    onClick={() => comentarioMutation.mutate()}
+                  >
+                    {comentarioMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <MessageSquare className="h-4 w-4" />
+                    )}
+                    Registrar comentario
+                  </Button>
+                </div>
                 <div>
                   <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">
                     Status atual

@@ -32,6 +32,11 @@ import {
   type OrdemServico,
   type OrdemServicoStatus,
 } from "@/services/ordens-servico";
+import {
+  createOrcamento,
+  listOrcamentos,
+  type OrcamentoStatus,
+} from "@/services/orcamentos";
 
 const budgetStatuses: OrdemServicoStatus[] = [
   "em_analise",
@@ -101,6 +106,12 @@ const Orcamento = () => {
     queryFn: () => listAparelhos(),
   });
 
+  const orcamentosQuery = useQuery({
+    queryKey: ["orcamentos", selectedOrdemId],
+    queryFn: () => listOrcamentos({ ordemServicoId: selectedOrdemId }),
+    enabled: Boolean(selectedOrdemId),
+  });
+
   const ordens = useMemo(
     () =>
       (ordensQuery.data ?? []).filter((ordem) =>
@@ -140,10 +151,22 @@ const Orcamento = () => {
   }, [ordens, selectedOrdemId]);
 
   const statusMutation = useMutation({
-    mutationFn: (status: OrdemServicoStatus) => {
+    mutationFn: async (status: OrdemServicoStatus) => {
       if (!selectedOrdem) {
         throw new Error("Selecione uma OS.");
       }
+
+      const orcamentoStatus: OrcamentoStatus =
+        status === "cancelado"
+          ? "reprovado"
+          : status === "em_manutencao"
+            ? "aprovado"
+            : "enviado";
+
+      await createOrcamento({
+        ordemServicoId: selectedOrdem.id,
+        status: orcamentoStatus,
+      });
 
       return updateOrdemServico(selectedOrdem.id, {
         clienteId: selectedOrdem.clienteId,
@@ -163,6 +186,8 @@ const Orcamento = () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["ordens-servico"] }),
         queryClient.invalidateQueries({ queryKey: ["ordem-servico", ordem.id] }),
+        queryClient.invalidateQueries({ queryKey: ["orcamentos"] }),
+        queryClient.invalidateQueries({ queryKey: ["ordem-eventos"] }),
       ]);
       setSelectedOrdemId(ordem.id);
       setActionError(null);
@@ -187,6 +212,7 @@ const Orcamento = () => {
   const aparelho = selectedOrdem
     ? aparelhoById.get(selectedOrdem.aparelhoId)
     : undefined;
+  const latestOrcamento = orcamentosQuery.data?.[0];
   const historico = useMemo(
     () =>
       (ordensQuery.data ?? [])
@@ -324,7 +350,9 @@ const Orcamento = () => {
                 </div>
                 <div className="inline-flex items-center gap-1.5 rounded-md border border-warning/40 bg-warning/10 px-3 py-1.5 text-xs font-medium text-warning">
                   <Clock className="h-3.5 w-3.5" />
-                  {statusLabels[selectedOrdem.status]}
+                  {latestOrcamento
+                    ? `Orcamento ${latestOrcamento.status}`
+                    : statusLabels[selectedOrdem.status]}
                 </div>
               </div>
 
@@ -336,6 +364,12 @@ const Orcamento = () => {
                 <p className="mt-2 text-sm text-muted-foreground">
                   {selectedOrdem.diagnostico ?? "Diagnostico ainda nao informado."}
                 </p>
+                {latestOrcamento && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Ultimo orcamento: {latestOrcamento.status} em{" "}
+                    {formatDateTime(latestOrcamento.updatedAt)}
+                  </p>
+                )}
               </div>
 
               <div className="mt-5">

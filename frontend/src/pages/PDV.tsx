@@ -28,10 +28,10 @@ import { listAparelhos } from "@/services/aparelhos";
 import { listClientes } from "@/services/clientes";
 import {
   listOrdensServico,
-  updateOrdemServico,
   type OrdemServico,
   type OrdemServicoFormaPagamento,
 } from "@/services/ordens-servico";
+import { createVenda } from "@/services/vendas";
 
 const paymentOptions: Array<{
   key: OrdemServicoFormaPagamento;
@@ -42,13 +42,6 @@ const paymentOptions: Array<{
   { key: "cartao", label: "Cartao", icon: CreditCard },
   { key: "dinheiro", label: "Dinheiro", icon: Banknote },
 ];
-
-const toPecasInput = (ordem: OrdemServico) =>
-  (ordem.pecasUsadas ?? []).map((peca) => ({
-    produtoId: peca.produtoId,
-    quantidade: peca.quantidade,
-    valorUnitario: peca.valorUnitario,
-  }));
 
 const PDV = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -132,26 +125,20 @@ const PDV = () => {
         throw new Error("Valor recebido menor que o total da OS.");
       }
 
-      return updateOrdemServico(selectedOrdem.id, {
-        clienteId: selectedOrdem.clienteId,
-        aparelhoId: selectedOrdem.aparelhoId,
-        checklistId: selectedOrdem.checklistId,
-        defeitoRelatado: selectedOrdem.defeitoRelatado,
-        diagnostico: selectedOrdem.diagnostico,
-        status: "entregue",
-        tecnicoResponsavel: selectedOrdem.tecnicoResponsavel,
-        pecasUsadas: toPecasInput(selectedOrdem),
-        valorMaoObra: selectedOrdem.valorMaoObra,
-        entradaEm: selectedOrdem.entradaEm,
-        previsaoEntregaEm: selectedOrdem.previsaoEntregaEm,
+      return createVenda({
+        ordemServicoId: selectedOrdem.id,
         formaPagamento,
         valorRecebido: recebido,
       });
     },
-    onSuccess: async (ordem) => {
+    onSuccess: async (venda) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["ordens-servico"] }),
-        queryClient.invalidateQueries({ queryKey: ["ordem-servico", ordem.id] }),
+        queryClient.invalidateQueries({
+          queryKey: ["ordem-servico", venda.ordemServicoId],
+        }),
+        queryClient.invalidateQueries({ queryKey: ["vendas"] }),
+        queryClient.invalidateQueries({ queryKey: ["ordem-eventos"] }),
       ]);
       setFormError(null);
     },

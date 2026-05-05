@@ -27,6 +27,9 @@ API base do MVP do RR Infocell.
 - `aparelhos`: CRUD de aparelhos vinculados a clientes com busca, validacao e testes.
 - `ordens-servico`: CRUD de OS com numero sequencial, status, validacao de vinculos e testes.
 - `checklists`: CRUD de checklist tecnico vinculado a OS/aparelho com validacao e testes.
+- `ordem-eventos`: linha do tempo e comentarios operacionais vinculados a OS.
+- `orcamentos`: snapshot de orcamento por OS com envio, aprovacao e reprovacao.
+- `vendas`: fechamento de caixa por OS, pagamento, troco e entrega.
 - `produtos`: CRUD de estoque com busca, categoria, ativo, custos, precos e ponto minimo.
 - `movimentacoes-estoque`: entrada, saida e ajuste manual com historico por produto.
 
@@ -103,4 +106,4 @@ npm test
 
 ## Status
 
-Base implementada com Express, TypeScript, middlewares globais, tratamento padronizado de erros, health check, modulos de clientes, aparelhos, ordens de servico, checklists, usuarios, produtos e movimentacoes de estoque funcionais com Firestore real/fallback local, e Firebase Admin SDK.
+Base implementada com Express, TypeScript, middlewares globais, tratamento padronizado de erros, health check, modulos de clientes, aparelhos, ordens de servico, checklists, usuarios, ordem-eventos, orcamentos, vendas, produtos e movimentacoes de estoque funcionais com Firestore real/fallback local, e Firebase Admin SDK.

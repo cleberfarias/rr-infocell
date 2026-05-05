@@ -18,6 +18,9 @@ O MVP usara Firebase como base principal:
 - Colecao `clientes` validada com escrita/leitura pelo backend.
 - Colecao `produtos` preparada para estoque via backend.
 - Colecao `movimentacoesEstoque` preparada para historico de entrada, saida e ajuste.
+- Colecao `ordemEventos` preparada para linha do tempo e comentarios de OS.
+- Colecao `orcamentos` preparada para snapshots de proposta por OS.
+- Colecao `vendas` preparada para fechamento de caixa por OS.
 - Backend local usa service account via `GOOGLE_APPLICATION_CREDENTIALS`.
 - Frontend possui login Firebase Auth real e protecao de rotas por perfil.
 - Backend possui endpoint administrativo para criar usuarios Firebase Auth e definir custom claim `role`.
@@ -39,6 +42,8 @@ aparelhos
 ordensServico
 checklists
 produtos
+ordemEventos
+orcamentos
 vendas
 movimentacoesEstoque
 auditLogs
@@ -52,6 +57,9 @@ counters
 - `ordensServico/{ordemId}` referencia `clienteId` e `aparelhoId`.
 - `ordensServico/{ordemId}` tambem pode armazenar dados de pagamento simples no fechamento de caixa.
 - `checklists/{checklistId}` referencia `ordemServicoId`.
+- `ordemEventos/{eventoId}` referencia `ordemServicoId` e registra comentarios, diagnostico, orcamento e venda.
+- `orcamentos/{orcamentoId}` referencia `ordemServicoId`, salva snapshot de pecas, mao de obra, total e decisao.
+- `vendas/{vendaId}` referencia `ordemServicoId`, salva forma de pagamento, valor recebido, troco e status.
 - `movimentacoesEstoque/{movimentacaoId}` referencia `produtoId` e, quando existir, `ordemServicoId`.
 - `produtos/{produtoId}` armazena SKU, nome, categoria, estoque atual, minimo, custo, venda e status ativo.
 - `movimentacoesEstoque/{movimentacaoId}` armazena tipo, quantidade, estoque anterior/posterior, origem e motivo.
