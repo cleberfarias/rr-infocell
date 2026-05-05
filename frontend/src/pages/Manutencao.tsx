@@ -308,7 +308,13 @@ const Manutencao = () => {
               </Button>
             )}
             <Button asChild variant="outline">
-              <Link to="/app/orcamento">
+              <Link
+                to={
+                  selectedOrdem
+                    ? `/app/orcamento?ordemId=${selectedOrdem.id}`
+                    : "/app/orcamento"
+                }
+              >
                 <Send className="h-4 w-4" /> Orcamento
               </Link>
             </Button>
