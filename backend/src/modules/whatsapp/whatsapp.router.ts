@@ -4,8 +4,19 @@ import { mensagemService } from "./mensagem.service.js";
 import { acoesService } from "./acoes.service.js";
 import { vincularCliente } from "./vinculo.service.js";
 import { normalizarTelefone } from "../../shared/normalizar-telefone.js";
+import type { TipoMensagem } from "./mensagem.service.js";
 
 export const whatsappRoutes = Router();
+
+const LIMITE_MIDIA_BYTES = 16 * 1024 * 1024;
+
+function tipoMidiaPorMime(mimeType: string): Exclude<TipoMensagem, "texto" | "orcamento" | "status" | "pagamento"> {
+  if (mimeType.startsWith("image/webp")) return "sticker";
+  if (mimeType.startsWith("image/")) return "imagem";
+  if (mimeType.startsWith("audio/")) return "audio";
+  if (mimeType.startsWith("video/")) return "video";
+  return "documento";
+}
 
 whatsappRoutes.get("/status", (_req, res) => {
   res.json(conexaoService.getStatus());
@@ -60,6 +71,59 @@ whatsappRoutes.post("/enviar", async (req, res, next) => {
       vinculo?.cliente.id ?? null,
       vinculo?.cliente.nome,
     );
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+whatsappRoutes.post("/enviar-midia", async (req, res, next) => {
+  try {
+    const { telefone, base64, mimeType, nomeArquivo, legenda } = req.body as {
+      telefone: string;
+      base64: string;
+      mimeType: string;
+      nomeArquivo?: string;
+      legenda?: string;
+    };
+
+    if (!telefone || !base64 || !mimeType) {
+      throw new Error("Telefone, arquivo e tipo de midia sao obrigatorios.");
+    }
+
+    const tel = normalizarTelefone(telefone);
+    const buffer = Buffer.from(base64, "base64");
+
+    if (buffer.byteLength > LIMITE_MIDIA_BYTES) {
+      throw new Error("Arquivo excede o limite de 16 MB.");
+    }
+
+    const tipo = tipoMidiaPorMime(mimeType);
+    await conexaoService.enviarMidia({
+      telefone: tel,
+      buffer,
+      mimeType,
+      nomeArquivo,
+      legenda,
+      tipo,
+    });
+
+    const vinculo = await vincularCliente(tel);
+    const midiaUrl = await mensagemService.armazenarMidiaSaida(tel, buffer, tipo, mimeType, nomeArquivo);
+    await mensagemService.salvarMensagemSaida(
+      tel,
+      legenda || nomeArquivo || `[${tipo}]`,
+      tipo,
+      vinculo?.cliente.id ?? null,
+      vinculo?.cliente.nome,
+      {
+        url: midiaUrl,
+        mimeType,
+        nome: nomeArquivo,
+        tamanho: buffer.byteLength,
+      },
+    );
+
     res.json({ ok: true });
   } catch (err) {
     next(err);

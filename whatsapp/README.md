@@ -10,6 +10,8 @@ Modulo de central de atendimento via WhatsApp integrado ao sistema RR Infocell.
 - [x] Painel frontend `/app/atendimento` com lista de conversas, chat, contexto do cliente e OS ativas.
 - [x] Envio de mensagens usando JID canonico retornado por `onWhatsApp()`.
 - [x] Recebimento de mensagens `@lid` resolvido para telefone real via `signalRepository.lidMapping`.
+- [x] Recebimento de imagem, audio, video, documento e sticker com upload para Firebase Storage.
+- [x] Envio de imagem, audio, video, documento e sticker pela tela de Atendimento.
 - [x] Polling da tela de Atendimento a cada 1,5s.
 - [x] Diagnostico em `/api/whatsapp/status` com ultimo evento, ultimo envio, recibos e motivos de descarte.
 - [x] Chatbot basico para resposta de aprovacao/rejeicao de orcamento (`SIM`/`NAO`).
@@ -49,6 +51,57 @@ socket.signalRepository.lidMapping.getPNForLID(lid)
 
 Depois disso a mensagem e gravada em `whatsapp_mensagens` com `telefone` normalizado e atualiza `whatsapp_conversas`.
 
+Midias recebidas sao baixadas com `downloadMediaMessage()` e gravadas no Firebase Storage em:
+
+```text
+whatsapp/{telefone}/{messageId}.{ext}
+```
+
+Tipos tratados:
+
+- `imageMessage` -> `imagem`
+- `audioMessage` -> `audio`
+- `videoMessage` -> `video`
+- `documentMessage` -> `documento`
+- `stickerMessage` -> `sticker`
+
+O sistema tambem salva metadados quando disponiveis:
+
+- `midiaUrl`
+- `midiaMimeType`
+- `midiaNome`
+- `midiaTamanho`
+
+### Envio de midia
+
+Endpoint:
+
+```http
+POST /api/whatsapp/enviar-midia
+```
+
+Payload:
+
+```json
+{
+  "telefone": "48999019525",
+  "base64": "...",
+  "mimeType": "audio/mp4",
+  "nomeArquivo": "audio.m4a",
+  "legenda": "opcional"
+}
+```
+
+O backend detecta o tipo pelo `mimeType`:
+
+- `image/*` -> imagem
+- `audio/*` -> audio, incluindo formatos comuns de Android e iOS como `audio/ogg`, `audio/mpeg`, `audio/mp4`, `audio/aac`
+- `video/*` -> video
+- `image/webp` -> sticker
+- demais tipos -> documento
+
+Limite atual: 16 MB por arquivo.
+
 ### Diagnostico
 
 Use:
@@ -71,9 +124,11 @@ Campos uteis:
 1. Abrir `/app/atendimento`.
 2. Confirmar que aparece `WhatsApp conectado`.
 3. Enviar mensagem do sistema para um cliente.
-4. Enviar uma resposta pelo WhatsApp do cliente para o numero conectado.
-5. Conferir se a mensagem aparece no chat em ate 1,5s.
-6. Se nao aparecer, consultar `/api/whatsapp/status` e verificar `ultimaMensagemIgnoradaMotivo`.
+4. Enviar imagem, audio, video ou documento pelo botao de anexo.
+5. Enviar uma resposta pelo WhatsApp do cliente para o numero conectado.
+6. Testar audio e midias vindos de Android e iOS.
+7. Conferir se a mensagem aparece no chat em ate 1,5s.
+8. Se nao aparecer, consultar `/api/whatsapp/status` e verificar `ultimaMensagemIgnoradaMotivo`.
 
 ## Cuidados
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MessageSquare, Wifi, WifiOff, Send, Loader2, Phone, QrCode, X } from "lucide-react";
+import { FileText, MessageSquare, Paperclip, Phone, QrCode, Send, Wifi, WifiOff, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
@@ -10,6 +10,7 @@ import {
   listarConversas,
   getConversa,
   enviarMensagem,
+  enviarMidia,
   enviarOrcamento,
   informarPronto,
   confirmarPagamento,
@@ -33,6 +34,24 @@ const STATUS_LABEL: Record<string, string> = {
 
 function hora(ts: string) {
   return new Date(ts).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+
+function formatarTamanho(bytes?: number) {
+  if (!bytes) return "";
+  if (bytes < 1024 * 1024) return `${Math.ceil(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function arquivoParaBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result ?? "");
+      resolve(result.includes(",") ? result.split(",")[1] : result);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
 }
 
 function ModalQR({ qr, onClose }: { qr: string; onClose: () => void }) {
@@ -182,7 +201,25 @@ function BolhaMensagem({ msg }: { msg: Mensagem }) {
         {msg.tipo === "video" && msg.midiaUrl && (
           <video controls src={msg.midiaUrl} className="mb-1 max-w-full rounded" />
         )}
-        {msg.texto && msg.texto !== "[imagem]" && msg.texto !== "[audio]" && msg.texto !== "[video]" && (
+        {msg.tipo === "sticker" && msg.midiaUrl && (
+          <img src={msg.midiaUrl} alt="sticker" className="mb-1 h-28 w-28 object-contain" />
+        )}
+        {msg.tipo === "documento" && msg.midiaUrl && (
+          <a
+            href={msg.midiaUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={cn(
+              "mb-1 flex items-center gap-2 rounded-md border px-3 py-2 text-xs underline-offset-2 hover:underline",
+              minha ? "border-primary-foreground/20" : "border-border",
+            )}
+          >
+            <FileText className="h-4 w-4 shrink-0" />
+            <span className="min-w-0 truncate">{msg.midiaNome ?? "Arquivo"}</span>
+            <span className="shrink-0 opacity-70">{formatarTamanho(msg.midiaTamanho)}</span>
+          </a>
+        )}
+        {msg.texto && !["[imagem]", "[audio]", "[video]", "[documento]", "[sticker]"].includes(msg.texto) && (
           <p className="whitespace-pre-wrap">{msg.texto}</p>
         )}
         <p className={cn("mt-0.5 text-right text-[10px]", minha ? "text-primary-foreground/60" : "text-muted-foreground")}>
@@ -291,8 +328,10 @@ export default function Atendimento() {
   const [telefoneSelecionado, setTelefoneSelecionado] = useState<string | null>(null);
   const [detalhe, setDetalhe] = useState<ConversaDetalhe | null>(null);
   const [texto, setTexto] = useState("");
+  const [arquivo, setArquivo] = useState<File | null>(null);
   const [enviando, setEnviando] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const poll = async () => {
@@ -337,11 +376,22 @@ export default function Atendimento() {
   };
 
   const enviar = async () => {
-    if (!telefoneSelecionado || !texto.trim()) return;
+    if (!telefoneSelecionado || (!texto.trim() && !arquivo)) return;
     setEnviando(true);
     try {
-      await enviarMensagem(telefoneSelecionado, texto.trim());
+      if (arquivo) {
+        const base64 = await arquivoParaBase64(arquivo);
+        await enviarMidia(telefoneSelecionado, {
+          base64,
+          mimeType: arquivo.type || "application/octet-stream",
+          nomeArquivo: arquivo.name,
+          legenda: texto.trim() || undefined,
+        });
+      } else {
+        await enviarMensagem(telefoneSelecionado, texto.trim());
+      }
       setTexto("");
+      setArquivo(null);
       const [d, cvs] = await Promise.all([
         getConversa(telefoneSelecionado),
         listarConversas(),
@@ -407,13 +457,41 @@ export default function Atendimento() {
 
               <div className="border-t border-border p-3 flex gap-2">
                 <input
-                  value={texto}
-                  onChange={(e) => setTexto(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && enviar()}
-                  placeholder="Digite uma mensagem..."
-                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary/60"
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => setArquivo(e.target.files?.[0] ?? null)}
+                  accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip"
                 />
-                <Button size="icon" onClick={enviar} disabled={enviando || !texto.trim()}>
+                <Button
+                  size="icon"
+                  variant={arquivo ? "secondary" : "outline"}
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={enviando}
+                  title={arquivo ? arquivo.name : "Anexar arquivo"}
+                >
+                  <Paperclip className="h-4 w-4" />
+                </Button>
+                <div className="flex flex-1 flex-col gap-1">
+                  {arquivo && (
+                    <div className="flex items-center gap-2 rounded-md border border-border bg-secondary/50 px-2 py-1 text-xs">
+                      <FileText className="h-3.5 w-3.5" />
+                      <span className="min-w-0 flex-1 truncate">{arquivo.name}</span>
+                      <span className="text-muted-foreground">{formatarTamanho(arquivo.size)}</span>
+                      <button className="text-muted-foreground hover:text-foreground" onClick={() => setArquivo(null)}>
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
+                  <input
+                    value={texto}
+                    onChange={(e) => setTexto(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && enviar()}
+                    placeholder={arquivo ? "Legenda opcional..." : "Digite uma mensagem..."}
+                    className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary/60"
+                  />
+                </div>
+                <Button size="icon" onClick={enviar} disabled={enviando || (!texto.trim() && !arquivo)}>
                   {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>
               </div>

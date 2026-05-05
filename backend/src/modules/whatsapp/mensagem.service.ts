@@ -5,7 +5,16 @@ import { normalizarTelefone } from "../../shared/normalizar-telefone.js";
 import { vincularCliente } from "./vinculo.service.js";
 import { botService } from "./bot.service.js";
 
-export type TipoMensagem = "texto" | "imagem" | "audio" | "video" | "orcamento" | "status" | "pagamento";
+export type TipoMensagem =
+  | "texto"
+  | "imagem"
+  | "audio"
+  | "video"
+  | "documento"
+  | "sticker"
+  | "orcamento"
+  | "status"
+  | "pagamento";
 
 export type Mensagem = {
   id: string;
@@ -15,6 +24,9 @@ export type Mensagem = {
   texto: string;
   tipo: TipoMensagem;
   midiaUrl?: string;
+  midiaMimeType?: string;
+  midiaNome?: string;
+  midiaTamanho?: number;
   timestamp: string;
   lida: boolean;
 };
@@ -43,17 +55,44 @@ type ConteudoMensagem = NonNullable<WAMessage["message"]>;
 const semUndefined = <T extends Record<string, unknown>>(obj: T): T =>
   Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as T;
 
+function extensaoMidia(tipo: TipoMensagem, mimeType?: string, nomeArquivo?: string): string {
+  const extNome = nomeArquivo?.split(".").pop()?.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+  if (extNome) return extNome;
+
+  const mapa: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "audio/ogg": "ogg",
+    "audio/mpeg": "mp3",
+    "audio/mp4": "m4a",
+    "audio/aac": "aac",
+    "video/mp4": "mp4",
+    "application/pdf": "pdf",
+  };
+
+  if (mimeType && mapa[mimeType]) return mapa[mimeType];
+  if (tipo === "imagem") return "jpg";
+  if (tipo === "audio") return "ogg";
+  if (tipo === "video") return "mp4";
+  if (tipo === "sticker") return "webp";
+  return "bin";
+}
+
 async function uploadMidia(
   buffer: Buffer,
   telefone: string,
   msgId: string,
-  tipo: "imagem" | "audio" | "video",
+  tipo: TipoMensagem,
+  mimeType?: string,
+  nomeArquivo?: string,
 ): Promise<string> {
-  const ext = tipo === "imagem" ? "jpg" : tipo === "audio" ? "ogg" : "mp4";
-  const path = `whatsapp/${telefone}/${msgId}.${ext}`;
+  const ext = extensaoMidia(tipo, mimeType, nomeArquivo);
+  const idSeguro = msgId.replace(/[^a-zA-Z0-9_-]/g, "_");
+  const path = `whatsapp/${telefone}/${idSeguro}.${ext}`;
   const bucket = getStorage().bucket();
   const file = bucket.file(path);
-  await file.save(buffer, { contentType: tipo === "imagem" ? "image/jpeg" : tipo === "audio" ? "audio/ogg" : "video/mp4" });
+  await file.save(buffer, { contentType: mimeType ?? "application/octet-stream" });
   const [url] = await file.getSignedUrl({ action: "read", expires: "2099-01-01" });
   return url;
 }
@@ -88,6 +127,8 @@ function extrairTipo(conteudo: ConteudoMensagem): TipoMensagem {
   if (conteudo.imageMessage) return "imagem";
   if (conteudo.audioMessage) return "audio";
   if (conteudo.videoMessage) return "video";
+  if (conteudo.documentMessage) return "documento";
+  if (conteudo.stickerMessage) return "sticker";
   return "texto";
 }
 
@@ -97,8 +138,36 @@ function extrairTexto(conteudo: ConteudoMensagem): string {
     conteudo.extendedTextMessage?.text ||
     conteudo.imageMessage?.caption ||
     conteudo.videoMessage?.caption ||
+    conteudo.documentMessage?.caption ||
+    conteudo.documentMessage?.fileName ||
     ""
   );
+}
+
+function extrairMimeType(conteudo: ConteudoMensagem): string | undefined {
+  return (
+    conteudo.imageMessage?.mimetype ||
+    conteudo.audioMessage?.mimetype ||
+    conteudo.videoMessage?.mimetype ||
+    conteudo.documentMessage?.mimetype ||
+    conteudo.stickerMessage?.mimetype ||
+    undefined
+  );
+}
+
+function extrairNomeArquivo(conteudo: ConteudoMensagem): string | undefined {
+  return conteudo.documentMessage?.fileName || undefined;
+}
+
+function extrairTamanhoArquivo(conteudo: ConteudoMensagem): number | undefined {
+  const tamanho =
+    conteudo.imageMessage?.fileLength ||
+    conteudo.audioMessage?.fileLength ||
+    conteudo.videoMessage?.fileLength ||
+    conteudo.documentMessage?.fileLength ||
+    conteudo.stickerMessage?.fileLength;
+
+  return tamanho ? Number(tamanho) : undefined;
 }
 
 class MensagemService {
@@ -128,14 +197,17 @@ class MensagemService {
 
     const tipo = extrairTipo(conteudo);
     const texto = extrairTexto(conteudo);
+    const midiaMimeType = extrairMimeType(conteudo);
+    const midiaNome = extrairNomeArquivo(conteudo);
+    const midiaTamanho = extrairTamanhoArquivo(conteudo);
     const timestamp = new Date().toISOString();
 
     let midiaUrl: string | undefined;
 
-    if (tipo === "imagem" || tipo === "audio" || tipo === "video") {
+    if (tipo === "imagem" || tipo === "audio" || tipo === "video" || tipo === "documento" || tipo === "sticker") {
       try {
         const buffer = (await downloadMediaMessage(msg, "buffer", {})) as Buffer;
-        midiaUrl = await uploadMidia(buffer, telefone, msg.key.id ?? timestamp, tipo);
+        midiaUrl = await uploadMidia(buffer, telefone, msg.key.id ?? timestamp, tipo, midiaMimeType, midiaNome);
       } catch {
         console.error("[WhatsApp] Erro ao processar midia");
       }
@@ -152,6 +224,9 @@ class MensagemService {
       texto: texto || `[${tipo}]`,
       tipo,
       midiaUrl,
+      midiaMimeType,
+      midiaNome,
+      midiaTamanho,
       timestamp,
       lida: false,
     };
@@ -186,20 +261,30 @@ class MensagemService {
     tipo: TipoMensagem = "texto",
     clienteId: string | null = null,
     nome?: string,
+    midia?: {
+      url?: string;
+      mimeType?: string;
+      nome?: string;
+      tamanho?: number;
+    },
   ) {
     if (!db) return;
     const timestamp = new Date().toISOString();
     const docRef = db.collection(colMensagens).doc();
-    await docRef.set({
+    await docRef.set(semUndefined({
       id: docRef.id,
       telefone,
       clienteId,
       de: "atendente",
       texto,
       tipo,
+      midiaUrl: midia?.url,
+      midiaMimeType: midia?.mimeType,
+      midiaNome: midia?.nome,
+      midiaTamanho: midia?.tamanho,
       timestamp,
       lida: true,
-    });
+    }));
     await db.collection(colConversas).doc(telefone).set(
       semUndefined({
         clienteId,
@@ -218,6 +303,16 @@ class MensagemService {
     return snap.docs
       .map((d) => ({ telefone: d.id, ...d.data() }) as Conversa)
       .sort((a, b) => (b.ultimaInteracao ?? "").localeCompare(a.ultimaInteracao ?? ""));
+  }
+
+  async armazenarMidiaSaida(
+    telefone: string,
+    buffer: Buffer,
+    tipo: TipoMensagem,
+    mimeType?: string,
+    nomeArquivo?: string,
+  ): Promise<string> {
+    return uploadMidia(buffer, telefone, `${Date.now()}_${nomeArquivo ?? tipo}`, tipo, mimeType, nomeArquivo);
   }
 
   async listarMensagens(telefone: string): Promise<Mensagem[]> {

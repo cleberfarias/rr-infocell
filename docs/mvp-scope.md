@@ -55,6 +55,8 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 - Envio manual e acoes de OS integradas ao WhatsApp.
 - Envio usa o JID canonico retornado por `onWhatsApp()` para evitar erro com nono digito.
 - Recebimento resolve mensagens `@lid` via `signalRepository.lidMapping.getPNForLID()` antes de salvar no Firestore.
+- Recebimento e envio de midia implementados para imagem, audio, video, documentos e stickers.
+- Audios e arquivos vindos de Android/iOS sao tratados por MIME type e armazenados no Firebase Storage.
 - Diagnostico disponivel em `/api/whatsapp/status` com ultimo evento, ultimo envio, recibos e motivo de descarte.
 
 ## Fora do MVP

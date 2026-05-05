@@ -4,6 +4,7 @@ import makeWASocket, {
   jidNormalizedUser,
   makeCacheableSignalKeyStore,
   useMultiFileAuthState,
+  type AnyMessageContent,
   type WAMessage,
   type WASocket,
 } from "@whiskeysockets/baileys";
@@ -47,6 +48,15 @@ type DiagnosticoWhatsApp = {
   ultimoReciboEm: string | null;
   ultimoReciboId: string | null;
   ultimoReciboDe: string | null;
+};
+
+export type EnviarMidiaWhatsAppInput = {
+  telefone: string;
+  buffer: Buffer;
+  mimeType: string;
+  nomeArquivo?: string;
+  legenda?: string;
+  tipo: "imagem" | "audio" | "video" | "documento" | "sticker";
 };
 
 class ConexaoService {
@@ -232,7 +242,7 @@ class ConexaoService {
     };
   }
 
-  async enviarTexto(telefone: string, texto: string) {
+  private async resolverJidEnvio(telefone: string): Promise<string> {
     if (!this.socket || this.status !== "conectado") {
       throw new Error("WhatsApp nao conectado.");
     }
@@ -244,11 +254,60 @@ class ConexaoService {
       throw new Error(`Numero ${telefone} nao encontrado no WhatsApp.`);
     }
 
-    const jid = destinatario.jid;
-    const enviada = await this.socket.sendMessage(jid, { text: texto });
+    return destinatario.jid;
+  }
+
+  async enviarTexto(telefone: string, texto: string) {
+    if (!this.socket || this.status !== "conectado") {
+      throw new Error("WhatsApp nao conectado.");
+    }
+
+    const socket = this.socket;
+    const jid = await this.resolverJidEnvio(telefone);
+    const enviada = await socket.sendMessage(jid, { text: texto });
     this.diagnostico.ultimoEnvioEm = new Date().toISOString();
     this.diagnostico.ultimoEnvioPara = jid;
     this.diagnostico.ultimoEnvioId = enviada?.key.id ?? null;
+  }
+
+  async enviarMidia(input: EnviarMidiaWhatsAppInput) {
+    if (!this.socket || this.status !== "conectado") {
+      throw new Error("WhatsApp nao conectado.");
+    }
+
+    const socket = this.socket;
+    const jid = await this.resolverJidEnvio(input.telefone);
+    const content = this.montarConteudoMidia(input);
+    const enviada = await socket.sendMessage(jid, content);
+    this.diagnostico.ultimoEnvioEm = new Date().toISOString();
+    this.diagnostico.ultimoEnvioPara = jid;
+    this.diagnostico.ultimoEnvioId = enviada?.key.id ?? null;
+    return enviada;
+  }
+
+  private montarConteudoMidia(input: EnviarMidiaWhatsAppInput): AnyMessageContent {
+    if (input.tipo === "imagem") {
+      return { image: input.buffer, mimetype: input.mimeType, caption: input.legenda };
+    }
+
+    if (input.tipo === "video") {
+      return { video: input.buffer, mimetype: input.mimeType, caption: input.legenda };
+    }
+
+    if (input.tipo === "audio") {
+      return { audio: input.buffer, mimetype: input.mimeType, ptt: false };
+    }
+
+    if (input.tipo === "sticker") {
+      return { sticker: input.buffer };
+    }
+
+    return {
+      document: input.buffer,
+      mimetype: input.mimeType,
+      fileName: input.nomeArquivo ?? "arquivo",
+      caption: input.legenda,
+    };
   }
 }
 

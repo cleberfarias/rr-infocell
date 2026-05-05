@@ -1,7 +1,16 @@
 import type { Cliente } from "./clientes";
 import type { OrdemServico } from "./ordens-servico";
 
-export type TipoMensagem = "texto" | "imagem" | "audio" | "video" | "orcamento" | "status" | "pagamento";
+export type TipoMensagem =
+  | "texto"
+  | "imagem"
+  | "audio"
+  | "video"
+  | "documento"
+  | "sticker"
+  | "orcamento"
+  | "status"
+  | "pagamento";
 
 export type Mensagem = {
   id: string;
@@ -11,6 +20,9 @@ export type Mensagem = {
   texto: string;
   tipo: TipoMensagem;
   midiaUrl?: string;
+  midiaMimeType?: string;
+  midiaNome?: string;
+  midiaTamanho?: number;
   timestamp: string;
   lida: boolean;
 };
@@ -62,6 +74,20 @@ export const enviarMensagem = (telefone: string, texto: string) =>
   request<{ ok: boolean }>("/whatsapp/enviar", {
     method: "POST",
     body: JSON.stringify({ telefone, texto }),
+  });
+
+export const enviarMidia = (
+  telefone: string,
+  arquivo: {
+    base64: string;
+    mimeType: string;
+    nomeArquivo: string;
+    legenda?: string;
+  },
+) =>
+  request<{ ok: boolean }>("/whatsapp/enviar-midia", {
+    method: "POST",
+    body: JSON.stringify({ telefone, ...arquivo }),
   });
 
 export const enviarOrcamento = (osId: string) =>
