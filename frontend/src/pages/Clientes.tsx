@@ -1,7 +1,9 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 
 import { EmptyState, FormField, PageHeader } from "@/components/design-system";
+import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -21,7 +23,19 @@ import {
   type Cliente,
   type ClienteInput,
 } from "@/services/clientes";
-import { Edit, Loader2, Plus, Search, Trash2, UserRound } from "lucide-react";
+import { listAparelhos } from "@/services/aparelhos";
+import { listOrdensServico, type OrdemServico } from "@/services/ordens-servico";
+import { formatBRL } from "@/data/mock";
+import {
+  Edit,
+  History,
+  Loader2,
+  Plus,
+  Search,
+  Smartphone,
+  Trash2,
+  UserRound,
+} from "lucide-react";
 
 const emptyForm: ClienteInput = {
   nome: "",
@@ -45,7 +59,52 @@ const Clientes = () => {
     queryFn: () => listClientes(search),
   });
 
+  const aparelhosQuery = useQuery({
+    queryKey: ["aparelhos", "clientes-historico"],
+    queryFn: () => listAparelhos(),
+  });
+
+  const ordensQuery = useQuery({
+    queryKey: ["ordens-servico", "clientes-historico"],
+    queryFn: () => listOrdensServico(),
+  });
+
   const clientes = useMemo(() => clientesQuery.data ?? [], [clientesQuery.data]);
+  const aparelhos = useMemo(
+    () => aparelhosQuery.data ?? [],
+    [aparelhosQuery.data],
+  );
+  const ordens = useMemo(() => ordensQuery.data ?? [], [ordensQuery.data]);
+
+  const aparelhosByCliente = useMemo(() => {
+    const map = new Map<string, typeof aparelhos>();
+
+    aparelhos.forEach((aparelho) => {
+      map.set(aparelho.clienteId, [
+        ...(map.get(aparelho.clienteId) ?? []),
+        aparelho,
+      ]);
+    });
+
+    return map;
+  }, [aparelhos]);
+
+  const ordensByCliente = useMemo(() => {
+    const map = new Map<string, OrdemServico[]>();
+
+    ordens.forEach((ordem) => {
+      map.set(ordem.clienteId, [...(map.get(ordem.clienteId) ?? []), ordem]);
+    });
+
+    for (const [clienteId, clienteOrdens] of map.entries()) {
+      map.set(
+        clienteId,
+        clienteOrdens.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+      );
+    }
+
+    return map;
+  }, [ordens]);
 
   const invalidateClientes = async () => {
     await queryClient.invalidateQueries({ queryKey: ["clientes"] });
@@ -160,18 +219,25 @@ const Clientes = () => {
         </div>
       </Card>
 
-      {clientesQuery.isLoading ? (
+      {clientesQuery.isLoading || aparelhosQuery.isLoading || ordensQuery.isLoading ? (
         <Card className="surface-panel flex min-h-[260px] items-center justify-center">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </Card>
-      ) : clientesQuery.isError ? (
+      ) : clientesQuery.isError || aparelhosQuery.isError || ordensQuery.isError ? (
         <Card className="surface-panel">
           <EmptyState
             icon={UserRound}
             title="Nao foi possivel carregar clientes"
             description="Verifique se o backend esta rodando em http://localhost:3333."
             actions={
-              <Button variant="outline" onClick={() => clientesQuery.refetch()}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  clientesQuery.refetch();
+                  aparelhosQuery.refetch();
+                  ordensQuery.refetch();
+                }}
+              >
                 Tentar novamente
               </Button>
             }
@@ -188,39 +254,50 @@ const Clientes = () => {
         </Card>
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {clientes.map((cliente) => (
-            <Card
-              key={cliente.id}
-              className="surface-panel group p-5 transition-all hover:border-primary/40 hover:shadow-glow"
-            >
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-gradient-metal font-display text-lg font-bold">
-                  {cliente.nome
-                    .split(" ")
-                    .map((name) => name[0])
-                    .slice(0, 2)
-                    .join("")}
+          {clientes.map((cliente) => {
+            const clienteAparelhos = aparelhosByCliente.get(cliente.id) ?? [];
+            const clienteOrdens = ordensByCliente.get(cliente.id) ?? [];
+            const abertas = clienteOrdens.filter(
+              (ordem) => !["entregue", "cancelado"].includes(ordem.status),
+            ).length;
+            const totalGasto = clienteOrdens
+              .filter((ordem) => ordem.status === "entregue")
+              .reduce((total, ordem) => total + ordem.valorTotal, 0);
+            const recentes = clienteOrdens.slice(0, 3);
+
+            return (
+              <Card
+                key={cliente.id}
+                className="surface-panel group p-5 transition-all hover:border-primary/40 hover:shadow-glow"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-gradient-metal font-display text-lg font-bold">
+                    {cliente.nome
+                      .split(" ")
+                      .map((name) => name[0])
+                      .slice(0, 2)
+                      .join("")}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="truncate font-display text-base font-semibold">{cliente.nome}</h3>
+                    <p className="text-sm text-muted-foreground">{cliente.telefone}</p>
+                    {cliente.email && <p className="truncate text-xs text-muted-foreground">{cliente.email}</p>}
+                  </div>
+                  <div className="flex shrink-0 gap-1">
+                    <Button variant="ghost" size="icon" title="Editar" onClick={() => openEditDialog(cliente)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Excluir"
+                      disabled={deleteMutation.isPending}
+                      onClick={() => handleDelete(cliente)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="truncate font-display text-base font-semibold">{cliente.nome}</h3>
-                  <p className="text-sm text-muted-foreground">{cliente.telefone}</p>
-                  {cliente.email && <p className="truncate text-xs text-muted-foreground">{cliente.email}</p>}
-                </div>
-                <div className="flex shrink-0 gap-1">
-                  <Button variant="ghost" size="icon" title="Editar" onClick={() => openEditDialog(cliente)}>
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    title="Excluir"
-                    disabled={deleteMutation.isPending}
-                    onClick={() => handleDelete(cliente)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              </div>
 
               <div className="mt-4 grid grid-cols-1 gap-2 border-t border-border pt-4 text-sm sm:grid-cols-2">
                 <div>
@@ -238,8 +315,70 @@ const Clientes = () => {
                   {cliente.observacoes}
                 </p>
               )}
-            </Card>
-          ))}
+
+                <div className="mt-4 grid grid-cols-2 gap-2 border-t border-border pt-4 text-xs sm:grid-cols-4">
+                  <div className="rounded-md border border-border bg-secondary/30 p-2">
+                    <p className="font-mono uppercase text-muted-foreground">Aparelhos</p>
+                    <p className="mt-1 font-display text-lg font-semibold">{clienteAparelhos.length}</p>
+                  </div>
+                  <div className="rounded-md border border-border bg-secondary/30 p-2">
+                    <p className="font-mono uppercase text-muted-foreground">OS</p>
+                    <p className="mt-1 font-display text-lg font-semibold">{clienteOrdens.length}</p>
+                  </div>
+                  <div className="rounded-md border border-border bg-secondary/30 p-2">
+                    <p className="font-mono uppercase text-muted-foreground">Abertas</p>
+                    <p className="mt-1 font-display text-lg font-semibold">{abertas}</p>
+                  </div>
+                  <div className="rounded-md border border-border bg-secondary/30 p-2">
+                    <p className="font-mono uppercase text-muted-foreground">Gasto</p>
+                    <p className="mt-1 truncate font-mono font-semibold">{formatBRL(totalGasto)}</p>
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-md border border-border bg-secondary/20 p-3">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <p className="inline-flex items-center gap-1.5 font-display text-sm font-semibold">
+                      <History className="h-4 w-4 text-primary" />
+                      Historico recente
+                    </p>
+                    <Button asChild size="sm" variant="outline">
+                      <Link to={`/app/aparelhos?clienteId=${cliente.id}`}>
+                        <Smartphone className="h-3.5 w-3.5" /> Aparelhos
+                      </Link>
+                    </Button>
+                  </div>
+                  {recentes.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      Cliente ainda nao possui ordens de servico.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {recentes.map((ordem) => (
+                        <Link
+                          key={ordem.id}
+                          to={`/app/ordens/${ordem.id}`}
+                          className="flex items-center justify-between gap-3 rounded-md border border-border bg-card/60 px-3 py-2 text-xs transition-colors hover:border-primary/50"
+                        >
+                          <div className="min-w-0">
+                            <p className="font-mono font-semibold">OS-{ordem.numero}</p>
+                            <p className="truncate text-muted-foreground">
+                              {ordem.defeitoRelatado}
+                            </p>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <StatusBadge status={ordem.status} />
+                            <span className="font-mono font-semibold">
+                              {formatBRL(ordem.valorTotal)}
+                            </span>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
         </div>
       )}
 

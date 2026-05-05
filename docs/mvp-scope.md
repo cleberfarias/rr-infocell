@@ -31,6 +31,7 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 - Detalhe da OS implementado com dados reais de cliente/aparelho.
 - Comprovante simples da OS implementado com impressao pelo navegador.
 - Historico operacional de OS implementado via eventos de manutencao, orcamento e venda.
+- Historico do cliente implementado na tela de clientes com aparelhos, OS, abertas, total gasto e ultimas OS.
 - Dashboard inicial usa dados reais de OS e exibe relatorio basico por status.
 
 ## Estado atual do estoque

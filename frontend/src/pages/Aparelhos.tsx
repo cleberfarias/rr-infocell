@@ -1,6 +1,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Edit, Loader2, Plus, Search, Smartphone, Trash2 } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 
 import { EmptyState, FormField, PageHeader } from "@/components/design-system";
 import { Button } from "@/components/ui/button";
@@ -43,9 +44,12 @@ const emptyForm: AparelhoInput = {
 };
 
 const Aparelhos = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [clienteFilter, setClienteFilter] = useState("todos");
+  const [clienteFilter, setClienteFilter] = useState(
+    searchParams.get("clienteId") ?? "todos",
+  );
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAparelho, setEditingAparelho] = useState<Aparelho | null>(null);
   const [form, setForm] = useState<AparelhoInput>(emptyForm);
@@ -176,6 +180,17 @@ const Aparelhos = () => {
       </SelectItem>
     ));
 
+  const handleClienteFilter = (clienteId: string) => {
+    setClienteFilter(clienteId);
+
+    if (clienteId === "todos") {
+      setSearchParams({});
+      return;
+    }
+
+    setSearchParams({ clienteId });
+  };
+
   return (
     <div className="space-y-5">
       <PageHeader
@@ -214,7 +229,7 @@ const Aparelhos = () => {
           label="Cliente"
           className="min-w-[220px]"
         >
-          <Select value={clienteFilter} onValueChange={setClienteFilter}>
+          <Select value={clienteFilter} onValueChange={handleClienteFilter}>
             <SelectTrigger id="aparelhos-cliente-filter">
               <SelectValue placeholder="Todos os clientes" />
             </SelectTrigger>
