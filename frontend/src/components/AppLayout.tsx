@@ -73,6 +73,21 @@ const allNav = [
   },
 ];
 
+const navOrder: Record<string, number> = {
+  "": 0,
+  clientes: 1,
+  aparelhos: 2,
+  ordens: 3,
+  checklist: 4,
+  manutencao: 5,
+  orcamento: 6,
+  pdv: 7,
+  estoque: 8,
+  financeiro: 9,
+  despesas: 10,
+  usuarios: 11,
+};
+
 export const AppLayout = () => {
   const location = useLocation();
   const {
@@ -100,7 +115,9 @@ export const AppLayout = () => {
     return <Navigate to={roleHome[role]} replace />;
   }
 
-  const nav = allNav.filter((n) => canAccess(role, n.to));
+  const nav = allNav
+    .filter((n) => canAccess(role, n.to))
+    .sort((a, b) => navOrder[a.key] - navOrder[b.key]);
   const current = nav.find((n) =>
     n.to === "/app"
       ? location.pathname === "/app"
