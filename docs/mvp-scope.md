@@ -48,6 +48,15 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 - Tela de despesas integrada com API real para cadastrar, editar, remover, filtrar e marcar pagamento.
 - Tela financeira integrada com vendas, OS, produtos e despesas reais para DRE simplificado, receita semanal e impacto de pecas.
 
+## Estado atual do atendimento WhatsApp
+
+- Conexao WhatsApp implementada no backend via Baileys e QR code.
+- Painel `/app/atendimento` implementado com conversas, chat, contexto do cliente e OS ativas.
+- Envio manual e acoes de OS integradas ao WhatsApp.
+- Envio usa o JID canonico retornado por `onWhatsApp()` para evitar erro com nono digito.
+- Recebimento resolve mensagens `@lid` via `signalRepository.lidMapping.getPNForLID()` antes de salvar no Firestore.
+- Diagnostico disponivel em `/api/whatsapp/status` com ultimo evento, ultimo envio, recibos e motivo de descarte.
+
 ## Fora do MVP
 
 - PDV fiscal completo.
@@ -55,7 +64,7 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 - Relatorios avancados.
 - Integracao com MarketUP.
 - Assinatura digital.
-- Envio automatico por WhatsApp.
+- WhatsApp automatico avancado, templates e campanhas.
 - Controle avancado de permissoes.
 - Aplicativo mobile.
 
