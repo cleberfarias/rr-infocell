@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { MessageSquare, Wifi, WifiOff, Send, Loader2, Phone, QrCode, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
   getStatusWhatsApp,
@@ -199,7 +200,17 @@ function PainelOS({ os, telefone }: { os: OrdemServico; telefone: string }) {
 
   const acao = async (fn: () => Promise<unknown>, id: string) => {
     setLoading(id);
-    try { await fn(); } finally { setLoading(null); }
+    try {
+      await fn();
+    } catch (error) {
+      toast({
+        title: "Acao nao concluida",
+        description: error instanceof Error ? error.message : "Verifique a conexao do WhatsApp.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(null);
+    }
   };
 
   return (
@@ -299,7 +310,7 @@ export default function Atendimento() {
       } catch { /* silencioso */ }
     };
     poll();
-    const id = setInterval(poll, 3000);
+    const id = setInterval(poll, 1500);
     return () => clearInterval(id);
   }, []);
 
@@ -312,7 +323,7 @@ export default function Atendimento() {
       } catch { /* silencioso */ }
     };
     poll();
-    const id = setInterval(poll, 3000);
+    const id = setInterval(poll, 1500);
     return () => clearInterval(id);
   }, [telefoneSelecionado]);
 
@@ -331,8 +342,18 @@ export default function Atendimento() {
     try {
       await enviarMensagem(telefoneSelecionado, texto.trim());
       setTexto("");
-      const d = await getConversa(telefoneSelecionado);
+      const [d, cvs] = await Promise.all([
+        getConversa(telefoneSelecionado),
+        listarConversas(),
+      ]);
       setDetalhe(d);
+      setConversas(cvs);
+    } catch (error) {
+      toast({
+        title: "Mensagem nao enviada",
+        description: error instanceof Error ? error.message : "Verifique a conexao do WhatsApp.",
+        variant: "destructive",
+      });
     } finally {
       setEnviando(false);
     }

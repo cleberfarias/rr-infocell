@@ -108,6 +108,13 @@ class ConexaoService {
       throw new Error("WhatsApp nao conectado.");
     }
     const jid = montarJidWhatsApp(telefone);
+    const destinatarios = await this.socket.onWhatsApp(jid);
+    const destinatario = destinatarios?.at(0);
+
+    if (!destinatario?.exists) {
+      throw new Error(`Numero ${telefone} nao encontrado no WhatsApp.`);
+    }
+
     await this.socket.sendMessage(jid, { text: texto });
   }
 }
