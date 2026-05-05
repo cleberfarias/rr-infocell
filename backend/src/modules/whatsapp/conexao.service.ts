@@ -35,6 +35,12 @@ type DiagnosticoWhatsApp = {
   ultimoEnvioEm: string | null;
   ultimoEnvioPara: string | null;
   ultimoEnvioId: string | null;
+  ultimoUpdateEm: string | null;
+  ultimoUpdateId: string | null;
+  ultimoUpdateStatus: string | null;
+  ultimoReciboEm: string | null;
+  ultimoReciboId: string | null;
+  ultimoReciboDe: string | null;
 };
 
 class ConexaoService {
@@ -42,6 +48,7 @@ class ConexaoService {
   private status: ConexaoStatus = "desconectado";
   private qrBase64: string | null = null;
   private authDir = "./whatsapp-auth";
+  private iniciadoEm = Date.now();
   private diagnostico: DiagnosticoWhatsApp = {
     conectadoComo: null,
     ultimoEventoEm: null,
@@ -53,6 +60,12 @@ class ConexaoService {
     ultimoEnvioEm: null,
     ultimoEnvioPara: null,
     ultimoEnvioId: null,
+    ultimoUpdateEm: null,
+    ultimoUpdateId: null,
+    ultimoUpdateStatus: null,
+    ultimoReciboEm: null,
+    ultimoReciboId: null,
+    ultimoReciboDe: null,
   };
 
   getStatus() {
@@ -72,6 +85,7 @@ class ConexaoService {
   async inicializar() {
     if (this.socket) return;
 
+    this.iniciadoEm = Date.now();
     const { version } = await fetchLatestBaileysVersion();
     const { state, saveCreds } = await useMultiFileAuthState(this.authDir);
 
@@ -125,16 +139,25 @@ class ConexaoService {
       this.diagnostico.ultimoEventoEm = new Date().toISOString();
       this.diagnostico.ultimoEventoTipo = `messages.upsert:${type}`;
 
-      if (type !== "notify") {
-        this.diagnostico.ultimaMensagemIgnoradaEm = new Date().toISOString();
-        this.diagnostico.ultimaMensagemIgnoradaMotivo = `tipo ${type}`;
-        return;
-      }
-
       for (const msg of messages) {
         if (msg.key.fromMe) {
           this.diagnostico.ultimaMensagemIgnoradaEm = new Date().toISOString();
           this.diagnostico.ultimaMensagemIgnoradaMotivo = "mensagem propria";
+          continue;
+        }
+
+        const timestamp = Number(msg.messageTimestamp ?? 0) * 1000;
+        const mensagemAntiga = timestamp > 0 && timestamp < this.iniciadoEm - 60_000;
+
+        if (type === "append" && mensagemAntiga) {
+          this.diagnostico.ultimaMensagemIgnoradaEm = new Date().toISOString();
+          this.diagnostico.ultimaMensagemIgnoradaMotivo = "historico antigo";
+          continue;
+        }
+
+        if (type !== "notify" && type !== "append") {
+          this.diagnostico.ultimaMensagemIgnoradaEm = new Date().toISOString();
+          this.diagnostico.ultimaMensagemIgnoradaMotivo = `tipo ${type}`;
           continue;
         }
 
@@ -149,6 +172,26 @@ class ConexaoService {
         }
       }
     });
+
+    this.socket.ev.on("messages.update", (updates) => {
+      const update = updates.at(-1);
+      if (!update) return;
+
+      this.diagnostico.ultimoUpdateEm = new Date().toISOString();
+      this.diagnostico.ultimoUpdateId = update.key.id ?? null;
+      this.diagnostico.ultimoUpdateStatus = update.update.status != null
+        ? String(update.update.status)
+        : null;
+    });
+
+    this.socket.ev.on("message-receipt.update", (updates) => {
+      const update = updates.at(-1);
+      if (!update) return;
+
+      this.diagnostico.ultimoReciboEm = new Date().toISOString();
+      this.diagnostico.ultimoReciboId = update.key.id ?? null;
+      this.diagnostico.ultimoReciboDe = update.key.remoteJid ?? null;
+    });
   }
 
   getSocket(): WASocket | null {
@@ -159,14 +202,15 @@ class ConexaoService {
     if (!this.socket || this.status !== "conectado") {
       throw new Error("WhatsApp nao conectado.");
     }
-    const jid = montarJidWhatsApp(telefone);
-    const destinatarios = await this.socket.onWhatsApp(jid);
+    const jidConsulta = montarJidWhatsApp(telefone);
+    const destinatarios = await this.socket.onWhatsApp(jidConsulta);
     const destinatario = destinatarios?.at(0);
 
     if (!destinatario?.exists) {
       throw new Error(`Numero ${telefone} nao encontrado no WhatsApp.`);
     }
 
+    const jid = destinatario.jid;
     const enviada = await this.socket.sendMessage(jid, { text: texto });
     this.diagnostico.ultimoEnvioEm = new Date().toISOString();
     this.diagnostico.ultimoEnvioPara = jid;
