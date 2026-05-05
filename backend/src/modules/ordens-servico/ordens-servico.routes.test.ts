@@ -161,4 +161,37 @@ describe("ordens-servico routes", () => {
     expect(movimentacoesResponse.body.data[0].origem).toBe("ordem_servico");
     expect(movimentacoesResponse.body.data[0].ordemServicoId).toBe(ordem.id);
   });
+
+  it("registers payment when delivering ordem", async () => {
+    const createResponse = await request(app).post("/api/ordens-servico").send({
+      clienteId: "cli_marcos_almeida",
+      aparelhoId: "apa_iphone_11_marcos",
+      defeitoRelatado: "Teste de pagamento",
+      status: "pronto_para_retirada",
+      valorPecas: 50,
+      valorMaoObra: 100,
+    });
+    const ordem = createResponse.body.data;
+
+    const updateResponse = await request(app)
+      .put(`/api/ordens-servico/${ordem.id}`)
+      .send({
+        clienteId: ordem.clienteId,
+        aparelhoId: ordem.aparelhoId,
+        defeitoRelatado: ordem.defeitoRelatado,
+        status: "entregue",
+        valorPecas: ordem.valorPecas,
+        valorMaoObra: ordem.valorMaoObra,
+        formaPagamento: "dinheiro",
+        valorRecebido: 200,
+      });
+
+    expect(updateResponse.status).toBe(200);
+    expect(updateResponse.body.data.status).toBe("entregue");
+    expect(updateResponse.body.data.formaPagamento).toBe("dinheiro");
+    expect(updateResponse.body.data.valorRecebido).toBe(200);
+    expect(updateResponse.body.data.troco).toBe(50);
+    expect(updateResponse.body.data.pagoEm).toEqual(expect.any(String));
+    expect(updateResponse.body.data.entregueEm).toEqual(expect.any(String));
+  });
 });

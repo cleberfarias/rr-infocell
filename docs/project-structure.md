@@ -37,6 +37,7 @@ Telas integradas com API:
 - `src/pages/OrdemDetalhe.tsx`
 - `src/pages/Manutencao.tsx`
 - `src/pages/Orcamento.tsx`
+- `src/pages/PDV.tsx`
 - `src/pages/Checklist.tsx`
 - `src/pages/Usuarios.tsx`
 - `src/pages/Estoque.tsx`

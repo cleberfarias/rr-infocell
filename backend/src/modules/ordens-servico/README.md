@@ -73,6 +73,10 @@ Resposta de listagem:
 - `previsaoEntregaEm`
 - `concluidaEm`
 - `entregueEm`
+- `formaPagamento`
+- `valorRecebido`
+- `troco`
+- `pagoEm`
 - `createdAt`
 - `updatedAt`
 
@@ -97,6 +101,7 @@ Resposta de listagem:
 - O backend baixa apenas o aumento de quantidade de cada peca, evitando duplicar baixa em edicoes posteriores.
 - Ao marcar como `pronto_para_retirada`, o backend registra `concluidaEm`.
 - Ao marcar como `entregue`, o backend registra `entregueEm`.
+- Ao entregar com pagamento, a OS salva forma de pagamento, valor recebido, troco e `pagoEm`.
 - OS entregue ou cancelada nao aceita edicoes operacionais.
 
 ## Validacao

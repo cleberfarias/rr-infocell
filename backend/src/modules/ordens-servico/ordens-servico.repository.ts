@@ -44,7 +44,12 @@ const buildOrdem = (
       ? pecasUsadas.reduce((total, peca) => total + peca.valorTotal, 0)
       : input.valorPecas ?? current?.valorPecas ?? 0;
   const valorMaoObra = input.valorMaoObra ?? current?.valorMaoObra ?? 0;
+  const valorTotal = valorPecas + valorMaoObra;
+  const valorRecebido = input.valorRecebido ?? current?.valorRecebido;
+  const troco =
+    valorRecebido !== undefined ? Math.max(0, valorRecebido - valorTotal) : current?.troco;
   const statusChanged = current ? current.status !== status : false;
+  const deliveredNow = status === "entregue" && (statusChanged || !current?.entregueEm);
 
   return {
     id: current?.id ?? randomUUID(),
@@ -59,17 +64,21 @@ const buildOrdem = (
     pecasUsadas,
     valorPecas,
     valorMaoObra,
-    valorTotal: valorPecas + valorMaoObra,
+    valorTotal,
     entradaEm: input.entradaEm ?? current?.entradaEm ?? timestamp,
     previsaoEntregaEm: input.previsaoEntregaEm,
     concluidaEm:
       status === "pronto_para_retirada" && (statusChanged || !current?.concluidaEm)
         ? timestamp
         : current?.concluidaEm,
-    entregueEm:
-      status === "entregue" && (statusChanged || !current?.entregueEm)
-        ? timestamp
-        : current?.entregueEm,
+    entregueEm: deliveredNow ? timestamp : current?.entregueEm,
+    formaPagamento: input.formaPagamento ?? current?.formaPagamento,
+    valorRecebido,
+    troco,
+    pagoEm:
+      status === "entregue" && (input.formaPagamento || current?.formaPagamento)
+        ? current?.pagoEm ?? timestamp
+        : current?.pagoEm,
     createdAt: current?.createdAt ?? timestamp,
     updatedAt: timestamp,
   };
@@ -303,6 +312,13 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
       previsaoEntregaEm: data.previsaoEntregaEm ? String(data.previsaoEntregaEm) : undefined,
       concluidaEm: data.concluidaEm ? String(data.concluidaEm) : undefined,
       entregueEm: data.entregueEm ? String(data.entregueEm) : undefined,
+      formaPagamento: data.formaPagamento
+        ? String(data.formaPagamento) as OrdemServico["formaPagamento"]
+        : undefined,
+      valorRecebido:
+        data.valorRecebido !== undefined ? Number(data.valorRecebido) : undefined,
+      troco: data.troco !== undefined ? Number(data.troco) : undefined,
+      pagoEm: data.pagoEm ? String(data.pagoEm) : undefined,
       createdAt: String(data.createdAt ?? ""),
       updatedAt: String(data.updatedAt ?? ""),
     };

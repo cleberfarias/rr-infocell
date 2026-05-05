@@ -50,6 +50,7 @@ counters
 - `clientes/{clienteId}` armazena dados do cliente.
 - `aparelhos/{aparelhoId}` referencia `clienteId`.
 - `ordensServico/{ordemId}` referencia `clienteId` e `aparelhoId`.
+- `ordensServico/{ordemId}` tambem pode armazenar dados de pagamento simples no fechamento de caixa.
 - `checklists/{checklistId}` referencia `ordemServicoId`.
 - `movimentacoesEstoque/{movimentacaoId}` referencia `produtoId` e, quando existir, `ordemServicoId`.
 - `produtos/{produtoId}` armazena SKU, nome, categoria, estoque atual, minimo, custo, venda e status ativo.

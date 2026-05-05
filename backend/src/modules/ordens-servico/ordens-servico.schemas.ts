@@ -36,6 +36,8 @@ export const ordemServicoInputSchema = z.object({
   valorMaoObra: money,
   entradaEm: optionalDateText,
   previsaoEntregaEm: optionalDateText,
+  formaPagamento: z.enum(["pix", "cartao", "dinheiro"]).optional(),
+  valorRecebido: money,
 });
 
 export const ordemServicoSearchSchema = z.object({
