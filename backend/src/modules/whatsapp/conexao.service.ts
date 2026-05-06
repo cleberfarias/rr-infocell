@@ -197,7 +197,7 @@ class ConexaoService {
       }
     });
 
-    this.socket.ev.on("messages.update", (updates) => {
+    this.socket.ev.on("messages.update", async (updates) => {
       const update = updates.at(-1);
       if (!update) return;
 
@@ -206,6 +206,11 @@ class ConexaoService {
       this.diagnostico.ultimoUpdateStatus = update.update.status != null
         ? String(update.update.status)
         : null;
+
+      const statusEnvio = mapearStatusEnvio(update.update.status);
+      if (statusEnvio) {
+        await mensagemService.atualizarStatusEnvio(update.key.id, statusEnvio);
+      }
     });
 
     this.socket.ev.on("message-receipt.update", (updates) => {
@@ -268,6 +273,7 @@ class ConexaoService {
     this.diagnostico.ultimoEnvioEm = new Date().toISOString();
     this.diagnostico.ultimoEnvioPara = jid;
     this.diagnostico.ultimoEnvioId = enviada?.key.id ?? null;
+    return enviada;
   }
 
   async enviarMidia(input: EnviarMidiaWhatsAppInput) {
@@ -309,6 +315,14 @@ class ConexaoService {
       caption: input.legenda,
     };
   }
+}
+
+function mapearStatusEnvio(status: unknown) {
+  const valor = Number(status);
+  if (valor >= 4) return "lido";
+  if (valor === 3) return "entregue";
+  if (valor === 2 || valor === 1) return "enviado";
+  return null;
 }
 
 export const conexaoService = new ConexaoService();

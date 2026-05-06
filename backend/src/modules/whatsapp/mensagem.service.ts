@@ -12,9 +12,15 @@ export type TipoMensagem =
   | "video"
   | "documento"
   | "sticker"
+  | "contato"
+  | "localizacao"
   | "orcamento"
   | "status"
   | "pagamento";
+
+export type StatusEnvio = "enviado" | "entregue" | "lido" | "falhou";
+
+export type StatusAtendimento = "aberto" | "em_atendimento" | "finalizado";
 
 export type Mensagem = {
   id: string;
@@ -27,6 +33,8 @@ export type Mensagem = {
   midiaMimeType?: string;
   midiaNome?: string;
   midiaTamanho?: number;
+  waMessageId?: string;
+  statusEnvio?: StatusEnvio;
   timestamp: string;
   lida: boolean;
 };
@@ -40,6 +48,17 @@ export type Conversa = {
   naoLidas: number;
   aguardandoAprovacao: boolean;
   osIdPendente: string | null;
+  statusAtendimento?: StatusAtendimento;
+  atendenteResponsavel?: string | null;
+  notasInternas?: string;
+  arquivada?: boolean;
+};
+
+export type AtualizarConversaInput = {
+  statusAtendimento?: StatusAtendimento;
+  atendenteResponsavel?: string | null;
+  notasInternas?: string;
+  arquivada?: boolean;
 };
 
 export type ResultadoProcessamentoMensagem = {
@@ -129,10 +148,18 @@ function extrairTipo(conteudo: ConteudoMensagem): TipoMensagem {
   if (conteudo.videoMessage) return "video";
   if (conteudo.documentMessage) return "documento";
   if (conteudo.stickerMessage) return "sticker";
+  if (conteudo.contactMessage || conteudo.contactsArrayMessage) return "contato";
+  if (conteudo.locationMessage || conteudo.liveLocationMessage) return "localizacao";
   return "texto";
 }
 
 function extrairTexto(conteudo: ConteudoMensagem): string {
+  const latitude = conteudo.locationMessage?.degreesLatitude ?? conteudo.liveLocationMessage?.degreesLatitude;
+  const longitude = conteudo.locationMessage?.degreesLongitude ?? conteudo.liveLocationMessage?.degreesLongitude;
+  const localizacao = latitude && longitude
+    ? `Localizacao: https://maps.google.com/?q=${latitude},${longitude}`
+    : "";
+
   return (
     conteudo.conversation ||
     conteudo.extendedTextMessage?.text ||
@@ -140,6 +167,9 @@ function extrairTexto(conteudo: ConteudoMensagem): string {
     conteudo.videoMessage?.caption ||
     conteudo.documentMessage?.caption ||
     conteudo.documentMessage?.fileName ||
+    conteudo.contactMessage?.displayName ||
+    conteudo.contactsArrayMessage?.contacts?.map((c) => c.displayName).filter(Boolean).join(", ") ||
+    localizacao ||
     ""
   );
 }
@@ -267,6 +297,7 @@ class MensagemService {
       nome?: string;
       tamanho?: number;
     },
+    waMessageId?: string | null,
   ) {
     if (!db) return;
     const timestamp = new Date().toISOString();
@@ -282,6 +313,8 @@ class MensagemService {
       midiaMimeType: midia?.mimeType,
       midiaNome: midia?.nome,
       midiaTamanho: midia?.tamanho,
+      waMessageId,
+      statusEnvio: waMessageId ? "enviado" : undefined,
       timestamp,
       lida: true,
     }));
@@ -333,6 +366,28 @@ class MensagemService {
     if (doc.exists) {
       await docRef.update({ naoLidas: 0 });
     }
+  }
+
+  async atualizarStatusEnvio(waMessageId: string | null | undefined, statusEnvio: StatusEnvio) {
+    if (!db || !waMessageId) return;
+    const snap = await db
+      .collection(colMensagens)
+      .where("waMessageId", "==", waMessageId)
+      .get();
+
+    await Promise.all(snap.docs.map((doc) => doc.ref.update({ statusEnvio })));
+  }
+
+  async atualizarConversa(telefone: string, input: AtualizarConversaInput) {
+    if (!db) return;
+    const tel = normalizarTelefone(telefone);
+    const patch = semUndefined({
+      statusAtendimento: input.statusAtendimento,
+      atendenteResponsavel: input.atendenteResponsavel,
+      notasInternas: input.notasInternas,
+      arquivada: input.arquivada,
+    });
+    await db.collection(colConversas).doc(tel).set(patch, { merge: true });
   }
 }
 

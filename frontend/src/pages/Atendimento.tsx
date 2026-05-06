@@ -1,5 +1,21 @@
 import { useEffect, useRef, useState } from "react";
-import { FileText, MessageSquare, Paperclip, Phone, QrCode, Send, Wifi, WifiOff, X, Loader2 } from "lucide-react";
+import {
+  Archive,
+  FileText,
+  Loader2,
+  MessageSquare,
+  Mic,
+  Paperclip,
+  Phone,
+  QrCode,
+  Search,
+  Send,
+  Smile,
+  Square,
+  Wifi,
+  WifiOff,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
@@ -9,6 +25,7 @@ import {
   getQRCode,
   listarConversas,
   getConversa,
+  atualizarConversa,
   enviarMensagem,
   enviarMidia,
   enviarOrcamento,
@@ -32,6 +49,17 @@ const STATUS_LABEL: Record<string, string> = {
   cancelado: "Cancelado",
 };
 
+const EMOJIS = ["😀", "👍", "🙏", "✅", "📱", "🔧", "💰", "🧾", "⏳", "🚚", "❌"];
+
+const RESPOSTAS_RAPIDAS = [
+  "Olá! Como posso ajudar?",
+  "Pode nos enviar uma foto ou vídeo do aparelho?",
+  "Recebemos sua mensagem e já vamos verificar.",
+  "Seu aparelho está em análise técnica.",
+  "Assim que houver atualização da OS, avisaremos por aqui.",
+  "Obrigado pelo contato. RR Infocell agradece!",
+];
+
 function hora(ts: string) {
   return new Date(ts).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 }
@@ -52,6 +80,14 @@ function arquivoParaBase64(file: File): Promise<string> {
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(file);
   });
+}
+
+function statusMensagem(status?: string) {
+  if (status === "lido") return "✓✓ lido";
+  if (status === "entregue") return "✓✓";
+  if (status === "enviado") return "✓";
+  if (status === "falhou") return "falhou";
+  return "";
 }
 
 function ModalQR({ qr, onClose }: { qr: string; onClose: () => void }) {
@@ -166,6 +202,7 @@ function ListaConversas({
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-1">
               <p className="truncate text-sm font-medium">{c.nome}</p>
+              {c.arquivada && <Archive className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
               {c.naoLidas > 0 && (
                 <Badge className="shrink-0 h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px]">
                   {c.naoLidas}
@@ -173,6 +210,11 @@ function ListaConversas({
               )}
             </div>
             <p className="truncate text-xs text-muted-foreground">{c.ultimaMensagem}</p>
+            {c.statusAtendimento && (
+              <p className="mt-0.5 text-[10px] uppercase text-muted-foreground">
+                {c.statusAtendimento.replace("_", " ")}
+              </p>
+            )}
           </div>
         </button>
       ))}
@@ -219,11 +261,27 @@ function BolhaMensagem({ msg }: { msg: Mensagem }) {
             <span className="shrink-0 opacity-70">{formatarTamanho(msg.midiaTamanho)}</span>
           </a>
         )}
-        {msg.texto && !["[imagem]", "[audio]", "[video]", "[documento]", "[sticker]"].includes(msg.texto) && (
+        {msg.tipo === "contato" && (
+          <div className="mb-1 rounded-md border border-border px-3 py-2 text-xs">
+            <p className="font-medium">Contato recebido</p>
+            <p className="opacity-80">{msg.texto}</p>
+          </div>
+        )}
+        {msg.tipo === "localizacao" && (
+          <a
+            href={msg.texto.replace("Localizacao: ", "")}
+            target="_blank"
+            rel="noreferrer"
+            className="mb-1 block rounded-md border border-border px-3 py-2 text-xs underline-offset-2 hover:underline"
+          >
+            Localização recebida
+          </a>
+        )}
+        {msg.texto && !["[imagem]", "[audio]", "[video]", "[documento]", "[sticker]"].includes(msg.texto) && !["contato", "localizacao"].includes(msg.tipo) && (
           <p className="whitespace-pre-wrap">{msg.texto}</p>
         )}
         <p className={cn("mt-0.5 text-right text-[10px]", minha ? "text-primary-foreground/60" : "text-muted-foreground")}>
-          {hora(msg.timestamp)}
+          {hora(msg.timestamp)} {minha && statusMensagem(msg.statusEnvio)}
         </p>
       </div>
     </div>
@@ -321,17 +379,104 @@ function PainelOS({ os, telefone }: { os: OrdemServico; telefone: string }) {
   );
 }
 
+function PainelAtendimento({
+  conversa,
+  onAtualizada,
+}: {
+  conversa: Conversa | undefined;
+  onAtualizada: () => Promise<void>;
+}) {
+  const [salvando, setSalvando] = useState(false);
+  const [statusAtendimento, setStatusAtendimento] = useState<"aberto" | "em_atendimento" | "finalizado">(
+    conversa?.statusAtendimento ?? "aberto",
+  );
+  const [responsavel, setResponsavel] = useState(conversa?.atendenteResponsavel ?? "");
+  const [notas, setNotas] = useState(conversa?.notasInternas ?? "");
+
+  useEffect(() => {
+    setStatusAtendimento(conversa?.statusAtendimento ?? "aberto");
+    setResponsavel(conversa?.atendenteResponsavel ?? "");
+    setNotas(conversa?.notasInternas ?? "");
+  }, [conversa?.telefone, conversa?.statusAtendimento, conversa?.atendenteResponsavel, conversa?.notasInternas]);
+
+  if (!conversa) return null;
+
+  const salvar = async (arquivada = conversa.arquivada ?? false) => {
+    setSalvando(true);
+    try {
+      await atualizarConversa(conversa.telefone, {
+        statusAtendimento,
+        atendenteResponsavel: responsavel.trim() || null,
+        notasInternas: notas,
+        arquivada,
+      });
+      await onAtualizada();
+    } catch (error) {
+      toast({
+        title: "Atendimento nao atualizado",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2 rounded-lg border border-border p-3 text-sm">
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Atendimento</p>
+      <select
+        value={statusAtendimento}
+        onChange={(e) => setStatusAtendimento(e.target.value as "aberto" | "em_atendimento" | "finalizado")}
+        className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-xs"
+      >
+        <option value="aberto">Aberto</option>
+        <option value="em_atendimento">Em atendimento</option>
+        <option value="finalizado">Finalizado</option>
+      </select>
+      <input
+        value={responsavel}
+        onChange={(e) => setResponsavel(e.target.value)}
+        placeholder="Responsável"
+        className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-xs outline-none focus:border-primary/60"
+      />
+      <textarea
+        value={notas}
+        onChange={(e) => setNotas(e.target.value)}
+        placeholder="Notas internas"
+        rows={3}
+        className="w-full resize-none rounded-md border border-input bg-background px-2 py-1.5 text-xs outline-none focus:border-primary/60"
+      />
+      <div className="grid grid-cols-2 gap-2">
+        <Button size="sm" variant="outline" disabled={salvando} onClick={() => salvar(conversa.arquivada ?? false)}>
+          {salvando && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+          Salvar
+        </Button>
+        <Button size="sm" variant="ghost" disabled={salvando} onClick={() => salvar(!(conversa.arquivada ?? false))}>
+          {conversa.arquivada ? "Restaurar" : "Arquivar"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function Atendimento() {
   const [status, setStatus] = useState("conectando");
   const [qr, setQr] = useState<string | null>(null);
   const [conversas, setConversas] = useState<Conversa[]>([]);
   const [telefoneSelecionado, setTelefoneSelecionado] = useState<string | null>(null);
   const [detalhe, setDetalhe] = useState<ConversaDetalhe | null>(null);
+  const [busca, setBusca] = useState("");
+  const [filtro, setFiltro] = useState<"ativas" | "nao_lidas" | "arquivadas" | "todas">("ativas");
   const [texto, setTexto] = useState("");
   const [arquivo, setArquivo] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [gravando, setGravando] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<BlobPart[]>([]);
 
   useEffect(() => {
     const poll = async () => {
@@ -370,9 +515,75 @@ export default function Atendimento() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [detalhe?.mensagens]);
 
+  useEffect(() => {
+    if (!arquivo || (!arquivo.type.startsWith("image/") && !arquivo.type.startsWith("audio/") && !arquivo.type.startsWith("video/"))) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(arquivo);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [arquivo]);
+
+  const conversaSelecionada = conversas.find((c) => c.telefone === telefoneSelecionado);
+  const conversasFiltradas = conversas.filter((c) => {
+    const textoBusca = `${c.nome} ${c.telefone} ${c.ultimaMensagem}`.toLowerCase();
+    const bateBusca = textoBusca.includes(busca.trim().toLowerCase());
+    const bateFiltro =
+      filtro === "todas" ||
+      (filtro === "ativas" && !c.arquivada) ||
+      (filtro === "nao_lidas" && c.naoLidas > 0) ||
+      (filtro === "arquivadas" && c.arquivada);
+    return bateBusca && bateFiltro;
+  });
+
   const selecionar = (tel: string) => {
     setTelefoneSelecionado(tel);
     setDetalhe(null);
+  };
+
+  const recarregarAtual = async () => {
+    const cvs = await listarConversas();
+    setConversas(cvs);
+    if (telefoneSelecionado) {
+      const d = await getConversa(telefoneSelecionado);
+      setDetalhe(d);
+    }
+  };
+
+  const iniciarGravacao = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+      };
+      recorder.onstop = () => {
+        const mimeType = recorder.mimeType || "audio/webm";
+        const blob = new Blob(audioChunksRef.current, { type: mimeType });
+        const file = new File([blob], `audio-atendimento-${Date.now()}.webm`, { type: mimeType });
+        setArquivo(file);
+        stream.getTracks().forEach((track) => track.stop());
+      };
+
+      recorder.start();
+      setGravando(true);
+    } catch {
+      toast({
+        title: "Microfone indisponivel",
+        description: "Permita o uso do microfone no navegador para gravar audio.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const pararGravacao = () => {
+    mediaRecorderRef.current?.stop();
+    setGravando(false);
   };
 
   const enviar = async () => {
@@ -416,13 +627,34 @@ export default function Atendimento() {
       <div className="flex flex-1 overflow-hidden">
         {/* Coluna 1 — Conversas */}
         <aside className="w-72 shrink-0 border-r border-border overflow-y-auto">
-          <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-semibold">Conversas</span>
-            <span className="ml-auto text-xs text-muted-foreground">{conversas.length}</span>
+          <div className="space-y-2 border-b border-border px-4 py-3">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-semibold">Conversas</span>
+              <span className="ml-auto text-xs text-muted-foreground">{conversasFiltradas.length}</span>
+            </div>
+            <label className="flex items-center gap-2 rounded-md border border-input px-2 py-1.5">
+              <Search className="h-3.5 w-3.5 text-muted-foreground" />
+              <input
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Buscar conversa"
+                className="min-w-0 flex-1 bg-transparent text-xs outline-none"
+              />
+            </label>
+            <select
+              value={filtro}
+              onChange={(e) => setFiltro(e.target.value as "ativas" | "nao_lidas" | "arquivadas" | "todas")}
+              className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-xs"
+            >
+              <option value="ativas">Ativas</option>
+              <option value="nao_lidas">Não lidas</option>
+              <option value="arquivadas">Arquivadas</option>
+              <option value="todas">Todas</option>
+            </select>
           </div>
           <ListaConversas
-            conversas={conversas}
+            conversas={conversasFiltradas}
             telefoneSelecionado={telefoneSelecionado}
             onSelect={selecionar}
           />
@@ -455,7 +687,7 @@ export default function Atendimento() {
                 <div ref={chatEndRef} />
               </div>
 
-              <div className="border-t border-border p-3 flex gap-2">
+              <div className="border-t border-border p-3">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -463,18 +695,32 @@ export default function Atendimento() {
                   onChange={(e) => setArquivo(e.target.files?.[0] ?? null)}
                   accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip"
                 />
-                <Button
-                  size="icon"
-                  variant={arquivo ? "secondary" : "outline"}
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={enviando}
-                  title={arquivo ? arquivo.name : "Anexar arquivo"}
-                >
-                  <Paperclip className="h-4 w-4" />
-                </Button>
-                <div className="flex flex-1 flex-col gap-1">
-                  {arquivo && (
-                    <div className="flex items-center gap-2 rounded-md border border-border bg-secondary/50 px-2 py-1 text-xs">
+                <div className="mb-2 flex flex-wrap gap-1">
+                  {RESPOSTAS_RAPIDAS.map((resposta) => (
+                    <button
+                      key={resposta}
+                      onClick={() => setTexto(resposta)}
+                      className="rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground"
+                    >
+                      {resposta}
+                    </button>
+                  ))}
+                </div>
+                <div className="mb-2 flex items-center gap-1">
+                  <Smile className="h-4 w-4 text-muted-foreground" />
+                  {EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => setTexto((atual) => `${atual}${emoji}`)}
+                      className="h-7 w-7 rounded-md text-sm hover:bg-accent"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+                {arquivo && (
+                  <div className="mb-2 rounded-md border border-border bg-secondary/50 p-2 text-xs">
+                    <div className="flex items-center gap-2">
                       <FileText className="h-3.5 w-3.5" />
                       <span className="min-w-0 flex-1 truncate">{arquivo.name}</span>
                       <span className="text-muted-foreground">{formatarTamanho(arquivo.size)}</span>
@@ -482,18 +728,47 @@ export default function Atendimento() {
                         <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
-                  )}
+                    {previewUrl && arquivo.type.startsWith("image/") && (
+                      <img src={previewUrl} alt="preview" className="mt-2 max-h-40 rounded-md object-contain" />
+                    )}
+                    {previewUrl && arquivo.type.startsWith("audio/") && (
+                      <audio controls src={previewUrl} className="mt-2 w-full" />
+                    )}
+                    {previewUrl && arquivo.type.startsWith("video/") && (
+                      <video controls src={previewUrl} className="mt-2 max-h-40 rounded-md" />
+                    )}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Button
+                    size="icon"
+                    variant={arquivo ? "secondary" : "outline"}
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={enviando || gravando}
+                    title={arquivo ? arquivo.name : "Anexar arquivo"}
+                  >
+                    <Paperclip className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant={gravando ? "destructive" : "outline"}
+                    onClick={gravando ? pararGravacao : iniciarGravacao}
+                    disabled={enviando}
+                    title={gravando ? "Parar gravação" : "Gravar áudio"}
+                  >
+                    {gravando ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  </Button>
                   <input
                     value={texto}
                     onChange={(e) => setTexto(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && enviar()}
                     placeholder={arquivo ? "Legenda opcional..." : "Digite uma mensagem..."}
-                    className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary/60"
+                    className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary/60"
                   />
+                  <Button size="icon" onClick={enviar} disabled={enviando || gravando || (!texto.trim() && !arquivo)}>
+                    {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  </Button>
                 </div>
-                <Button size="icon" onClick={enviar} disabled={enviando || (!texto.trim() && !arquivo)}>
-                  {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                </Button>
               </div>
             </>
           )}
@@ -502,6 +777,7 @@ export default function Atendimento() {
         {/* Coluna 3 — Cliente + OS */}
         {telefoneSelecionado && (
           <aside className="w-72 shrink-0 border-l border-border overflow-y-auto p-4 space-y-4">
+            <PainelAtendimento conversa={conversaSelecionada} onAtualizada={recarregarAtual} />
             {detalhe?.cliente ? (
               <>
                 <div>

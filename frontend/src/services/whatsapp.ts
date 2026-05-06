@@ -8,9 +8,14 @@ export type TipoMensagem =
   | "video"
   | "documento"
   | "sticker"
+  | "contato"
+  | "localizacao"
   | "orcamento"
   | "status"
   | "pagamento";
+
+export type StatusAtendimento = "aberto" | "em_atendimento" | "finalizado";
+export type StatusEnvio = "enviado" | "entregue" | "lido" | "falhou";
 
 export type Mensagem = {
   id: string;
@@ -23,6 +28,8 @@ export type Mensagem = {
   midiaMimeType?: string;
   midiaNome?: string;
   midiaTamanho?: number;
+  waMessageId?: string;
+  statusEnvio?: StatusEnvio;
   timestamp: string;
   lida: boolean;
 };
@@ -36,6 +43,10 @@ export type Conversa = {
   naoLidas: number;
   aguardandoAprovacao: boolean;
   osIdPendente: string | null;
+  statusAtendimento?: StatusAtendimento;
+  atendenteResponsavel?: string | null;
+  notasInternas?: string;
+  arquivada?: boolean;
 };
 
 export type ConversaDetalhe = {
@@ -88,6 +99,20 @@ export const enviarMidia = (
   request<{ ok: boolean }>("/whatsapp/enviar-midia", {
     method: "POST",
     body: JSON.stringify({ telefone, ...arquivo }),
+  });
+
+export const atualizarConversa = (
+  telefone: string,
+  dados: {
+    statusAtendimento?: StatusAtendimento;
+    atendenteResponsavel?: string | null;
+    notasInternas?: string;
+    arquivada?: boolean;
+  },
+) =>
+  request<{ ok: boolean }>(`/whatsapp/conversas/${telefone}`, {
+    method: "PATCH",
+    body: JSON.stringify(dados),
   });
 
 export const enviarOrcamento = (osId: string) =>

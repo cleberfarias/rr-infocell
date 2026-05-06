@@ -12,11 +12,15 @@ Modulo de central de atendimento via WhatsApp integrado ao sistema RR Infocell.
 - [x] Recebimento de mensagens `@lid` resolvido para telefone real via `signalRepository.lidMapping`.
 - [x] Recebimento de imagem, audio, video, documento e sticker com upload para Firebase Storage.
 - [x] Envio de imagem, audio, video, documento e sticker pela tela de Atendimento.
+- [x] Gravacao de audio direto no navegador para envio pelo WhatsApp.
+- [x] Emojis, respostas rapidas, busca e filtros de conversas na tela de Atendimento.
+- [x] Controle de fila com status, responsavel, notas internas e arquivar/restaurar.
+- [x] Recebimento de contato compartilhado e localizacao como link.
+- [x] Status de mensagens enviadas quando o WhatsApp informa enviado, entregue ou lido.
 - [x] Polling da tela de Atendimento a cada 1,5s.
 - [x] Diagnostico em `/api/whatsapp/status` com ultimo evento, ultimo envio, recibos e motivos de descarte.
 - [x] Chatbot basico para resposta de aprovacao/rejeicao de orcamento (`SIM`/`NAO`).
-- [ ] Fila avancada de atendimento humano.
-- [ ] WhatsApp automatico avancado e templates.
+- [ ] WhatsApp automatico avancado, campanhas e templates oficiais.
 
 ## Pontos tecnicos importantes
 
@@ -64,6 +68,8 @@ Tipos tratados:
 - `videoMessage` -> `video`
 - `documentMessage` -> `documento`
 - `stickerMessage` -> `sticker`
+- `contactMessage` / `contactsArrayMessage` -> `contato`
+- `locationMessage` / `liveLocationMessage` -> `localizacao`
 
 O sistema tambem salva metadados quando disponiveis:
 
@@ -125,10 +131,12 @@ Campos uteis:
 2. Confirmar que aparece `WhatsApp conectado`.
 3. Enviar mensagem do sistema para um cliente.
 4. Enviar imagem, audio, video ou documento pelo botao de anexo.
-5. Enviar uma resposta pelo WhatsApp do cliente para o numero conectado.
-6. Testar audio e midias vindos de Android e iOS.
-7. Conferir se a mensagem aparece no chat em ate 1,5s.
-8. Se nao aparecer, consultar `/api/whatsapp/status` e verificar `ultimaMensagemIgnoradaMotivo`.
+5. Gravar um audio pelo botao de microfone e enviar.
+6. Usar emojis e respostas rapidas no campo de mensagem.
+7. Enviar uma resposta pelo WhatsApp do cliente para o numero conectado.
+8. Testar audio, contato, localizacao e midias vindos de Android e iOS.
+9. Conferir se a mensagem aparece no chat em ate 1,5s.
+10. Se nao aparecer, consultar `/api/whatsapp/status` e verificar `ultimaMensagemIgnoradaMotivo`.
 
 ## Cuidados
 

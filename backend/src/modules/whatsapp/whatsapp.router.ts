@@ -10,7 +10,9 @@ export const whatsappRoutes = Router();
 
 const LIMITE_MIDIA_BYTES = 16 * 1024 * 1024;
 
-function tipoMidiaPorMime(mimeType: string): Exclude<TipoMensagem, "texto" | "orcamento" | "status" | "pagamento"> {
+function tipoMidiaPorMime(
+  mimeType: string,
+): Exclude<TipoMensagem, "texto" | "orcamento" | "status" | "pagamento" | "contato" | "localizacao"> {
   if (mimeType.startsWith("image/webp")) return "sticker";
   if (mimeType.startsWith("image/")) return "imagem";
   if (mimeType.startsWith("audio/")) return "audio";
@@ -62,7 +64,7 @@ whatsappRoutes.post("/enviar", async (req, res, next) => {
   try {
     const { telefone, texto } = req.body as { telefone: string; texto: string };
     const tel = normalizarTelefone(telefone);
-    await conexaoService.enviarTexto(tel, texto);
+    const enviada = await conexaoService.enviarTexto(tel, texto);
     const vinculo = await vincularCliente(tel);
     await mensagemService.salvarMensagemSaida(
       tel,
@@ -70,6 +72,8 @@ whatsappRoutes.post("/enviar", async (req, res, next) => {
       "texto",
       vinculo?.cliente.id ?? null,
       vinculo?.cliente.nome,
+      undefined,
+      enviada?.key.id,
     );
     res.json({ ok: true });
   } catch (err) {
@@ -99,7 +103,7 @@ whatsappRoutes.post("/enviar-midia", async (req, res, next) => {
     }
 
     const tipo = tipoMidiaPorMime(mimeType);
-    await conexaoService.enviarMidia({
+    const enviada = await conexaoService.enviarMidia({
       telefone: tel,
       buffer,
       mimeType,
@@ -122,8 +126,18 @@ whatsappRoutes.post("/enviar-midia", async (req, res, next) => {
         nome: nomeArquivo,
         tamanho: buffer.byteLength,
       },
+      enviada?.key.id,
     );
 
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+whatsappRoutes.patch("/conversas/:telefone", async (req, res, next) => {
+  try {
+    await mensagemService.atualizarConversa(req.params.telefone, req.body);
     res.json({ ok: true });
   } catch (err) {
     next(err);

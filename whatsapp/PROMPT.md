@@ -25,6 +25,39 @@ O atendente pode, sem sair da conversa:
 - Confirmar pagamento.
 - Enviar status atual da OS.
 - Ver imagens, ouvir áudios e assistir vídeos enviados pelo cliente.
+- Receber e enviar documentos, stickers, imagens, vídeos e áudios de Android/iOS.
+- Gravar áudio direto no navegador e enviar no atendimento.
+- Usar emojis e respostas rápidas no chat.
+- Filtrar conversas por ativas, não lidas, arquivadas e todas.
+- Controlar fila com status do atendimento, responsável, notas internas e arquivamento.
+- Ver status de envio quando o WhatsApp informar enviado, entregue ou lido.
+
+---
+
+## Escopo atualizado de recursos WhatsApp
+
+Recursos implementados no módulo de Atendimento:
+
+- Texto com emojis.
+- Respostas rápidas editáveis no código da tela.
+- Recebimento e envio de imagem.
+- Recebimento e envio de áudio, incluindo gravação pelo navegador.
+- Recebimento e envio de vídeo.
+- Recebimento e envio de documentos/arquivos gerais.
+- Recebimento e envio de stickers WebP.
+- Recebimento de contato compartilhado.
+- Recebimento de localização como link do Google Maps.
+- Pré-visualização de imagem, áudio e vídeo antes do envio.
+- Metadados de mídia: MIME type, nome do arquivo e tamanho.
+- Armazenamento de mídias no Firebase Storage.
+- Controle operacional da conversa: aberto, em atendimento, finalizado, responsável, notas internas e arquivar/restaurar.
+- Indicador de status da mensagem enviada quando houver atualização pelo WhatsApp.
+
+Limites atuais:
+
+- Upload pela API interna limitado a 16 MB por arquivo.
+- Envio ativo de contato, localização, enquete, pagamento nativo e catálogo não faz parte do MVP operacional.
+- Status de entregue/lido depende dos eventos emitidos pelo WhatsApp/Baileys.
 
 ---
 

@@ -57,6 +57,10 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 - Recebimento resolve mensagens `@lid` via `signalRepository.lidMapping.getPNForLID()` antes de salvar no Firestore.
 - Recebimento e envio de midia implementados para imagem, audio, video, documentos e stickers.
 - Audios e arquivos vindos de Android/iOS sao tratados por MIME type e armazenados no Firebase Storage.
+- Tela de Atendimento conta com emojis, respostas rapidas, gravacao de audio no navegador, busca e filtros.
+- Conversas possuem controle operacional de status, responsavel, notas internas e arquivar/restaurar.
+- Recebimento de contato compartilhado e localizacao tratado no chat.
+- Mensagens enviadas guardam identificador do WhatsApp e podem exibir status enviado, entregue ou lido quando o evento chega.
 - Diagnostico disponivel em `/api/whatsapp/status` com ultimo evento, ultimo envio, recibos e motivo de descarte.
 
 ## Fora do MVP
@@ -66,7 +70,7 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 - Relatorios avancados.
 - Integracao com MarketUP.
 - Assinatura digital.
-- WhatsApp automatico avancado, templates e campanhas.
+- WhatsApp automatico avancado, campanhas e templates oficiais.
 - Controle avancado de permissoes.
 - Aplicativo mobile.
 
