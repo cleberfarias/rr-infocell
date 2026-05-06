@@ -32,6 +32,7 @@ import {
   type OrdemServicoFormaPagamento,
 } from "@/services/ordens-servico";
 import { createVenda } from "@/services/vendas";
+import type { Venda } from "@/services/vendas";
 
 const paymentOptions: Array<{
   key: OrdemServicoFormaPagamento;
@@ -53,6 +54,8 @@ const PDV = () => {
     useState<OrdemServicoFormaPagamento>("pix");
   const [valorRecebido, setValorRecebido] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [ordemFinalizada, setOrdemFinalizada] = useState<OrdemServico | null>(null);
+  const [vendaFinalizada, setVendaFinalizada] = useState<Venda | null>(null);
 
   const ordensQuery = useQuery({
     queryKey: ["ordens-servico", "pdv"],
@@ -93,13 +96,14 @@ const PDV = () => {
     [aparelhosQuery.data],
   );
 
-  const selectedOrdem = useMemo(() => {
+  const selectedOrdemPronta = useMemo(() => {
     if (!selectedOrdemId) {
       return null;
     }
 
     return ordens.find((ordem) => ordem.id === selectedOrdemId) ?? null;
   }, [ordens, selectedOrdemId]);
+  const selectedOrdem = selectedOrdemPronta ?? ordemFinalizada;
 
   useEffect(() => {
     if (!selectedOrdemId && ordens[0]) {
@@ -108,30 +112,32 @@ const PDV = () => {
   }, [ordens, selectedOrdemId]);
 
   useEffect(() => {
-    if (selectedOrdem) {
-      setValorRecebido(String(selectedOrdem.valorTotal));
+    if (selectedOrdemPronta) {
+      setValorRecebido(String(selectedOrdemPronta.valorTotal));
     }
-  }, [selectedOrdem]);
+  }, [selectedOrdemPronta]);
 
   const finalizarMutation = useMutation({
-    mutationFn: () => {
-      if (!selectedOrdem) {
+    mutationFn: async () => {
+      if (!selectedOrdemPronta) {
         throw new Error("Selecione uma OS.");
       }
 
       const recebido = Number(valorRecebido.replace(",", ".")) || 0;
 
-      if (recebido < selectedOrdem.valorTotal) {
+      if (recebido < selectedOrdemPronta.valorTotal) {
         throw new Error("Valor recebido menor que o total da OS.");
       }
 
-      return createVenda({
-        ordemServicoId: selectedOrdem.id,
+      const venda = await createVenda({
+        ordemServicoId: selectedOrdemPronta.id,
         formaPagamento,
         valorRecebido: recebido,
       });
+
+      return { ordem: selectedOrdemPronta, venda };
     },
-    onSuccess: async (venda) => {
+    onSuccess: async ({ ordem, venda }) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["ordens-servico"] }),
         queryClient.invalidateQueries({
@@ -140,6 +146,14 @@ const PDV = () => {
         queryClient.invalidateQueries({ queryKey: ["vendas"] }),
         queryClient.invalidateQueries({ queryKey: ["ordem-eventos"] }),
       ]);
+      setOrdemFinalizada({
+        ...ordem,
+        status: "entregue",
+        formaPagamento: venda.formaPagamento,
+        valorRecebido: venda.valorRecebido,
+        troco: venda.troco,
+      });
+      setVendaFinalizada(venda);
       setFormError(null);
     },
     onError: (error) => {
@@ -154,6 +168,25 @@ const PDV = () => {
   const handleSelectOrdem = (ordemId: string) => {
     setSelectedOrdemId(ordemId);
     setSearchParams({ ordemId });
+    setOrdemFinalizada(null);
+    setVendaFinalizada(null);
+    setFormError(null);
+  };
+
+  const handleNovaVenda = () => {
+    const proximaOrdem = ordens.find((ordem) => ordem.id !== ordemFinalizada?.id);
+    setOrdemFinalizada(null);
+    setVendaFinalizada(null);
+    setFormError(null);
+
+    if (proximaOrdem) {
+      setSelectedOrdemId(proximaOrdem.id);
+      setSearchParams({ ordemId: proximaOrdem.id });
+      return;
+    }
+
+    setSelectedOrdemId("");
+    setSearchParams({});
   };
 
   const recebido = Number(valorRecebido.replace(",", ".")) || 0;
@@ -194,7 +227,7 @@ const PDV = () => {
     );
   }
 
-  if (ordens.length === 0) {
+  if (ordens.length === 0 && !ordemFinalizada) {
     return (
       <Card className="surface-panel">
         <EmptyState
@@ -227,6 +260,12 @@ const PDV = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                {ordemFinalizada &&
+                  !ordens.some((ordem) => ordem.id === ordemFinalizada.id) && (
+                    <SelectItem value={ordemFinalizada.id}>
+                      OS-{ordemFinalizada.numero} - venda finalizada
+                    </SelectItem>
+                  )}
                 {ordens.map((ordem) => {
                   const rowCliente = clienteById.get(ordem.clienteId);
                   const rowAparelho = aparelhoById.get(ordem.aparelhoId);
@@ -264,7 +303,8 @@ const PDV = () => {
                 </p>
               </div>
               <div className="inline-flex items-center gap-1.5 rounded-md border border-success/40 bg-success/10 px-3 py-1.5 text-xs font-medium text-success">
-                <CheckCircle2 className="h-3.5 w-3.5" /> OS pronta para entrega
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {vendaFinalizada ? "Venda finalizada" : "OS pronta para entrega"}
               </div>
             </div>
 
@@ -308,7 +348,51 @@ const PDV = () => {
         )}
       </div>
 
-      {selectedOrdem && (
+      {vendaFinalizada && selectedOrdem ? (
+        <Card className="surface-panel p-6">
+          <div className="mb-4 flex items-center gap-2 text-success">
+            <CheckCircle2 className="h-5 w-5" />
+            <h3 className="font-display text-base font-semibold">
+              Pagamento finalizado
+            </h3>
+          </div>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between gap-4">
+              <span className="text-muted-foreground">OS</span>
+              <strong>OS-{selectedOrdem.numero}</strong>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-muted-foreground">Forma</span>
+              <strong className="uppercase">{vendaFinalizada.formaPagamento}</strong>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-muted-foreground">Total</span>
+              <strong>{formatBRL(vendaFinalizada.valorTotal)}</strong>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-muted-foreground">Recebido</span>
+              <strong>{formatBRL(vendaFinalizada.valorRecebido)}</strong>
+            </div>
+            <div className="flex justify-between gap-4 border-t border-border pt-3">
+              <span className="text-muted-foreground">Troco</span>
+              <strong className="text-success">{formatBRL(vendaFinalizada.troco)}</strong>
+            </div>
+          </div>
+          <div className="mt-5 space-y-2">
+            <Button className="w-full" type="button" onClick={() => window.print()}>
+              <Printer className="h-4 w-4" /> Imprimir comprovante
+            </Button>
+            <Button
+              className="w-full"
+              variant="outline"
+              type="button"
+              onClick={handleNovaVenda}
+            >
+              Fechar outra OS
+            </Button>
+          </div>
+        </Card>
+      ) : selectedOrdemPronta ? (
         <Card className="surface-panel p-6">
           <h3 className="mb-1 font-display text-base font-semibold">Pagamento</h3>
           <p className="mb-4 text-xs text-muted-foreground">
@@ -339,7 +423,7 @@ const PDV = () => {
               <Input
                 id="pdv-recebido"
                 className="font-mono text-lg"
-                min={selectedOrdem.valorTotal}
+                min={selectedOrdemPronta.valorTotal}
                 step="0.01"
                 type="number"
                 value={valorRecebido}
@@ -385,7 +469,7 @@ const PDV = () => {
             </Button>
           </div>
         </Card>
-      )}
+      ) : null}
     </div>
   );
 };
