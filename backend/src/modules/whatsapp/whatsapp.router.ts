@@ -2,6 +2,7 @@ import { Router } from "express";
 import { conexaoService } from "./conexao.service.js";
 import { mensagemService } from "./mensagem.service.js";
 import { acoesService } from "./acoes.service.js";
+import { automacoesAtendimentoService } from "./automacoes.service.js";
 import { vincularCliente } from "./vinculo.service.js";
 import { normalizarTelefone } from "../../shared/normalizar-telefone.js";
 import type { TipoMensagem } from "./mensagem.service.js";
@@ -138,6 +139,15 @@ whatsappRoutes.post("/enviar-midia", async (req, res, next) => {
 whatsappRoutes.patch("/conversas/:telefone", async (req, res, next) => {
   try {
     await mensagemService.atualizarConversa(req.params.telefone, req.body);
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+whatsappRoutes.post("/automacoes/processar-pendencias", async (_req, res, next) => {
+  try {
+    await automacoesAtendimentoService.processarPendencias();
     res.json({ ok: true });
   } catch (err) {
     next(err);

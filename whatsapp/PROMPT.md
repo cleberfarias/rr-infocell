@@ -31,6 +31,8 @@ O atendente pode, sem sair da conversa:
 - Filtrar conversas por ativas, não lidas, arquivadas e todas.
 - Controlar fila com status do atendimento, responsável, notas internas e arquivamento.
 - Ver status de envio quando o WhatsApp informar enviado, entregue ou lido.
+- Automatizar avisos de abertura de OS, mudança de status, orçamento pendente, retirada pendente e fechamento da conversa.
+- Enviar valor e PIX opcional quando o aparelho ficar pronto.
 
 ---
 
@@ -52,6 +54,12 @@ Recursos implementados no módulo de Atendimento:
 - Armazenamento de mídias no Firebase Storage.
 - Controle operacional da conversa: aberto, em atendimento, finalizado, responsável, notas internas e arquivar/restaurar.
 - Indicador de status da mensagem enviada quando houver atualização pelo WhatsApp.
+- Automação ao criar OS.
+- Automação por status da OS.
+- Lembrete único de orçamento pendente.
+- Lembrete único de retirada pendente.
+- Autoarquivamento de conversas finalizadas.
+- Chave PIX opcional por variáveis `ATENDIMENTO_PIX_CHAVE` e `ATENDIMENTO_PIX_NOME`.
 
 Limites atuais:
 

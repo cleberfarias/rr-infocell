@@ -32,6 +32,7 @@ O objetivo do projeto e centralizar o fluxo operacional da RR Infocell: clientes
 - Firestore real ativo no projeto `rr-infocell` e modulo de clientes validado gravando no banco real.
 - Base de Firebase Auth preparada no frontend com `AuthProvider`, login/logout e protecao de rotas por perfil.
 - Tela administrativa de usuarios implementada para criar usuarios internos e definir nivel de acesso.
+- Modulo de Atendimento WhatsApp implementado com conversas, midias, acoes de OS, automacoes de abertura/status/lembretes e PIX opcional.
 
 ## Stack definida
 
@@ -222,6 +223,7 @@ npm test
 - Relatorio basico de OS por status no dashboard.
 - Visualizacao e impressao simples de comprovante da OS.
 - Estoque integrado com API real, CRUD de produtos, movimentacoes manuais e baixa por OS.
+- Atendimento WhatsApp com envio/recebimento de mensagens, midias, acoes de OS e automacoes operacionais.
 
 ## Fora do MVP inicial
 

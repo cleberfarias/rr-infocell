@@ -271,6 +271,8 @@ class MensagemService {
         ultimaMensagem: mensagem.texto,
         ultimaInteracao: timestamp,
         naoLidas: (await this.getNaoLidas(telefone)) + 1,
+        statusAtendimento: "aberto",
+        arquivada: false,
       },
       { merge: true },
     );

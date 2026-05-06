@@ -79,6 +79,7 @@ const buildOrdem = (
       status === "entregue" && (input.formaPagamento || current?.formaPagamento)
         ? current?.pagoEm ?? timestamp
         : current?.pagoEm,
+    automacoes: current?.automacoes,
     createdAt: current?.createdAt ?? timestamp,
     updatedAt: timestamp,
   };
@@ -319,6 +320,9 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
         data.valorRecebido !== undefined ? Number(data.valorRecebido) : undefined,
       troco: data.troco !== undefined ? Number(data.troco) : undefined,
       pagoEm: data.pagoEm ? String(data.pagoEm) : undefined,
+      automacoes: data.automacoes && typeof data.automacoes === "object"
+        ? data.automacoes as OrdemServico["automacoes"]
+        : undefined,
       createdAt: String(data.createdAt ?? ""),
       updatedAt: String(data.updatedAt ?? ""),
     };

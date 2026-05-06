@@ -61,6 +61,8 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 - Conversas possuem controle operacional de status, responsavel, notas internas e arquivar/restaurar.
 - Recebimento de contato compartilhado e localizacao tratado no chat.
 - Mensagens enviadas guardam identificador do WhatsApp e podem exibir status enviado, entregue ou lido quando o evento chega.
+- Automacoes do atendimento implementadas para abertura de OS, mudancas de status, lembrete de orcamento pendente, lembrete de retirada e autoarquivamento.
+- Aviso de aparelho pronto inclui valor total, chave PIX opcional e pedido de confirmacao da forma de pagamento.
 - Diagnostico disponivel em `/api/whatsapp/status` com ultimo evento, ultimo envio, recibos e motivo de descarte.
 
 ## Fora do MVP

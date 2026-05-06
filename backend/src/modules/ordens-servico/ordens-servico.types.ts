@@ -35,8 +35,16 @@ export type OrdemServico = {
   valorRecebido?: number;
   troco?: number;
   pagoEm?: string;
+  automacoes?: OrdemServicoAutomacoes;
   createdAt: string;
   updatedAt: string;
+};
+
+export type OrdemServicoAutomacoes = {
+  aberturaEnviadaEm?: string;
+  statusNotificados?: Partial<Record<OrdemServicoStatus, string>>;
+  lembreteOrcamentoEnviadoEm?: string;
+  lembreteRetiradaEnviadoEm?: string;
 };
 
 export type OrdemServicoPeca = {

@@ -11,6 +11,11 @@ const envSchema = z.object({
   GOOGLE_APPLICATION_CREDENTIALS: z.string().optional(),
   FIRESTORE_EMULATOR_HOST: z.string().optional(),
   FIREBASE_AUTH_EMULATOR_HOST: z.string().optional(),
+  ATENDIMENTO_PIX_CHAVE: z.string().optional(),
+  ATENDIMENTO_PIX_NOME: z.string().optional(),
+  ATENDIMENTO_LEMBRETE_ORCAMENTO_HORAS: z.coerce.number().positive().default(24),
+  ATENDIMENTO_LEMBRETE_RETIRADA_DIAS: z.coerce.number().positive().default(2),
+  ATENDIMENTO_AUTOARQUIVAR_DIAS: z.coerce.number().positive().default(7),
 });
 
 export const env = envSchema.parse(process.env);

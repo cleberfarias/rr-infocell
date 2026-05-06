@@ -3,6 +3,7 @@ import { createOrdensServicoRepository } from "../ordens-servico/ordens-servico.
 import { createClientesRepository } from "../clientes/clientes.repository.js";
 import type { OrdemServicoFormaPagamento } from "../ordens-servico/ordens-servico.types.js";
 import { normalizarTelefone } from "../../shared/normalizar-telefone.js";
+import { env } from "../../config/env.js";
 import { conexaoService } from "./conexao.service.js";
 import { mensagemService } from "./mensagem.service.js";
 
@@ -73,8 +74,11 @@ class AcoesService {
       `*RR Infocell — Aparelho pronto!* ✅`,
       `OS #${os.numero}`,
       `Seu aparelho ja pode ser retirado.`,
+      `Valor total: R$ ${os.valorTotal.toFixed(2).replace(".", ",")}`,
+      env.ATENDIMENTO_PIX_CHAVE ? `Chave PIX: ${env.ATENDIMENTO_PIX_CHAVE}` : null,
+      `Se preferir pagar na retirada, responda: PIX, CARTAO ou DINHEIRO.`,
       `Horario: seg-sex 9h-18h, sab 9h-13h.`,
-    ].join("\n");
+    ].filter((linha) => linha !== null).join("\n");
 
     await conexaoService.enviarTexto(contato.telefone, texto);
     await mensagemService.salvarMensagemSaida(contato.telefone, texto, "status", os.clienteId, contato.nome);

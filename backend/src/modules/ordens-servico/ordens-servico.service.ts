@@ -5,6 +5,7 @@ import { aparelhosService } from "../aparelhos/aparelhos.service.js";
 import { clientesService } from "../clientes/clientes.service.js";
 import { movimentacoesEstoqueService } from "../movimentacoes-estoque/movimentacoes-estoque.service.js";
 import { produtosService } from "../produtos/produtos.service.js";
+import { automacoesAtendimentoService } from "../whatsapp/automacoes.service.js";
 import {
   createOrdensServicoRepository,
   isTerminalStatus,
@@ -51,6 +52,7 @@ export class OrdensServicoService {
 
     const ordem = await this.repository.create(enrichedInput);
     await this.applyPecasDeltas(ordem);
+    await automacoesAtendimentoService.aoCriarOrdem(ordem);
 
     return ordem;
   }
@@ -81,6 +83,7 @@ export class OrdensServicoService {
     }
 
     await this.applyPecasDeltas(ordem, current);
+    await automacoesAtendimentoService.aoAtualizarOrdem(current, ordem);
 
     return ordem;
   }

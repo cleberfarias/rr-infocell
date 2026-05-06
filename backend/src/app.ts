@@ -6,6 +6,7 @@ import { errorHandler } from "./middlewares/error-handler.js";
 import { notFoundHandler } from "./middlewares/not-found.js";
 import { routes } from "./routes.js";
 import { conexaoService } from "./modules/whatsapp/conexao.service.js";
+import { automacoesAtendimentoService } from "./modules/whatsapp/automacoes.service.js";
 
 export const createApp = () => {
   const app = express();
@@ -20,6 +21,7 @@ export const createApp = () => {
   conexaoService.inicializar().catch((err) => {
     console.error("[WhatsApp] Falha ao inicializar:", err);
   });
+  automacoesAtendimentoService.iniciarRotina();
 
   return app;
 };

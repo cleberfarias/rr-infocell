@@ -17,6 +17,8 @@ Modulo de central de atendimento via WhatsApp integrado ao sistema RR Infocell.
 - [x] Controle de fila com status, responsavel, notas internas e arquivar/restaurar.
 - [x] Recebimento de contato compartilhado e localizacao como link.
 - [x] Status de mensagens enviadas quando o WhatsApp informa enviado, entregue ou lido.
+- [x] Automacoes de OS: mensagem ao abrir OS, aviso por mudanca de status, lembrete de orcamento, lembrete de retirada e autoarquivamento.
+- [x] Mensagem de aparelho pronto inclui valor, chave PIX opcional e pedido de confirmacao da forma de pagamento.
 - [x] Polling da tela de Atendimento a cada 1,5s.
 - [x] Diagnostico em `/api/whatsapp/status` com ultimo evento, ultimo envio, recibos e motivos de descarte.
 - [x] Chatbot basico para resposta de aprovacao/rejeicao de orcamento (`SIM`/`NAO`).
@@ -107,6 +109,42 @@ O backend detecta o tipo pelo `mimeType`:
 - demais tipos -> documento
 
 Limite atual: 16 MB por arquivo.
+
+### Automacoes de atendimento
+
+Arquivo principal:
+
+```text
+backend/src/modules/whatsapp/automacoes.service.ts
+```
+
+Disparos automaticos:
+
+- Ao criar OS: envia confirmacao de abertura para o cliente.
+- Ao mudar status para `em_analise`: avisa que entrou em analise tecnica.
+- Ao mudar status para `aguardando_peca`: avisa que depende de peca.
+- Ao mudar status para `em_manutencao`: avisa que o servico foi iniciado.
+- Ao mudar status para `pronto_para_retirada`: avisa que esta pronto, informa valor e inclui chave PIX quando configurada.
+- Ao mudar status para `entregue` ou `cancelado`: marca a conversa como `finalizado`.
+- Rotina periodica: cobra orcamento pendente, lembra retirada pendente e arquiva conversas finalizadas antigas.
+
+Endpoint manual para rodar pendencias:
+
+```http
+POST /api/whatsapp/automacoes/processar-pendencias
+```
+
+Variaveis opcionais:
+
+```text
+ATENDIMENTO_PIX_CHAVE=
+ATENDIMENTO_PIX_NOME=
+ATENDIMENTO_LEMBRETE_ORCAMENTO_HORAS=24
+ATENDIMENTO_LEMBRETE_RETIRADA_DIAS=2
+ATENDIMENTO_AUTOARQUIVAR_DIAS=7
+```
+
+As automacoes sao best effort: se o WhatsApp estiver desconectado, a criacao/alteracao da OS continua funcionando.
 
 ### Diagnostico
 
