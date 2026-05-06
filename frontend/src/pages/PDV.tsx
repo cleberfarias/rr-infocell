@@ -31,8 +31,7 @@ import {
   type OrdemServico,
   type OrdemServicoFormaPagamento,
 } from "@/services/ordens-servico";
-import { createVenda } from "@/services/vendas";
-import type { Venda } from "@/services/vendas";
+import { createVenda, listVendas, type Venda } from "@/services/vendas";
 
 const paymentOptions: Array<{
   key: OrdemServicoFormaPagamento;
@@ -70,6 +69,11 @@ const PDV = () => {
   const aparelhosQuery = useQuery({
     queryKey: ["aparelhos", "pdv"],
     queryFn: () => listAparelhos(),
+  });
+
+  const vendasQuery = useQuery({
+    queryKey: ["vendas", "pdv"],
+    queryFn: () => listVendas(),
   });
 
   const ordens = useMemo(
@@ -198,9 +202,22 @@ const PDV = () => {
     ? aparelhoById.get(selectedOrdem.aparelhoId)
     : undefined;
   const isLoading =
-    ordensQuery.isLoading || clientesQuery.isLoading || aparelhosQuery.isLoading;
+    ordensQuery.isLoading ||
+    clientesQuery.isLoading ||
+    aparelhosQuery.isLoading ||
+    vendasQuery.isLoading;
   const isError =
-    ordensQuery.isError || clientesQuery.isError || aparelhosQuery.isError;
+    ordensQuery.isError ||
+    clientesQuery.isError ||
+    aparelhosQuery.isError ||
+    vendasQuery.isError;
+  const historicoVendas = useMemo(
+    () =>
+      [...(vendasQuery.data ?? [])]
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .slice(0, 10),
+    [vendasQuery.data],
+  );
 
   if (isLoading) {
     return (
@@ -227,63 +244,62 @@ const PDV = () => {
     );
   }
 
-  if (ordens.length === 0 && !ordemFinalizada) {
-    return (
-      <Card className="surface-panel">
-        <EmptyState
-          icon={Receipt}
-          title="Nenhuma OS pronta para caixa"
-          description="Finalize a manutencao de uma OS para liberar o fechamento no PDV."
-          actions={
-            <Button asChild>
-              <Link to="/app/manutencao">Ir para manutencao</Link>
-            </Button>
-          }
-        />
-      </Card>
-    );
-  }
-
   return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-      <div className="space-y-5 lg:col-span-2">
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <div className="space-y-5 lg:col-span-2">
         <PageHeader
           eyebrow="PDV / Caixa"
           title="Fechamento de OS"
           description="Registre o pagamento, entregue a OS e gere comprovante simples."
         />
 
-        <Card className="surface-panel flex flex-wrap items-end gap-3 p-4">
-          <FormField id="pdv-os" label="Ordem de servico" className="flex-1">
-            <Select value={selectedOrdemId} onValueChange={handleSelectOrdem}>
-              <SelectTrigger id="pdv-os">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ordemFinalizada &&
-                  !ordens.some((ordem) => ordem.id === ordemFinalizada.id) && (
-                    <SelectItem value={ordemFinalizada.id}>
-                      OS-{ordemFinalizada.numero} - venda finalizada
-                    </SelectItem>
-                  )}
-                {ordens.map((ordem) => {
-                  const rowCliente = clienteById.get(ordem.clienteId);
-                  const rowAparelho = aparelhoById.get(ordem.aparelhoId);
+        {ordens.length === 0 && !ordemFinalizada ? (
+          <Card className="surface-panel">
+            <EmptyState
+              icon={Receipt}
+              title="Nenhuma OS pronta para caixa"
+              description="Finalize a manutencao de uma OS para liberar o fechamento no PDV."
+              actions={
+                <Button asChild>
+                  <Link to="/app/manutencao">Ir para manutencao</Link>
+                </Button>
+              }
+            />
+          </Card>
+        ) : (
+          <Card className="surface-panel flex flex-wrap items-end gap-3 p-4">
+            <FormField id="pdv-os" label="Ordem de servico" className="flex-1">
+              <Select value={selectedOrdemId} onValueChange={handleSelectOrdem}>
+                <SelectTrigger id="pdv-os">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ordemFinalizada &&
+                    !ordens.some((ordem) => ordem.id === ordemFinalizada.id) && (
+                      <SelectItem value={ordemFinalizada.id}>
+                        OS-{ordemFinalizada.numero} - venda finalizada
+                      </SelectItem>
+                    )}
+                  {ordens.map((ordem) => {
+                    const rowCliente = clienteById.get(ordem.clienteId);
+                    const rowAparelho = aparelhoById.get(ordem.aparelhoId);
 
-                  return (
-                    <SelectItem key={ordem.id} value={ordem.id}>
-                      OS-{ordem.numero} - {rowCliente?.nome ?? ordem.clienteId} -{" "}
-                      {rowAparelho
-                        ? `${rowAparelho.marca} ${rowAparelho.modelo}`
-                        : ordem.aparelhoId}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-          </FormField>
-          {selectedOrdem && <StatusBadge status={selectedOrdem.status} />}
-        </Card>
+                    return (
+                      <SelectItem key={ordem.id} value={ordem.id}>
+                        OS-{ordem.numero} - {rowCliente?.nome ?? ordem.clienteId} -{" "}
+                        {rowAparelho
+                          ? `${rowAparelho.marca} ${rowAparelho.modelo}`
+                          : ordem.aparelhoId}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </FormField>
+            {selectedOrdem && <StatusBadge status={selectedOrdem.status} />}
+          </Card>
+        )}
 
         {selectedOrdem && (
           <Card className="surface-panel p-6">
@@ -346,9 +362,9 @@ const PDV = () => {
             </div>
           </Card>
         )}
-      </div>
+        </div>
 
-      {vendaFinalizada && selectedOrdem ? (
+        {vendaFinalizada && selectedOrdem ? (
         <Card className="surface-panel p-6">
           <div className="mb-4 flex items-center gap-2 text-success">
             <CheckCircle2 className="h-5 w-5" />
@@ -469,7 +485,86 @@ const PDV = () => {
             </Button>
           </div>
         </Card>
-      ) : null}
+        ) : null}
+      </div>
+
+      <Card className="surface-panel p-5">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 className="font-display text-base font-semibold">
+              Historico de pagamentos
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Ultimas OS fechadas no caixa.
+            </p>
+          </div>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/app/financeiro">Ver relatorio</Link>
+          </Button>
+        </div>
+        <div className="overflow-x-auto rounded-md border border-border">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-secondary/30 text-xs uppercase tracking-wider text-muted-foreground">
+                <th className="px-4 py-3 text-left font-medium">OS</th>
+                <th className="px-4 py-3 text-left font-medium">Cliente</th>
+                <th className="px-4 py-3 text-left font-medium">Data</th>
+                <th className="px-4 py-3 text-left font-medium">Forma</th>
+                <th className="px-4 py-3 text-right font-medium">Total</th>
+                <th className="px-4 py-3 text-right font-medium">Recebido</th>
+                <th className="px-4 py-3 text-right font-medium">Troco</th>
+              </tr>
+            </thead>
+            <tbody>
+              {historicoVendas.length === 0 ? (
+                <tr>
+                  <td
+                    className="px-4 py-8 text-center text-muted-foreground"
+                    colSpan={7}
+                  >
+                    Nenhum pagamento finalizado ainda.
+                  </td>
+                </tr>
+              ) : (
+                historicoVendas.map((venda) => {
+                  const rowCliente = clienteById.get(venda.clienteId);
+
+                  return (
+                    <tr key={venda.id} className="border-b border-border/40">
+                      <td className="px-4 py-3 font-medium">
+                        <Link
+                          className="text-primary hover:underline"
+                          to={`/app/ordens/${venda.ordemServicoId}`}
+                        >
+                          OS-{venda.numeroOs}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3">
+                        {rowCliente?.nome ?? venda.clienteId}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs">
+                        {new Date(venda.createdAt).toLocaleString("pt-BR")}
+                      </td>
+                      <td className="px-4 py-3 uppercase">
+                        {venda.formaPagamento}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono">
+                        {formatBRL(venda.valorTotal)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono">
+                        {formatBRL(venda.valorRecebido)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono">
+                        {formatBRL(venda.troco)}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
     </div>
   );
 };

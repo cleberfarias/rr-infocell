@@ -27,6 +27,7 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 - Tela de manutencao integrada com OS reais para atualizar diagnostico, status tecnico, responsavel, mao de obra, comentarios e linha do tempo.
 - Tela de orcamentos integrada com OS reais para enviar proposta, aprovar e reprovar, gravando snapshot do orcamento e alterando status da OS.
 - PDV/Caixa integrado com OS reais para registrar venda, pagamento, troco, evento de entrega e marcar OS como entregue.
+- PDV/Caixa e tela financeira exibem historico de pagamentos com OS, forma, recebido, troco e link para detalhe da OS.
 - Checklist tecnico vinculado a OS real.
 - Checklist tecnico registra o atendente logado e envia aviso automatico ao cliente pelo WhatsApp quando criado.
 - Detalhe da OS implementado com dados reais de cliente/aparelho.

@@ -10,6 +10,7 @@ import {
   YAxis,
 } from "recharts";
 import { Calendar, Loader2, TrendingDown, TrendingUp } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -134,6 +135,7 @@ const Financeiro = () => {
       custoPecas,
       despesasFixas,
       faturamentoSemanal: dias,
+      historicoPagamentos: [...vendas].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
       lucroBruto,
       lucroLiquido,
       produtos,
@@ -326,6 +328,72 @@ const Financeiro = () => {
           </ul>
         </Card>
       </div>
+
+      <Card className="surface-panel p-5">
+        <h3 className="mb-4 font-display text-base font-semibold">
+          Historico de pagamentos e OS
+        </h3>
+        <div className="overflow-x-auto rounded-md border border-border">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-secondary/30 text-xs uppercase tracking-wider text-muted-foreground">
+                <th className="px-4 py-3 text-left font-medium">Data</th>
+                <th className="px-4 py-3 text-left font-medium">OS</th>
+                <th className="px-4 py-3 text-left font-medium">Forma</th>
+                <th className="px-4 py-3 text-right font-medium">Pecas</th>
+                <th className="px-4 py-3 text-right font-medium">Mao de obra</th>
+                <th className="px-4 py-3 text-right font-medium">Total</th>
+                <th className="px-4 py-3 text-right font-medium">Recebido</th>
+                <th className="px-4 py-3 text-right font-medium">Troco</th>
+              </tr>
+            </thead>
+            <tbody>
+              {financeiro.historicoPagamentos.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={8}
+                    className="px-4 py-8 text-center text-muted-foreground"
+                  >
+                    Nenhum pagamento finalizado ainda.
+                  </td>
+                </tr>
+              ) : (
+                financeiro.historicoPagamentos.map((venda) => (
+                  <tr key={venda.id} className="border-b border-border/40">
+                    <td className="px-4 py-3 font-mono text-xs">
+                      {new Date(venda.createdAt).toLocaleString("pt-BR")}
+                    </td>
+                    <td className="px-4 py-3 font-medium">
+                      <Link
+                        className="text-primary hover:underline"
+                        to={`/app/ordens/${venda.ordemServicoId}`}
+                      >
+                        OS-{venda.numeroOs}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 uppercase">{venda.formaPagamento}</td>
+                    <td className="px-4 py-3 text-right font-mono">
+                      {formatBRL(venda.valorPecas)}
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono">
+                      {formatBRL(venda.valorMaoObra)}
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono font-semibold">
+                      {formatBRL(venda.valorTotal)}
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono">
+                      {formatBRL(venda.valorRecebido)}
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono">
+                      {formatBRL(venda.troco)}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
 
       <Card className="surface-panel p-5">
         <h3 className="mb-4 font-display text-base font-semibold">
