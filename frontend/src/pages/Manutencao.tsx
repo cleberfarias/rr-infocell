@@ -35,6 +35,7 @@ import { formatBRL } from "@/data/mock";
 import { listAparelhos, type Aparelho } from "@/services/aparelhos";
 import { listClientes, type Cliente } from "@/services/clientes";
 import {
+  getOrdemServico,
   listOrdensServico,
   updateOrdemServico,
   type OrdemServico,
@@ -138,6 +139,12 @@ const Manutencao = () => {
     enabled: Boolean(selectedOrdemId),
   });
 
+  const selectedOrdemQuery = useQuery({
+    queryKey: ["ordem-servico", selectedOrdemId],
+    queryFn: () => getOrdemServico(selectedOrdemId),
+    enabled: Boolean(selectedOrdemId),
+  });
+
   const ordens = useMemo(
     () =>
       (ordensQuery.data ?? []).filter((ordem) =>
@@ -162,13 +169,15 @@ const Manutencao = () => {
     [aparelhosQuery.data],
   );
 
-  const selectedOrdem = useMemo(() => {
+  const selectedOrdemFromList = useMemo(() => {
     if (!selectedOrdemId) {
       return null;
     }
 
     return ordens.find((ordem) => ordem.id === selectedOrdemId) ?? null;
   }, [ordens, selectedOrdemId]);
+
+  const selectedOrdem = selectedOrdemQuery.data ?? selectedOrdemFromList;
 
   useEffect(() => {
     if (!selectedOrdemId && ordens[0]) {
@@ -290,9 +299,15 @@ const Manutencao = () => {
   };
 
   const isLoading =
-    ordensQuery.isLoading || clientesQuery.isLoading || aparelhosQuery.isLoading;
+    ordensQuery.isLoading ||
+    clientesQuery.isLoading ||
+    aparelhosQuery.isLoading ||
+    (Boolean(selectedOrdemId) && selectedOrdemQuery.isLoading);
   const isError =
-    ordensQuery.isError || clientesQuery.isError || aparelhosQuery.isError;
+    ordensQuery.isError ||
+    clientesQuery.isError ||
+    aparelhosQuery.isError ||
+    selectedOrdemQuery.isError;
   const cliente = selectedOrdem
     ? clienteById.get(selectedOrdem.clienteId)
     : undefined;
@@ -302,6 +317,10 @@ const Manutencao = () => {
   const currentIdx = selectedOrdem
     ? statusFlow.findIndex((status) => status.key === selectedOrdem.status)
     : -1;
+  const valorMaoObraAtual = form
+    ? Number(form.valorMaoObra.replace(",", ".")) || 0
+    : selectedOrdem?.valorMaoObra ?? 0;
+  const valorTotalAtual = (selectedOrdem?.valorPecas ?? 0) + valorMaoObraAtual;
 
   if (isLoading) {
     return (
@@ -328,7 +347,7 @@ const Manutencao = () => {
     );
   }
 
-  if (ordens.length === 0) {
+  if (ordens.length === 0 && !selectedOrdem) {
     return (
       <Card className="surface-panel">
         <EmptyState
@@ -447,7 +466,7 @@ const Manutencao = () => {
             <Card className="surface-panel p-4">
               <p className="text-xs text-muted-foreground">Total</p>
               <p className="mt-1 font-display text-lg font-semibold">
-                {formatBRL(selectedOrdem.valorTotal)}
+                {formatBRL(valorTotalAtual)}
               </p>
             </Card>
           </div>
@@ -642,10 +661,10 @@ const Manutencao = () => {
                         </td>
                         <td className="px-4 py-3 text-center font-mono">1</td>
                         <td className="px-4 py-3 text-right font-mono">
-                          {formatBRL(Number(form.valorMaoObra) || 0)}
+                          {formatBRL(valorMaoObraAtual)}
                         </td>
                         <td className="px-4 py-3 text-right font-mono font-semibold">
-                          {formatBRL(Number(form.valorMaoObra) || 0)}
+                          {formatBRL(valorMaoObraAtual)}
                         </td>
                       </tr>
                     </tbody>

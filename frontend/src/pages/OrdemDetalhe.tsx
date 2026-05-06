@@ -125,6 +125,7 @@ const OrdemDetalhe = () => {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["ordem-servico", ordemId] }),
+        queryClient.invalidateQueries({ queryKey: ["ordens-servico"] }),
         queryClient.invalidateQueries({ queryKey: ["produtos"] }),
         queryClient.invalidateQueries({ queryKey: ["movimentacoes-estoque"] }),
       ]);

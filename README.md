@@ -29,6 +29,7 @@ O objetivo do projeto e centralizar o fluxo operacional da RR Infocell: clientes
 - Baixa automatica de pecas usadas na OS integrada ao estoque.
 - Upload de fotos no checklist funcionando com Firebase Storage, regras por custom claim e metadados salvos no checklist.
 - Impressao do checklist tecnico implementada com versao limpa para papel contendo OS, cliente, aparelho, itens, fotos e assinaturas.
+- Checklist tecnico registra o usuario logado como atendente e avisa o cliente pelo WhatsApp quando criado.
 - Firestore real ativo no projeto `rr-infocell` e modulo de clientes validado gravando no banco real.
 - Base de Firebase Auth preparada no frontend com `AuthProvider`, login/logout e protecao de rotas por perfil.
 - Tela administrativa de usuarios implementada para criar usuarios internos e definir nivel de acesso.
@@ -224,6 +225,7 @@ npm test
 - Visualizacao e impressao simples de comprovante da OS.
 - Estoque integrado com API real, CRUD de produtos, movimentacoes manuais e baixa por OS.
 - Atendimento WhatsApp com envio/recebimento de mensagens, midias, acoes de OS e automacoes operacionais.
+- Sincronizacao entre detalhe da OS e manutencao para valores de pecas, mao de obra e total.
 
 ## Fora do MVP inicial
 
@@ -231,5 +233,5 @@ npm test
 - DRE completo.
 - Integracao com MarketUP.
 - Assinatura digital.
-- Envio automatico por WhatsApp.
+- WhatsApp automatico avancado, campanhas e templates oficiais.
 - App mobile.

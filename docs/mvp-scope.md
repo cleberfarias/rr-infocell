@@ -28,7 +28,9 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 - Tela de orcamentos integrada com OS reais para enviar proposta, aprovar e reprovar, gravando snapshot do orcamento e alterando status da OS.
 - PDV/Caixa integrado com OS reais para registrar venda, pagamento, troco, evento de entrega e marcar OS como entregue.
 - Checklist tecnico vinculado a OS real.
+- Checklist tecnico registra o atendente logado e envia aviso automatico ao cliente pelo WhatsApp quando criado.
 - Detalhe da OS implementado com dados reais de cliente/aparelho.
+- Detalhe da OS e tela de manutencao compartilham cache de dados para refletir valores de pecas, mao de obra e total.
 - Comprovante simples da OS implementado com impressao pelo navegador.
 - Historico operacional de OS implementado via eventos de manutencao, orcamento e venda.
 - Historico do cliente implementado na tela de clientes com aparelhos, OS, abertas, total gasto e ultimas OS.
@@ -62,6 +64,7 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 - Recebimento de contato compartilhado e localizacao tratado no chat.
 - Mensagens enviadas guardam identificador do WhatsApp e podem exibir status enviado, entregue ou lido quando o evento chega.
 - Automacoes do atendimento implementadas para abertura de OS, mudancas de status, lembrete de orcamento pendente, lembrete de retirada e autoarquivamento.
+- Automacao de checklist implementada para avisar o cliente quando o checklist de entrada da OS for criado.
 - Aviso de aparelho pronto inclui valor total, chave PIX opcional e pedido de confirmacao da forma de pagamento.
 - Diagnostico disponivel em `/api/whatsapp/status` com ultimo evento, ultimo envio, recibos e motivo de descarte.
 

@@ -1,6 +1,7 @@
 import { env } from "../../config/env.js";
 import { db } from "../../firebase/admin.js";
 import { normalizarTelefone } from "../../shared/normalizar-telefone.js";
+import type { Checklist } from "../checklists/checklists.types.js";
 import { createClientesRepository } from "../clientes/clientes.repository.js";
 import { createOrdensServicoRepository } from "../ordens-servico/ordens-servico.repository.js";
 import type { OrdemServico, OrdemServicoStatus } from "../ordens-servico/ordens-servico.types.js";
@@ -86,6 +87,26 @@ function mensagemRetiradaPendente(os: OrdemServico) {
   ].join("\n");
 }
 
+function mensagemChecklist(os: OrdemServico, checklist: Checklist) {
+  const itensComDefeito = checklist.itens.filter((item) => item.status === "com_defeito");
+  const linhas = [
+    `*RR Infocell - Checklist da OS #${os.numero}*`,
+    `Checklist de entrada registrado${checklist.criadoPor ? ` por ${checklist.criadoPor}` : ""}.`,
+    itensComDefeito.length > 0
+      ? `Itens com defeito: ${itensComDefeito.map((item) => item.nome).join(", ")}.`
+      : "Itens com defeito: nenhum informado.",
+    `Fotos anexadas: ${checklist.fotos.length}.`,
+  ];
+
+  if (checklist.observacoesGerais) {
+    linhas.push(`Observacoes: ${checklist.observacoesGerais}`);
+  }
+
+  linhas.push("Vamos seguir com a analise tecnica e avisaremos por aqui.");
+
+  return linhas.join("\n");
+}
+
 class AutomacoesAtendimentoService {
   private timer: NodeJS.Timeout | null = null;
   private processandoPendencias = false;
@@ -126,6 +147,15 @@ class AutomacoesAtendimentoService {
     if (next.status === "entregue" || next.status === "cancelado") {
       await this.finalizarConversa(next);
     }
+  }
+
+  async aoCriarChecklist(checklist: Checklist) {
+    if (env.NODE_ENV === "test") return;
+
+    const os = await ordensRepo.findById(checklist.ordemServicoId);
+    if (!os) return;
+
+    await this.enviarAutomacaoOrdem(os, mensagemChecklist(os, checklist), "status");
   }
 
   async processarPendencias() {

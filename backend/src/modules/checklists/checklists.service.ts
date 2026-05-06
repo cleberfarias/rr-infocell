@@ -2,6 +2,7 @@ import { db } from "../../firebase/admin.js";
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
 import { ordensServicoService } from "../ordens-servico/ordens-servico.service.js";
+import { automacoesAtendimentoService } from "../whatsapp/automacoes.service.js";
 import { createChecklistsRepository, type ChecklistsRepository } from "./checklists.repository.js";
 import type { ChecklistInput } from "./checklists.types.js";
 
@@ -25,7 +26,10 @@ export class ChecklistsService {
   async create(input: ChecklistInput) {
     await this.ensureOrdemMatchesAparelho(input);
 
-    return this.repository.create(input);
+    const checklist = await this.repository.create(input);
+    await automacoesAtendimentoService.aoCriarChecklist(checklist);
+
+    return checklist;
   }
 
   async update(id: string, input: ChecklistInput) {

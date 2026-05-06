@@ -36,6 +36,7 @@ import {
   firebaseStorage,
   isFirebaseClientConfigured,
 } from "@/lib/firebase";
+import { useAuth } from "@/lib/auth";
 import { listAparelhos } from "@/services/aparelhos";
 import {
   createChecklist,
@@ -126,13 +127,15 @@ const uploadWithTimeout = (
 const Checklist = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const { displayName } = useAuth();
+  const atendenteLogado = displayName.trim() || "Atendente";
   const [selectedOrdemId, setSelectedOrdemId] = useState(
     searchParams.get("ordemId") ?? "",
   );
   const [itens, setItens] = useState<ChecklistItem[]>(initialItems);
   const [fotos, setFotos] = useState<ChecklistFoto[]>([]);
   const [observacoesGerais, setObservacoesGerais] = useState("");
-  const [criadoPor, setCriadoPor] = useState("Camila O.");
+  const [criadoPor, setCriadoPor] = useState(atendenteLogado);
   const [formError, setFormError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -199,15 +202,15 @@ const Checklist = () => {
       );
       setFotos(existingChecklist.fotos ?? []);
       setObservacoesGerais(existingChecklist.observacoesGerais ?? "");
-      setCriadoPor(existingChecklist.criadoPor ?? "Camila O.");
+      setCriadoPor(existingChecklist.criadoPor ?? atendenteLogado);
       return;
     }
 
     setItens(initialItems);
     setFotos([]);
     setObservacoesGerais("");
-    setCriadoPor("Camila O.");
-  }, [existingChecklist]);
+    setCriadoPor(atendenteLogado);
+  }, [atendenteLogado, existingChecklist]);
 
   const saveMutation = useMutation({
     mutationFn: () => {

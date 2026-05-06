@@ -8,7 +8,9 @@ Registrar o estado tecnico do aparelho na entrada da ordem de servico. O checkli
 
 CRUD implementado com validacao, service, repository em memoria/Firestore e testes de rotas.
 
-A tela frontend de checklist esta integrada com OS real, upload de fotos no Firebase Storage e impressao limpa para papel.
+A tela frontend de checklist esta integrada com OS real, upload de fotos no Firebase Storage, impressao limpa para papel e preenchimento do atendente pelo usuario logado.
+
+Ao criar um checklist, o backend dispara uma mensagem automatica pelo WhatsApp para o cliente da OS com resumo dos itens com defeito, quantidade de fotos anexadas e observacoes gerais. A automacao e best effort: se o WhatsApp estiver desconectado, o checklist continua sendo salvo.
 
 Endpoints disponiveis:
 
@@ -97,6 +99,7 @@ Cada item do checklist deve ter:
 - Cada item deve registrar um status tecnico.
 - Fotos enviadas ao Storage devem ser persistidas no checklist como metadados.
 - Checklist deve ser criado na entrada do aparelho e poder ser revisado durante a manutencao.
+- Checklist criado deve notificar o cliente pelo WhatsApp quando houver telefone cadastrado e conexao ativa.
 
 ## Upload e impressao
 

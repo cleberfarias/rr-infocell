@@ -18,6 +18,7 @@ Modulo de central de atendimento via WhatsApp integrado ao sistema RR Infocell.
 - [x] Recebimento de contato compartilhado e localizacao como link.
 - [x] Status de mensagens enviadas quando o WhatsApp informa enviado, entregue ou lido.
 - [x] Automacoes de OS: mensagem ao abrir OS, aviso por mudanca de status, lembrete de orcamento, lembrete de retirada e autoarquivamento.
+- [x] Automacao de checklist: avisa o cliente quando o checklist de entrada da OS e criado.
 - [x] Mensagem de aparelho pronto inclui valor, chave PIX opcional e pedido de confirmacao da forma de pagamento.
 - [x] Polling da tela de Atendimento a cada 1,5s.
 - [x] Diagnostico em `/api/whatsapp/status` com ultimo evento, ultimo envio, recibos e motivos de descarte.
@@ -121,6 +122,7 @@ backend/src/modules/whatsapp/automacoes.service.ts
 Disparos automaticos:
 
 - Ao criar OS: envia confirmacao de abertura para o cliente.
+- Ao criar checklist de entrada: envia resumo do checklist para o cliente da OS.
 - Ao mudar status para `em_analise`: avisa que entrou em analise tecnica.
 - Ao mudar status para `aguardando_peca`: avisa que depende de peca.
 - Ao mudar status para `em_manutencao`: avisa que o servico foi iniciado.
