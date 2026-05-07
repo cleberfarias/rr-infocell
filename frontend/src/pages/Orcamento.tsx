@@ -90,6 +90,9 @@ const Orcamento = () => {
     searchParams.get("ordemId") ?? "",
   );
   const [actionError, setActionError] = useState<string | null>(null);
+  const [aprovadoPor, setAprovadoPor] = useState("");
+  const [canalAprovacao, setCanalAprovacao] = useState<"balcao" | "whatsapp" | "telefone">("whatsapp");
+  const [mensagemAprovacao, setMensagemAprovacao] = useState("");
 
   const ordensQuery = useQuery({
     queryKey: ["ordens-servico", "orcamento"],
@@ -166,6 +169,10 @@ const Orcamento = () => {
       await createOrcamento({
         ordemServicoId: selectedOrdem.id,
         status: orcamentoStatus,
+        aprovadoPor: orcamentoStatus === "aprovado" ? aprovadoPor || undefined : undefined,
+        canalAprovacao: orcamentoStatus === "aprovado" ? canalAprovacao : undefined,
+        mensagemAprovacao:
+          orcamentoStatus === "aprovado" ? mensagemAprovacao || undefined : undefined,
       });
 
       return updateOrdemServico(selectedOrdem.id, {
@@ -175,11 +182,22 @@ const Orcamento = () => {
         defeitoRelatado: selectedOrdem.defeitoRelatado,
         diagnostico: selectedOrdem.diagnostico,
         status,
+        prioridade: selectedOrdem.prioridade,
         tecnicoResponsavel: selectedOrdem.tecnicoResponsavel,
         pecasUsadas: toPecasInput(selectedOrdem),
         valorMaoObra: selectedOrdem.valorMaoObra,
         entradaEm: selectedOrdem.entradaEm,
         previsaoEntregaEm: selectedOrdem.previsaoEntregaEm,
+        prazoPrometidoEm: selectedOrdem.prazoPrometidoEm,
+        garantiaDias: selectedOrdem.garantiaDias,
+        garantiaObservacoes: selectedOrdem.garantiaObservacoes,
+        aprovadoPor: orcamentoStatus === "aprovado" ? aprovadoPor || "Cliente" : selectedOrdem.aprovadoPor,
+        aprovadoEm: orcamentoStatus === "aprovado" ? new Date().toISOString() : selectedOrdem.aprovadoEm,
+        canalAprovacao: orcamentoStatus === "aprovado" ? canalAprovacao : selectedOrdem.canalAprovacao,
+        mensagemAprovacao:
+          orcamentoStatus === "aprovado"
+            ? mensagemAprovacao || undefined
+            : selectedOrdem.mensagemAprovacao,
       });
     },
     onSuccess: async (ordem) => {
@@ -456,6 +474,43 @@ const Orcamento = () => {
                     Enviado ao cliente
                   </Button>
                 </div>
+              </div>
+              <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-3">
+                <FormField id="orcamento-aprovado-por" label="Quem aprovou">
+                  <input
+                    id="orcamento-aprovado-por"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={aprovadoPor}
+                    onChange={(event) => setAprovadoPor(event.target.value)}
+                    placeholder="Nome do cliente"
+                  />
+                </FormField>
+                <FormField id="orcamento-canal" label="Canal">
+                  <Select
+                    value={canalAprovacao}
+                    onValueChange={(value) =>
+                      setCanalAprovacao(value as typeof canalAprovacao)
+                    }
+                  >
+                    <SelectTrigger id="orcamento-canal">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                      <SelectItem value="balcao">Balcao</SelectItem>
+                      <SelectItem value="telefone">Telefone</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormField>
+                <FormField id="orcamento-mensagem" label="Mensagem/resposta">
+                  <input
+                    id="orcamento-mensagem"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={mensagemAprovacao}
+                    onChange={(event) => setMensagemAprovacao(event.target.value)}
+                    placeholder="Ex.: Cliente respondeu SIM"
+                  />
+                </FormField>
               </div>
               {actionError && (
                 <p className="mt-3 text-sm text-destructive">{actionError}</p>

@@ -46,6 +46,9 @@ export class OrcamentosService {
         status === "aprovado" || status === "reprovado"
           ? current?.decididoEm ?? timestamp
           : current?.decididoEm,
+      aprovadoPor: input.aprovadoPor ?? current?.aprovadoPor,
+      canalAprovacao: input.canalAprovacao ?? current?.canalAprovacao,
+      mensagemAprovacao: input.mensagemAprovacao ?? current?.mensagemAprovacao,
       observacoes: input.observacoes ?? current?.observacoes,
       updatedAt: timestamp,
     };
@@ -71,7 +74,7 @@ export class OrcamentosService {
       descricao: `Total ${orcamento.valorTotal.toLocaleString("pt-BR", {
         style: "currency",
         currency: "BRL",
-      })}`,
+      })}${orcamento.canalAprovacao ? `. Canal: ${orcamento.canalAprovacao}` : ""}`,
       criadoPor: "Sistema",
     });
 

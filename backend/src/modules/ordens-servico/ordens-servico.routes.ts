@@ -38,6 +38,7 @@ ordensServicoRoutes.get(
     const ordens = await ordensServicoService.list({
       search: filters.q,
       status: filters.status,
+      prioridade: filters.prioridade,
       clienteId: filters.clienteId,
       aparelhoId: filters.aparelhoId,
     });
@@ -48,6 +49,7 @@ ordensServicoRoutes.get(
         total: ordens.length,
         query: filters.q,
         status: filters.status,
+        prioridade: filters.prioridade,
         clienteId: filters.clienteId,
         aparelhoId: filters.aparelhoId,
       },

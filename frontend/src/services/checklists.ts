@@ -24,6 +24,7 @@ export type Checklist = {
   id: string;
   ordemServicoId: string;
   aparelhoId: string;
+  tipo: "entrada" | "saida";
   itens: ChecklistItem[];
   fotos: ChecklistFoto[];
   observacoesGerais?: string;
@@ -35,6 +36,7 @@ export type Checklist = {
 export type ChecklistInput = {
   ordemServicoId: string;
   aparelhoId: string;
+  tipo?: "entrada" | "saida";
   itens: ChecklistItem[];
   fotos?: ChecklistFoto[];
   observacoesGerais?: string;
@@ -76,7 +78,7 @@ const request = async <T>(path: string, init?: RequestInit) => {
 };
 
 export const listChecklists = async (
-  filters: { ordemServicoId?: string; aparelhoId?: string } = {},
+  filters: { ordemServicoId?: string; aparelhoId?: string; tipo?: "entrada" | "saida" | "" } = {},
 ) => {
   const search = new URLSearchParams();
 
@@ -86,6 +88,10 @@ export const listChecklists = async (
 
   if (filters.aparelhoId?.trim()) {
     search.set("aparelhoId", filters.aparelhoId.trim());
+  }
+
+  if ("tipo" in filters && typeof filters.tipo === "string" && filters.tipo.trim()) {
+    search.set("tipo", filters.tipo.trim());
   }
 
   const suffix = search.toString() ? `?${search.toString()}` : "";

@@ -12,6 +12,8 @@ export const ordemServicoStatus = [
 export type OrdemServicoStatus = (typeof ordemServicoStatus)[number];
 
 export type OrdemServicoFormaPagamento = "pix" | "cartao" | "dinheiro";
+export type OrdemServicoPrioridade = "baixa" | "normal" | "urgente";
+export type OrdemServicoCanalAprovacao = "balcao" | "whatsapp" | "telefone";
 
 export type OrdemServico = {
   id: string;
@@ -22,6 +24,7 @@ export type OrdemServico = {
   defeitoRelatado: string;
   diagnostico?: string;
   status: OrdemServicoStatus;
+  prioridade: OrdemServicoPrioridade;
   tecnicoResponsavel?: string;
   pecasUsadas: OrdemServicoPeca[];
   valorPecas: number;
@@ -29,6 +32,14 @@ export type OrdemServico = {
   valorTotal: number;
   entradaEm: string;
   previsaoEntregaEm?: string;
+  prazoPrometidoEm?: string;
+  garantiaDias?: number;
+  garantiaAte?: string;
+  garantiaObservacoes?: string;
+  aprovadoPor?: string;
+  aprovadoEm?: string;
+  canalAprovacao?: OrdemServicoCanalAprovacao;
+  mensagemAprovacao?: string;
   concluidaEm?: string;
   entregueEm?: string;
   formaPagamento?: OrdemServicoFormaPagamento;
@@ -63,12 +74,20 @@ export type OrdemServicoInput = {
   defeitoRelatado: string;
   diagnostico?: string;
   status?: OrdemServicoStatus;
+  prioridade?: OrdemServicoPrioridade;
   tecnicoResponsavel?: string;
   pecasUsadas?: OrdemServicoPecaInput[];
   valorPecas?: number;
   valorMaoObra?: number;
   entradaEm?: string;
   previsaoEntregaEm?: string;
+  prazoPrometidoEm?: string;
+  garantiaDias?: number;
+  garantiaObservacoes?: string;
+  aprovadoPor?: string;
+  aprovadoEm?: string;
+  canalAprovacao?: OrdemServicoCanalAprovacao;
+  mensagemAprovacao?: string;
   formaPagamento?: OrdemServicoFormaPagamento;
   valorRecebido?: number;
 };

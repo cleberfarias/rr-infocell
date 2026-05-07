@@ -9,6 +9,9 @@ const optionalText = z
 export const orcamentoInputSchema = z.object({
   ordemServicoId: z.string().trim().min(1, "OS e obrigatoria."),
   status: z.enum(["rascunho", "enviado", "aprovado", "reprovado"]).optional(),
+  aprovadoPor: optionalText,
+  canalAprovacao: z.enum(["balcao", "whatsapp", "telefone"]).optional(),
+  mensagemAprovacao: optionalText,
   observacoes: optionalText,
 });
 

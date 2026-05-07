@@ -23,6 +23,7 @@ const buildOrdem = (
 ): OrdemServico => {
   const timestamp = now();
   const status = input.status ?? current?.status ?? "recebido";
+  const prioridade = input.prioridade ?? current?.prioridade ?? "normal";
   const pecasUsadas = input.pecasUsadas
     ? input.pecasUsadas.map((peca) => ({
         produtoId: peca.produtoId,
@@ -50,6 +51,12 @@ const buildOrdem = (
     valorRecebido !== undefined ? Math.max(0, valorRecebido - valorTotal) : current?.troco;
   const statusChanged = current ? current.status !== status : false;
   const deliveredNow = status === "entregue" && (statusChanged || !current?.entregueEm);
+  const garantiaDias = input.garantiaDias ?? current?.garantiaDias;
+  const garantiaBase = deliveredNow ? timestamp : current?.entregueEm;
+  const garantiaAte =
+    garantiaDias && garantiaBase
+      ? new Date(new Date(garantiaBase).getTime() + garantiaDias * 24 * 60 * 60 * 1000).toISOString()
+      : current?.garantiaAte;
 
   return {
     id: current?.id ?? randomUUID(),
@@ -60,6 +67,7 @@ const buildOrdem = (
     defeitoRelatado: input.defeitoRelatado,
     diagnostico: input.diagnostico,
     status,
+    prioridade,
     tecnicoResponsavel: input.tecnicoResponsavel,
     pecasUsadas,
     valorPecas,
@@ -67,6 +75,14 @@ const buildOrdem = (
     valorTotal,
     entradaEm: input.entradaEm ?? current?.entradaEm ?? timestamp,
     previsaoEntregaEm: input.previsaoEntregaEm,
+    prazoPrometidoEm: input.prazoPrometidoEm ?? input.previsaoEntregaEm ?? current?.prazoPrometidoEm,
+    garantiaDias,
+    garantiaAte,
+    garantiaObservacoes: input.garantiaObservacoes ?? current?.garantiaObservacoes,
+    aprovadoPor: input.aprovadoPor ?? current?.aprovadoPor,
+    aprovadoEm: input.aprovadoEm ?? current?.aprovadoEm,
+    canalAprovacao: input.canalAprovacao ?? current?.canalAprovacao,
+    mensagemAprovacao: input.mensagemAprovacao ?? current?.mensagemAprovacao,
     concluidaEm:
       status === "pronto_para_retirada" && (statusChanged || !current?.concluidaEm)
         ? timestamp
@@ -92,6 +108,7 @@ const seedOrdensServico: OrdemServico[] = [
       aparelhoId: "apa_iphone_11_marcos",
       defeitoRelatado: "Aparelho nao carrega",
       status: "recebido",
+      prioridade: "normal",
       tecnicoResponsavel: "Rafael S.",
       valorPecas: 0,
       valorMaoObra: 0,
@@ -104,6 +121,7 @@ const seedOrdensServico: OrdemServico[] = [
       aparelhoId: "apa_moto_g_juliana",
       defeitoRelatado: "Tela quebrada",
       status: "em_analise",
+      prioridade: "normal",
       tecnicoResponsavel: "Diego M.",
       valorPecas: 180,
       valorMaoObra: 80,
@@ -116,6 +134,7 @@ export interface OrdensServicoRepository {
   list(filters?: {
     search?: string;
     status?: OrdemServicoStatus | "";
+    prioridade?: OrdemServico["prioridade"] | "";
     clienteId?: string;
     aparelhoId?: string;
   }): Promise<OrdemServico[]>;
@@ -130,6 +149,7 @@ const filterOrdensServico = (
   filters: {
     search?: string;
     status?: OrdemServicoStatus | "";
+    prioridade?: OrdemServico["prioridade"] | "";
     clienteId?: string;
     aparelhoId?: string;
   } = {},
@@ -138,6 +158,7 @@ const filterOrdensServico = (
 
   return ordens.filter((ordem) => {
     const matchesStatus = !filters.status || ordem.status === filters.status;
+    const matchesPrioridade = !filters.prioridade || ordem.prioridade === filters.prioridade;
     const matchesCliente = !filters.clienteId || ordem.clienteId === filters.clienteId;
     const matchesAparelho = !filters.aparelhoId || ordem.aparelhoId === filters.aparelhoId;
     const matchesSearch =
@@ -147,12 +168,13 @@ const filterOrdensServico = (
         ordem.defeitoRelatado,
         ordem.diagnostico,
         ordem.tecnicoResponsavel,
+        ordem.prioridade,
         ordem.status,
       ]
         .filter(Boolean)
         .some((value) => value?.toLowerCase().includes(normalizedSearch));
 
-    return matchesStatus && matchesCliente && matchesAparelho && matchesSearch;
+    return matchesStatus && matchesPrioridade && matchesCliente && matchesAparelho && matchesSearch;
   });
 };
 
@@ -167,6 +189,7 @@ export class MemoryOrdensServicoRepository implements OrdensServicoRepository {
     filters: {
       search?: string;
       status?: OrdemServicoStatus | "";
+      prioridade?: OrdemServico["prioridade"] | "";
       clienteId?: string;
       aparelhoId?: string;
     } = {},
@@ -214,6 +237,7 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
     filters: {
       search?: string;
       status?: OrdemServicoStatus | "";
+      prioridade?: OrdemServico["prioridade"] | "";
       clienteId?: string;
       aparelhoId?: string;
     } = {},
@@ -222,6 +246,10 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
 
     if (filters.status) {
       query = query.where("status", "==", filters.status);
+    }
+
+    if (filters.prioridade) {
+      query = query.where("prioridade", "==", filters.prioridade);
     }
 
     if (filters.clienteId) {
@@ -304,6 +332,7 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
       defeitoRelatado: String(data.defeitoRelatado ?? ""),
       diagnostico: data.diagnostico ? String(data.diagnostico) : undefined,
       status: String(data.status ?? "recebido") as OrdemServicoStatus,
+      prioridade: String(data.prioridade ?? "normal") as OrdemServico["prioridade"],
       tecnicoResponsavel: data.tecnicoResponsavel ? String(data.tecnicoResponsavel) : undefined,
       pecasUsadas: this.fromPecasUsadas(data.pecasUsadas),
       valorPecas,
@@ -311,6 +340,14 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
       valorTotal: Number(data.valorTotal ?? valorPecas + valorMaoObra),
       entradaEm: String(data.entradaEm ?? ""),
       previsaoEntregaEm: data.previsaoEntregaEm ? String(data.previsaoEntregaEm) : undefined,
+      prazoPrometidoEm: data.prazoPrometidoEm ? String(data.prazoPrometidoEm) : undefined,
+      garantiaDias: data.garantiaDias !== undefined ? Number(data.garantiaDias) : undefined,
+      garantiaAte: data.garantiaAte ? String(data.garantiaAte) : undefined,
+      garantiaObservacoes: data.garantiaObservacoes ? String(data.garantiaObservacoes) : undefined,
+      aprovadoPor: data.aprovadoPor ? String(data.aprovadoPor) : undefined,
+      aprovadoEm: data.aprovadoEm ? String(data.aprovadoEm) : undefined,
+      canalAprovacao: data.canalAprovacao ? String(data.canalAprovacao) as OrdemServico["canalAprovacao"] : undefined,
+      mensagemAprovacao: data.mensagemAprovacao ? String(data.mensagemAprovacao) : undefined,
       concluidaEm: data.concluidaEm ? String(data.concluidaEm) : undefined,
       entregueEm: data.entregueEm ? String(data.entregueEm) : undefined,
       formaPagamento: data.formaPagamento

@@ -78,12 +78,16 @@ const Ordens = () => {
   const [statusFilter, setStatusFilter] = useState<
     OrdemServicoStatus | "todos"
   >("todos");
+  const [prioridadeFilter, setPrioridadeFilter] = useState<"todos" | "baixa" | "normal" | "urgente">("todos");
+  const [tecnicoFilter, setTecnicoFilter] = useState("todos");
+  const [atrasoFilter, setAtrasoFilter] = useState<"todos" | "atrasadas">("todos");
 
   const ordensQuery = useQuery({
-    queryKey: ["ordens-servico", statusFilter],
+    queryKey: ["ordens-servico", statusFilter, prioridadeFilter],
     queryFn: () =>
       listOrdensServico({
         status: statusFilter === "todos" ? "" : statusFilter,
+        prioridade: prioridadeFilter === "todos" ? "" : prioridadeFilter,
       }),
   });
 
@@ -115,6 +119,8 @@ const Ordens = () => {
 
   const ordens = useMemo<OrdemRow[]>(() => {
     const normalizedSearch = search.trim().toLowerCase();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     return (ordensQuery.data ?? [])
       .map((ordem) => ({
@@ -123,6 +129,20 @@ const Ordens = () => {
         aparelho: aparelhoById.get(ordem.aparelhoId),
       }))
       .filter((ordem) => {
+        if (tecnicoFilter !== "todos" && (ordem.tecnicoResponsavel ?? "nao_atribuido") !== tecnicoFilter) {
+          return false;
+        }
+
+        if (atrasoFilter === "atrasadas") {
+          const prazo = ordem.prazoPrometidoEm ?? ordem.previsaoEntregaEm;
+          const dataPrazo = prazo ? new Date(prazo) : null;
+          const atrasada =
+            dataPrazo &&
+            dataPrazo < today &&
+            !["entregue", "cancelado"].includes(ordem.status);
+          if (!atrasada) return false;
+        }
+
         if (!normalizedSearch) {
           return true;
         }
@@ -141,7 +161,15 @@ const Ordens = () => {
           .filter(Boolean)
           .some((value) => value?.toLowerCase().includes(normalizedSearch));
       });
-  }, [aparelhoById, clienteById, ordensQuery.data, search]);
+  }, [aparelhoById, atrasoFilter, clienteById, ordensQuery.data, search, tecnicoFilter]);
+
+  const tecnicos = useMemo(
+    () =>
+      Array.from(
+        new Set((ordensQuery.data ?? []).map((ordem) => ordem.tecnicoResponsavel ?? "nao_atribuido")),
+      ),
+    [ordensQuery.data],
+  );
 
   const columns: DataTableColumn<OrdemRow>[] = [
     {
@@ -194,6 +222,22 @@ const Ordens = () => {
       ),
     },
     {
+      key: "prioridade",
+      header: "Prioridade",
+      cell: (ordem) => (
+        <span className={
+          "rounded-md px-2 py-1 text-xs font-medium " +
+          (ordem.prioridade === "urgente"
+            ? "bg-destructive/10 text-destructive"
+            : ordem.prioridade === "baixa"
+              ? "bg-secondary text-muted-foreground"
+              : "bg-primary/10 text-primary")
+        }>
+          {ordem.prioridade}
+        </span>
+      ),
+    },
+    {
       key: "tecnico",
       header: "Tecnico",
       className: "text-muted-foreground",
@@ -209,7 +253,19 @@ const Ordens = () => {
       key: "previsao",
       header: "Previsao",
       className: "font-mono text-xs",
-      cell: (ordem) => formatDate(ordem.previsaoEntregaEm),
+      cell: (ordem) => {
+        const prazo = ordem.prazoPrometidoEm ?? ordem.previsaoEntregaEm;
+        const atrasada =
+          prazo &&
+          new Date(prazo) < new Date(new Date().toDateString()) &&
+          !["entregue", "cancelado"].includes(ordem.status);
+
+        return (
+          <span className={atrasada ? "text-destructive" : ""}>
+            {formatDate(prazo)}
+          </span>
+        );
+      },
     },
     {
       key: "status",
@@ -307,6 +363,53 @@ const Ordens = () => {
                   {option.label}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+        </FormField>
+        <FormField id="ordens-prioridade" label="Prioridade" className="min-w-[180px]">
+          <Select
+            value={prioridadeFilter}
+            onValueChange={(value) =>
+              setPrioridadeFilter(value as typeof prioridadeFilter)
+            }
+          >
+            <SelectTrigger id="ordens-prioridade">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todas</SelectItem>
+              <SelectItem value="baixa">Baixa</SelectItem>
+              <SelectItem value="normal">Normal</SelectItem>
+              <SelectItem value="urgente">Urgente</SelectItem>
+            </SelectContent>
+          </Select>
+        </FormField>
+        <FormField id="ordens-tecnico" label="Tecnico" className="min-w-[180px]">
+          <Select value={tecnicoFilter} onValueChange={setTecnicoFilter}>
+            <SelectTrigger id="ordens-tecnico">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos</SelectItem>
+              {tecnicos.map((tecnico) => (
+                <SelectItem key={tecnico} value={tecnico}>
+                  {tecnico === "nao_atribuido" ? "Nao atribuido" : tecnico}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FormField>
+        <FormField id="ordens-atraso" label="Atraso" className="min-w-[160px]">
+          <Select
+            value={atrasoFilter}
+            onValueChange={(value) => setAtrasoFilter(value as typeof atrasoFilter)}
+          >
+            <SelectTrigger id="ordens-atraso">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todas</SelectItem>
+              <SelectItem value="atrasadas">Atrasadas</SelectItem>
             </SelectContent>
           </Select>
         </FormField>

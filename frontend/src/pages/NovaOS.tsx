@@ -29,7 +29,9 @@ type NovaOSForm = {
   defeitoRelatado: string;
   diagnostico: string;
   status: OrdemServicoStatus;
+  prioridade: "baixa" | "normal" | "urgente";
   tecnicoResponsavel: string;
+  garantiaDias: string;
   valorPecas: string;
   valorMaoObra: string;
   entradaEm: string;
@@ -44,7 +46,9 @@ const emptyForm: NovaOSForm = {
   defeitoRelatado: "",
   diagnostico: "",
   status: "recebido",
+  prioridade: "normal",
   tecnicoResponsavel: "",
+  garantiaDias: "90",
   valorPecas: "0",
   valorMaoObra: "0",
   entradaEm: today,
@@ -124,11 +128,14 @@ const NovaOS = () => {
       defeitoRelatado: form.defeitoRelatado,
       diagnostico: form.diagnostico || undefined,
       status: form.status,
+      prioridade: form.prioridade,
       tecnicoResponsavel: form.tecnicoResponsavel || undefined,
       valorPecas: Number(form.valorPecas.replace(",", ".")) || 0,
       valorMaoObra: Number(form.valorMaoObra.replace(",", ".")) || 0,
       entradaEm: form.entradaEm || undefined,
       previsaoEntregaEm: form.previsaoEntregaEm || undefined,
+      prazoPrometidoEm: form.previsaoEntregaEm || undefined,
+      garantiaDias: Number(form.garantiaDias) || undefined,
     });
   };
 
@@ -287,6 +294,21 @@ const NovaOS = () => {
                   }
                 />
               </FormField>
+              <FormField id="nova-os-prioridade" label="Prioridade">
+                <Select
+                  value={form.prioridade}
+                  onValueChange={(value) => updateForm("prioridade", value)}
+                >
+                  <SelectTrigger id="nova-os-prioridade">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="baixa">Baixa</SelectItem>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="urgente">Urgente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormField>
               <FormField id="nova-os-tecnico" label="Tecnico responsavel">
                 <Select
                   value={form.tecnicoResponsavel}
@@ -319,6 +341,18 @@ const NovaOS = () => {
                     <SelectItem value="em_analise">Em analise</SelectItem>
                   </SelectContent>
                 </Select>
+              </FormField>
+              <FormField id="nova-os-garantia" label="Garantia padrao (dias)">
+                <Input
+                  id="nova-os-garantia"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.garantiaDias}
+                  onChange={(event) =>
+                    updateForm("garantiaDias", event.target.value)
+                  }
+                />
               </FormField>
             </div>
           </Card>

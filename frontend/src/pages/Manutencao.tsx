@@ -49,8 +49,11 @@ import {
 type ManutencaoForm = {
   diagnostico: string;
   status: OrdemServicoStatus;
+  prioridade: OrdemServico["prioridade"];
   tecnicoResponsavel: string;
   valorMaoObra: string;
+  garantiaDias: string;
+  garantiaObservacoes: string;
 };
 
 const statusFlow: Array<{ key: OrdemServicoStatus; label: string }> = [
@@ -96,8 +99,11 @@ const formatDateTime = (value?: string) => {
 const buildForm = (ordem: OrdemServico): ManutencaoForm => ({
   diagnostico: ordem.diagnostico ?? "",
   status: ordem.status,
+  prioridade: ordem.prioridade ?? "normal",
   tecnicoResponsavel: ordem.tecnicoResponsavel ?? "",
   valorMaoObra: String(ordem.valorMaoObra),
+  garantiaDias: String(ordem.garantiaDias ?? 90),
+  garantiaObservacoes: ordem.garantiaObservacoes ?? "",
 });
 
 const toPecasInput = (ordem: OrdemServico) =>
@@ -210,11 +216,15 @@ const Manutencao = () => {
         defeitoRelatado: selectedOrdem.defeitoRelatado,
         diagnostico: input.diagnostico || undefined,
         status: input.status,
+        prioridade: input.prioridade,
         tecnicoResponsavel: input.tecnicoResponsavel || undefined,
         pecasUsadas: toPecasInput(selectedOrdem),
         valorMaoObra: Number(input.valorMaoObra.replace(",", ".")) || 0,
         entradaEm: selectedOrdem.entradaEm,
         previsaoEntregaEm: selectedOrdem.previsaoEntregaEm,
+        prazoPrometidoEm: selectedOrdem.prazoPrometidoEm,
+        garantiaDias: Number(input.garantiaDias) || undefined,
+        garantiaObservacoes: input.garantiaObservacoes || undefined,
       });
     },
     onSuccess: async (ordem, input) => {
@@ -534,7 +544,7 @@ const Manutencao = () => {
                       placeholder="Registre a avaliacao tecnica, testes realizados e recomendacao."
                     />
                   </FormField>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
                     <FormField id="manutencao-status" label="Status">
                       <Select
                         value={form.status}
@@ -574,6 +584,23 @@ const Manutencao = () => {
                         </SelectContent>
                       </Select>
                     </FormField>
+                    <FormField id="manutencao-prioridade" label="Prioridade">
+                      <Select
+                        value={form.prioridade}
+                        onValueChange={(value) =>
+                          updateForm("prioridade", value as OrdemServico["prioridade"])
+                        }
+                      >
+                        <SelectTrigger id="manutencao-prioridade">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="baixa">Baixa</SelectItem>
+                          <SelectItem value="normal">Normal</SelectItem>
+                          <SelectItem value="urgente">Urgente</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormField>
                     <FormField id="manutencao-mao-obra" label="Mao de obra">
                       <Input
                         id="manutencao-mao-obra"
@@ -584,6 +611,30 @@ const Manutencao = () => {
                         onChange={(event) =>
                           updateForm("valorMaoObra", event.target.value)
                         }
+                      />
+                    </FormField>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-[180px_1fr]">
+                    <FormField id="manutencao-garantia" label="Garantia (dias)">
+                      <Input
+                        id="manutencao-garantia"
+                        min="0"
+                        step="1"
+                        type="number"
+                        value={form.garantiaDias}
+                        onChange={(event) =>
+                          updateForm("garantiaDias", event.target.value)
+                        }
+                      />
+                    </FormField>
+                    <FormField id="manutencao-garantia-obs" label="Observacao da garantia">
+                      <Input
+                        id="manutencao-garantia-obs"
+                        value={form.garantiaObservacoes}
+                        onChange={(event) =>
+                          updateForm("garantiaObservacoes", event.target.value)
+                        }
+                        placeholder="Ex.: garantia de 90 dias para tela e mao de obra"
                       />
                     </FormField>
                   </div>
@@ -769,6 +820,11 @@ const Manutencao = () => {
                 <Button asChild variant="outline" className="w-full">
                   <Link to={`/app/checklist?ordemId=${selectedOrdem.id}`}>
                     Checklist da OS
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" className="w-full">
+                  <Link to={`/app/checklist?ordemId=${selectedOrdem.id}&tipo=saida`}>
+                    Checklist de saida
                   </Link>
                 </Button>
               </div>

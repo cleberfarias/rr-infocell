@@ -20,6 +20,7 @@ export type Checklist = {
   id: string;
   ordemServicoId: string;
   aparelhoId: string;
+  tipo: "entrada" | "saida";
   itens: ChecklistItem[];
   fotos: ChecklistFoto[];
   observacoesGerais?: string;
@@ -31,6 +32,7 @@ export type Checklist = {
 export type ChecklistInput = {
   ordemServicoId: string;
   aparelhoId: string;
+  tipo?: "entrada" | "saida";
   itens: ChecklistItem[];
   fotos?: ChecklistFoto[];
   observacoesGerais?: string;
@@ -48,4 +50,14 @@ export const checklistItensIniciais = [
   "Wi-Fi",
   "Bluetooth",
   "Bateria",
+];
+
+export const checklistItensSaida = [
+  "Aparelho testado",
+  "Carga funcionando",
+  "Biometria/Face ID",
+  "Camera",
+  "Audio",
+  "Chip/rede",
+  "Senha removida ou confirmada",
 ];

@@ -26,6 +26,8 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 - Frontend de abertura e listagem de OS integrado com API real.
 - Tela de manutencao integrada com OS reais para atualizar diagnostico, status tecnico, responsavel, mao de obra, comentarios e linha do tempo.
 - Tela de orcamentos integrada com OS reais para enviar proposta, aprovar e reprovar, gravando snapshot do orcamento e alterando status da OS.
+- OS possui prioridade, prazo prometido, alerta/filtro de atraso por tecnico/status/prioridade, garantia e dados de aprovacao.
+- Checklist de saida implementado para validar aparelho testado, carga, biometria/Face ID, camera, audio, chip/rede e senha antes da entrega.
 - PDV/Caixa integrado com OS reais para registrar venda, pagamento, troco, evento de entrega e marcar OS como entregue.
 - PDV/Caixa e tela financeira exibem historico de pagamentos com OS, forma, recebido, troco e link para detalhe da OS.
 - Checklist tecnico vinculado a OS real.
@@ -33,7 +35,7 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 - Detalhe da OS implementado com dados reais de cliente/aparelho.
 - Detalhe da OS e tela de manutencao compartilham cache de dados para refletir valores de pecas, mao de obra e total.
 - Comprovante simples da OS implementado com impressao pelo navegador.
-- Historico operacional de OS implementado via eventos de manutencao, orcamento e venda.
+- Historico operacional de OS implementado via eventos de criacao, checklist, manutencao, orcamento, pecas, status, garantia, venda e entrega.
 - Historico do cliente implementado na tela de clientes com aparelhos, OS, abertas, total gasto e ultimas OS.
 - Dashboard inicial usa dados reais de OS e exibe relatorio basico por status.
 

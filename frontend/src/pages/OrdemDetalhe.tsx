@@ -232,6 +232,11 @@ const OrdemDetalhe = () => {
                 <ClipboardCheck className="h-4 w-4" /> Checklist
               </Link>
             </Button>
+            <Button asChild variant="outline">
+              <Link to={`/app/checklist?ordemId=${ordem.id}&tipo=saida`}>
+                <ClipboardCheck className="h-4 w-4" /> Saida
+              </Link>
+            </Button>
             <Button onClick={() => window.print()}>
               <Printer className="h-4 w-4" /> Imprimir
             </Button>
@@ -251,9 +256,9 @@ const OrdemDetalhe = () => {
           <p className="mt-1 font-mono text-lg">{formatDate(ordem.entradaEm)}</p>
         </Card>
         <Card className="surface-panel p-4">
-          <p className="text-xs text-muted-foreground">Previsao</p>
+          <p className="text-xs text-muted-foreground">Prazo prometido</p>
           <p className="mt-1 font-mono text-lg">
-            {formatDate(ordem.previsaoEntregaEm)}
+            {formatDate(ordem.prazoPrometidoEm ?? ordem.previsaoEntregaEm)}
           </p>
         </Card>
         <Card className="surface-panel p-4">
@@ -314,6 +319,49 @@ const OrdemDetalhe = () => {
               <dd className="font-mono font-semibold">
                 {formatBRL(ordem.valorTotal)}
               </dd>
+            </div>
+          </dl>
+        </SectionPanel>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <SectionPanel title="Controle da OS" className="lg:col-span-1">
+          <dl className="space-y-3 text-sm">
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Prioridade</dt>
+              <dd className="font-medium capitalize">{ordem.prioridade}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Tecnico</dt>
+              <dd>{ordem.tecnicoResponsavel ?? "-"}</dd>
+            </div>
+          </dl>
+        </SectionPanel>
+        <SectionPanel title="Aprovacao" className="lg:col-span-1">
+          <dl className="space-y-3 text-sm">
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Aprovado por</dt>
+              <dd>{ordem.aprovadoPor ?? "-"}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Canal</dt>
+              <dd>{ordem.canalAprovacao ?? "-"}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Data</dt>
+              <dd>{formatDate(ordem.aprovadoEm)}</dd>
+            </div>
+          </dl>
+        </SectionPanel>
+        <SectionPanel title="Garantia" className="lg:col-span-1">
+          <dl className="space-y-3 text-sm">
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Prazo</dt>
+              <dd>{ordem.garantiaDias ? `${ordem.garantiaDias} dias` : "-"}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Valida ate</dt>
+              <dd>{formatDate(ordem.garantiaAte)}</dd>
             </div>
           </dl>
         </SectionPanel>

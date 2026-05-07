@@ -6,7 +6,7 @@ Gerenciar o fluxo central do sistema: abertura, acompanhamento, manutencao, conc
 
 ## Status atual
 
-CRUD implementado com validacao, service, repository em memoria/Firestore, numero sequencial, pecas usadas, baixa de estoque por OS e testes de rotas.
+CRUD implementado com validacao, service, repository em memoria/Firestore, numero sequencial, prioridade, prazo prometido, garantia, aprovacao, pecas usadas, baixa de estoque por OS e testes de rotas.
 
 No frontend, o fluxo de OS esta integrado com API real para abertura, listagem, detalhe, relatorio basico no dashboard e comprovante simples para impressao.
 
@@ -64,6 +64,7 @@ Resposta de listagem:
 - `defeitoRelatado`
 - `diagnostico`
 - `status`
+- `prioridade`
 - `tecnicoResponsavel`
 - `pecasUsadas`
 - `valorPecas`
@@ -71,6 +72,14 @@ Resposta de listagem:
 - `valorTotal`
 - `entradaEm`
 - `previsaoEntregaEm`
+- `prazoPrometidoEm`
+- `garantiaDias`
+- `garantiaAte`
+- `garantiaObservacoes`
+- `aprovadoPor`
+- `aprovadoEm`
+- `canalAprovacao`
+- `mensagemAprovacao`
 - `concluidaEm`
 - `entregueEm`
 - `formaPagamento`
@@ -97,6 +106,10 @@ Resposta de listagem:
 - O aparelho deve pertencer ao cliente informado.
 - Numero da OS e sequencial e gerado pelo backend.
 - `valorTotal` e calculado pelo backend a partir de pecas e mao de obra.
+- `prioridade` aceita `baixa`, `normal` ou `urgente`.
+- `prazoPrometidoEm` alimenta os alertas de OS atrasada na listagem.
+- Garantia pode ser registrada em dias e calcula `garantiaAte` na entrega.
+- Aprovacao registra responsavel, canal e mensagem/resposta do cliente.
 - Pecas adicionadas em `pecasUsadas` geram movimentacao de estoque do tipo `saida` com origem `ordem_servico`.
 - O backend baixa apenas o aumento de quantidade de cada peca, evitando duplicar baixa em edicoes posteriores.
 - Ao marcar como `pronto_para_retirada`, o backend registra `concluidaEm`.

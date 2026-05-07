@@ -4,6 +4,7 @@ import { httpStatus } from "../../shared/http-status.js";
 import { aparelhosService } from "../aparelhos/aparelhos.service.js";
 import { clientesService } from "../clientes/clientes.service.js";
 import { movimentacoesEstoqueService } from "../movimentacoes-estoque/movimentacoes-estoque.service.js";
+import { createOrdemEventosRepository } from "../ordem-eventos/ordem-eventos.repository.js";
 import { produtosService } from "../produtos/produtos.service.js";
 import { automacoesAtendimentoService } from "../whatsapp/automacoes.service.js";
 import {
@@ -17,6 +18,9 @@ import type {
   OrdemServicoStatus,
 } from "./ordens-servico.types.js";
 
+const eventosRepo = createOrdemEventosRepository(db);
+const now = () => new Date().toISOString();
+
 export class OrdensServicoService {
   constructor(
     private readonly repository: OrdensServicoRepository = createOrdensServicoRepository(db),
@@ -25,6 +29,7 @@ export class OrdensServicoService {
   async list(filters?: {
     search?: string;
     status?: OrdemServicoStatus | "";
+    prioridade?: OrdemServico["prioridade"] | "";
     clienteId?: string;
     aparelhoId?: string;
   }) {
@@ -52,6 +57,7 @@ export class OrdensServicoService {
 
     const ordem = await this.repository.create(enrichedInput);
     await this.applyPecasDeltas(ordem);
+    await this.registrarEvento(ordem.id, "status", "OS criada", `Status inicial: ${ordem.status}. Prioridade: ${ordem.prioridade}.`, ordem.tecnicoResponsavel);
     await automacoesAtendimentoService.aoCriarOrdem(ordem);
 
     return ordem;
@@ -83,6 +89,7 @@ export class OrdensServicoService {
     }
 
     await this.applyPecasDeltas(ordem, current);
+    await this.registrarEventosOperacionais(current, ordem);
     await automacoesAtendimentoService.aoAtualizarOrdem(current, ordem);
 
     return ordem;
@@ -173,7 +180,55 @@ export class OrdensServicoService {
         origem: "ordem_servico",
         ordemServicoId: ordem.id,
       });
+      await this.registrarEvento(
+        ordem.id,
+        "peca",
+        "Peca adicionada",
+        `${delta.quantidade} un. adicionada(s) e baixada(s) do estoque.`,
+        ordem.tecnicoResponsavel,
+      );
     }
+  }
+
+  private async registrarEventosOperacionais(current: OrdemServico, next: OrdemServico) {
+    if (current.status !== next.status) {
+      await this.registrarEvento(
+        next.id,
+        next.status === "entregue" ? "entrega" : "status",
+        next.status === "entregue" ? "OS entregue" : "Status alterado",
+        `${current.status} -> ${next.status}`,
+        next.tecnicoResponsavel,
+      );
+    }
+
+    if (current.prioridade !== next.prioridade) {
+      await this.registrarEvento(next.id, "status", "Prioridade alterada", `${current.prioridade} -> ${next.prioridade}`, next.tecnicoResponsavel);
+    }
+
+    if (!current.garantiaAte && next.garantiaAte) {
+      await this.registrarEvento(next.id, "garantia", "Garantia registrada", `Garantia ate ${new Date(next.garantiaAte).toLocaleDateString("pt-BR")}.`, next.tecnicoResponsavel);
+    }
+
+    if (!current.aprovadoEm && next.aprovadoEm) {
+      await this.registrarEvento(next.id, "orcamento", "Aprovacao registrada", `Aprovado por ${next.aprovadoPor ?? "cliente"} via ${next.canalAprovacao ?? "canal nao informado"}.`, next.tecnicoResponsavel);
+    }
+  }
+
+  private async registrarEvento(
+    ordemServicoId: string,
+    tipo: "status" | "peca" | "garantia" | "entrega" | "orcamento",
+    titulo: string,
+    descricao?: string,
+    criadoPor?: string,
+  ) {
+    await eventosRepo.create({
+      ordemServicoId,
+      tipo,
+      titulo,
+      descricao,
+      criadoPor,
+      createdAt: now(),
+    });
   }
 
   private calculatePecasDeltas(

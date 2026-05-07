@@ -28,6 +28,7 @@ export const checklistFotoSchema = z.object({
 export const checklistInputSchema = z.object({
   ordemServicoId: z.string().trim().min(1, "Ordem de servico e obrigatoria."),
   aparelhoId: z.string().trim().min(1, "Aparelho e obrigatorio."),
+  tipo: z.enum(["entrada", "saida"]).optional().default("entrada"),
   itens: z.array(checklistItemSchema).min(1, "Checklist deve ter pelo menos 1 item."),
   fotos: z.array(checklistFotoSchema).optional().default([]),
   observacoesGerais: optionalText,
@@ -37,4 +38,5 @@ export const checklistInputSchema = z.object({
 export const checklistSearchSchema = z.object({
   ordemServicoId: z.string().trim().optional().default(""),
   aparelhoId: z.string().trim().optional().default(""),
+  tipo: z.enum(["entrada", "saida"]).optional().or(z.literal("")).default(""),
 });

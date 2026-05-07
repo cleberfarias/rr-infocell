@@ -3,7 +3,11 @@ export type OrdemEventoTipo =
   | "diagnostico"
   | "status"
   | "orcamento"
-  | "venda";
+  | "venda"
+  | "checklist"
+  | "peca"
+  | "garantia"
+  | "entrega";
 
 export type OrdemEvento = {
   id: string;

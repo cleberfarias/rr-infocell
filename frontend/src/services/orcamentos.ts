@@ -16,6 +16,9 @@ export type Orcamento = {
   valorTotal: number;
   enviadoEm?: string;
   decididoEm?: string;
+  aprovadoPor?: string;
+  canalAprovacao?: "balcao" | "whatsapp" | "telefone";
+  mensagemAprovacao?: string;
   observacoes?: string;
   createdAt: string;
   updatedAt: string;
@@ -24,6 +27,9 @@ export type Orcamento = {
 export type OrcamentoInput = {
   ordemServicoId: string;
   status?: OrcamentoStatus;
+  aprovadoPor?: string;
+  canalAprovacao?: "balcao" | "whatsapp" | "telefone";
+  mensagemAprovacao?: string;
   observacoes?: string;
 };
 

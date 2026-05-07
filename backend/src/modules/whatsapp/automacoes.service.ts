@@ -91,7 +91,7 @@ function mensagemChecklist(os: OrdemServico, checklist: Checklist) {
   const itensComDefeito = checklist.itens.filter((item) => item.status === "com_defeito");
   const linhas = [
     `*RR Infocell - Checklist da OS #${os.numero}*`,
-    `Checklist de entrada registrado${checklist.criadoPor ? ` por ${checklist.criadoPor}` : ""}.`,
+    `Checklist de ${checklist.tipo === "saida" ? "saida" : "entrada"} registrado${checklist.criadoPor ? ` por ${checklist.criadoPor}` : ""}.`,
     itensComDefeito.length > 0
       ? `Itens com defeito: ${itensComDefeito.map((item) => item.nome).join(", ")}.`
       : "Itens com defeito: nenhum informado.",

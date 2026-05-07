@@ -62,6 +62,16 @@ const initialItems: ChecklistItem[] = [
   { nome: "Bateria", status: "nao_testado" },
 ];
 
+const saidaItems: ChecklistItem[] = [
+  { nome: "Aparelho testado", status: "nao_testado" },
+  { nome: "Carga funcionando", status: "nao_testado" },
+  { nome: "Biometria/Face ID", status: "nao_testado" },
+  { nome: "Camera", status: "nao_testado" },
+  { nome: "Audio", status: "nao_testado" },
+  { nome: "Chip/rede", status: "nao_testado" },
+  { nome: "Senha removida ou confirmada", status: "nao_testado" },
+];
+
 const statusLabels: Record<ChecklistItemStatus, string> = {
   funcionando: "Funcionando",
   com_defeito: "Com defeito",
@@ -132,7 +142,9 @@ const Checklist = () => {
   const [selectedOrdemId, setSelectedOrdemId] = useState(
     searchParams.get("ordemId") ?? "",
   );
-  const [itens, setItens] = useState<ChecklistItem[]>(initialItems);
+  const checklistTipo = searchParams.get("tipo") === "saida" ? "saida" : "entrada";
+  const itensBase = checklistTipo === "saida" ? saidaItems : initialItems;
+  const [itens, setItens] = useState<ChecklistItem[]>(itensBase);
   const [fotos, setFotos] = useState<ChecklistFoto[]>([]);
   const [observacoesGerais, setObservacoesGerais] = useState("");
   const [criadoPor, setCriadoPor] = useState(atendenteLogado);
@@ -164,7 +176,7 @@ const Checklist = () => {
 
   const checklistsQuery = useQuery({
     queryKey: ["checklists", selectedOrdemId],
-    queryFn: () => listChecklists({ ordemServicoId: selectedOrdemId }),
+    queryFn: () => listChecklists({ ordemServicoId: selectedOrdemId, tipo: checklistTipo }),
     enabled: Boolean(selectedOrdemId),
   });
 
@@ -189,16 +201,16 @@ const Checklist = () => {
   useEffect(() => {
     if (!selectedOrdemId && ordensQuery.data?.[0]) {
       setSelectedOrdemId(ordensQuery.data[0].id);
-      setSearchParams({ ordemId: ordensQuery.data[0].id });
+      setSearchParams({ ordemId: ordensQuery.data[0].id, tipo: checklistTipo });
     }
-  }, [ordensQuery.data, selectedOrdemId, setSearchParams]);
+  }, [checklistTipo, ordensQuery.data, selectedOrdemId, setSearchParams]);
 
   useEffect(() => {
     if (existingChecklist) {
       setItens(
         existingChecklist.itens.length > 0
           ? existingChecklist.itens
-          : initialItems,
+          : itensBase,
       );
       setFotos(existingChecklist.fotos ?? []);
       setObservacoesGerais(existingChecklist.observacoesGerais ?? "");
@@ -206,11 +218,11 @@ const Checklist = () => {
       return;
     }
 
-    setItens(initialItems);
+    setItens(itensBase);
     setFotos([]);
     setObservacoesGerais("");
     setCriadoPor(atendenteLogado);
-  }, [atendenteLogado, existingChecklist]);
+  }, [atendenteLogado, existingChecklist, itensBase]);
 
   const saveMutation = useMutation({
     mutationFn: () => {
@@ -221,6 +233,7 @@ const Checklist = () => {
       const input = {
         ordemServicoId: selectedOrdem.id,
         aparelhoId: selectedOrdem.aparelhoId,
+        tipo: checklistTipo,
         itens,
         fotos,
         observacoesGerais,
@@ -254,7 +267,7 @@ const Checklist = () => {
 
   const handleOrdemChange = (value: string) => {
     setSelectedOrdemId(value);
-    setSearchParams({ ordemId: value });
+    setSearchParams({ ordemId: value, tipo: checklistTipo });
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -369,8 +382,12 @@ const Checklist = () => {
     <form className="checklist-page space-y-5" onSubmit={handleSubmit}>
       <PageHeader
         eyebrow={selectedOrdem ? `OS-${selectedOrdem.numero}` : "Checklist"}
-        title="Checklist de entrada"
-        description="Registre o estado fisico e funcional do aparelho antes do diagnostico."
+        title={checklistTipo === "saida" ? "Checklist de saida" : "Checklist de entrada"}
+        description={
+          checklistTipo === "saida"
+            ? "Confirme os testes finais antes da entrega ao cliente."
+            : "Registre o estado fisico e funcional do aparelho antes do diagnostico."
+        }
         actions={
           <div className="flex gap-2">
             <Button
@@ -403,8 +420,8 @@ const Checklist = () => {
           <header className="print-header">
             <div>
               <p className="print-kicker">RR Infocell</p>
-              <h1>Checklist de entrada</h1>
-              <p>Ordem de servico OS-{selectedOrdem.numero}</p>
+              <h1>{checklistTipo === "saida" ? "Checklist de saida" : "Checklist de entrada"}</h1>
+                <p>Ordem de servico OS-{selectedOrdem.numero}</p>
             </div>
             <div className="print-meta">
               <span>Data: {new Date().toLocaleDateString("pt-BR")}</span>
@@ -555,7 +572,7 @@ const Checklist = () => {
             </div>
 
             <h3 className="mb-4 font-display text-base font-semibold">
-              Inspecao do aparelho
+              {checklistTipo === "saida" ? "Teste final do aparelho" : "Inspecao do aparelho"}
             </h3>
             <div className="space-y-3">
               {itens.map((item, index) => (
