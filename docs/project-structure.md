@@ -88,8 +88,8 @@ Modulos atuais:
 - `ordens-servico`: CRUD implementado com numero sequencial, status, filtros, pecas usadas, baixa de estoque por OS, validacao de vinculos, Firestore/fallback local e testes.
 - `checklists`: CRUD implementado com vinculo a OS/aparelho, validacao, Firestore/fallback local e testes.
 - `usuarios`: gerenciamento administrativo de usuarios Firebase Auth e custom claim `role`, protegido por token admin.
-- `produtos`: CRUD de estoque basico com busca, categoria, ativo, custos, precos e ponto minimo.
-- `movimentacoes-estoque`: entrada, saida e ajuste manual de estoque com historico por produto.
+- `produtos`: CRUD de estoque com busca, categoria, ativo, custos, precos, ponto minimo e aparelhos de venda controlados por IMEI.
+- `movimentacoes-estoque`: entrada, saida e ajuste manual de estoque com historico por produto, baixa por OS e baixa por venda direta.
 
 Cada modulo possui documentacao propria em `backend/src/modules/<modulo>/README.md`.
 

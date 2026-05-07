@@ -23,8 +23,8 @@ POST /api/movimentacoes-estoque
 - `saida`: subtrai `quantidade` e bloqueia estoque negativo.
 - `ajuste`: define o estoque final informado em `estoqueFinal`.
 - Toda movimentacao salva estoque anterior, estoque posterior, produto, SKU, motivo e origem.
+- Origem `venda` e usada para baixa automatica de vendas diretas feitas no PDV.
 
 ## Proximos passos
 
-- Integrar baixa automatica de pecas usadas na OS/manutencao.
-- Amarrar movimentacoes de origem `ordem_servico` ao fechamento ou etapa tecnica da OS.
+- Melhorar auditoria visual das movimentacoes por origem no frontend.

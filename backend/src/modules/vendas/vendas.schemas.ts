@@ -1,9 +1,25 @@
 import { z } from "zod";
 
 export const vendaInputSchema = z.object({
-  ordemServicoId: z.string().trim().min(1, "Ordem de servico e obrigatoria."),
+  ordemServicoId: z.string().trim().optional(),
+  clienteId: z.string().trim().optional(),
+  clienteNome: z.string().trim().optional(),
+  itens: z.array(z.object({
+    produtoId: z.string().trim().min(1, "Produto e obrigatorio."),
+    quantidade: z.coerce.number().int().positive("Quantidade deve ser maior que zero."),
+    valorUnitario: z.coerce.number().min(0).optional(),
+    garantiaDias: z.coerce.number().int().min(0).max(3650).optional(),
+  })).optional(),
   formaPagamento: z.enum(["pix", "cartao", "dinheiro"]),
   valorRecebido: z.coerce.number().min(0, "Valor recebido nao pode ser negativo."),
+}).superRefine((input, ctx) => {
+  if (!input.ordemServicoId && (!input.itens || input.itens.length === 0)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Informe uma OS ou itens para venda direta.",
+      path: ["itens"],
+    });
+  }
 });
 
 export const vendaSearchSchema = z.object({

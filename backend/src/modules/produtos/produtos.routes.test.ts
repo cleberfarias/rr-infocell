@@ -77,4 +77,33 @@ describe("produtos routes", () => {
     expect(response.status).toBe(400);
     expect(response.body.error.code).toBe("validation_error");
   });
+
+  it("requires IMEI and individual stock for phone products", async () => {
+    const missingImei = await request(app).post("/api/produtos").send({
+      sku: "IPH-13-SEM",
+      nome: "iPhone 13 seminovo",
+      categoria: "celular_seminovo",
+      estoqueAtual: 1,
+      estoqueMinimo: 0,
+      custo: 1800,
+      precoVenda: 2400,
+    });
+
+    expect(missingImei.status).toBe(400);
+    expect(missingImei.body.error.code).toBe("validation_error");
+
+    const multipleStock = await request(app).post("/api/produtos").send({
+      sku: "IPH-13-SEM",
+      nome: "iPhone 13 seminovo",
+      categoria: "celular_seminovo",
+      estoqueAtual: 2,
+      estoqueMinimo: 0,
+      custo: 1800,
+      precoVenda: 2400,
+      imei: "359111111111111",
+    });
+
+    expect(multipleStock.status).toBe(400);
+    expect(multipleStock.body.error.code).toBe("validation_error");
+  });
 });

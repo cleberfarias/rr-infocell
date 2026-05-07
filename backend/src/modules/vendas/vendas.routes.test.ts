@@ -53,4 +53,34 @@ describe("vendas routes", () => {
     expect(response.status).toBe(400);
     expect(response.body.error.code).toBe("pagamento_insuficiente");
   });
+
+  it("finalizes direct phone sale by IMEI and decreases stock", async () => {
+    const produtoResponse = await request(app).post("/api/produtos").send({
+      sku: "IPH-12-VD",
+      nome: "iPhone 12 seminovo venda direta",
+      categoria: "celular_seminovo",
+      estoqueAtual: 1,
+      estoqueMinimo: 0,
+      custo: 1200,
+      precoVenda: 1700,
+      imei: "359222222222222",
+      garantiaDias: 90,
+    });
+    const produto = produtoResponse.body.data;
+
+    const vendaResponse = await request(app).post("/api/vendas").send({
+      clienteNome: "Cliente Balcao",
+      formaPagamento: "pix",
+      valorRecebido: 1700,
+      itens: [{ produtoId: produto.id, quantidade: 1 }],
+    });
+
+    expect(vendaResponse.status).toBe(201);
+    expect(vendaResponse.body.data.tipo).toBe("direta");
+    expect(vendaResponse.body.data.itens[0].imei).toBe("359222222222222");
+    expect(vendaResponse.body.data.itens[0].garantiaDias).toBe(90);
+
+    const estoqueResponse = await request(app).get(`/api/produtos/${produto.id}`);
+    expect(estoqueResponse.body.data.estoqueAtual).toBe(0);
+  });
 });

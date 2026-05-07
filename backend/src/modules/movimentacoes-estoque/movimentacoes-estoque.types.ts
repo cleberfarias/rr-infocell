@@ -1,6 +1,6 @@
 export type MovimentacaoEstoqueTipo = "entrada" | "saida" | "ajuste";
 
-export type MovimentacaoEstoqueOrigem = "manual" | "ordem_servico";
+export type MovimentacaoEstoqueOrigem = "manual" | "ordem_servico" | "venda";
 
 export type MovimentacaoEstoque = {
   id: string;

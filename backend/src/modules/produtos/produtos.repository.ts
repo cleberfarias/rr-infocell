@@ -65,7 +65,7 @@ const filterProdutos = (
     const matchesAtivo = filters.ativo === "" || filters.ativo === undefined || produto.ativo === filters.ativo;
     const matchesSearch =
       !normalizedSearch ||
-      [produto.sku, produto.nome, produto.categoria, produto.observacoes]
+      [produto.sku, produto.nome, produto.categoria, produto.imei, produto.marca, produto.modelo, produto.observacoes]
         .filter(Boolean)
         .some((value) => value?.toLowerCase().includes(normalizedSearch));
 
@@ -222,6 +222,17 @@ export class FirestoreProdutosRepository implements ProdutosRepository {
       custo: Number(data.custo ?? 0),
       precoVenda: Number(data.precoVenda ?? 0),
       ativo: data.ativo !== false,
+      marca: data.marca ? String(data.marca) : undefined,
+      modelo: data.modelo ? String(data.modelo) : undefined,
+      imei: data.imei ? String(data.imei) : undefined,
+      cor: data.cor ? String(data.cor) : undefined,
+      capacidade: data.capacidade ? String(data.capacidade) : undefined,
+      estadoConservacao: data.estadoConservacao ? String(data.estadoConservacao) : undefined,
+      saudeBateria: data.saudeBateria !== undefined ? Number(data.saudeBateria) : undefined,
+      origem: data.origem ? String(data.origem) as Produto["origem"] : undefined,
+      garantiaDias: data.garantiaDias !== undefined ? Number(data.garantiaDias) : undefined,
+      laudoEntrada: data.laudoEntrada ? String(data.laudoEntrada) : undefined,
+      custoRestauracao: data.custoRestauracao !== undefined ? Number(data.custoRestauracao) : undefined,
       observacoes: data.observacoes ? String(data.observacoes) : undefined,
       createdAt: String(data.createdAt ?? ""),
       updatedAt: String(data.updatedAt ?? ""),

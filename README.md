@@ -23,11 +23,13 @@ O objetivo do projeto e centralizar o fluxo operacional da RR Infocell: clientes
 - Tela de orcamentos integrada com OS reais para envio, aprovacao e reprovacao por status.
 - PDV/Caixa integrado com OS reais prontas para retirada, registro de pagamento e entrega.
 - PDV/Caixa e Financeiro exibem historico de pagamentos com vinculo para a OS.
+- PDV/Caixa tambem registra venda direta de celular, acessorio e servico avulso sem OS, com carrinho, forma de pagamento, comprovante e garantia por item.
 - Dashboard inicial integrado com dados reais de OS, relatorio por status e resumo financeiro previsto.
 - Modulo de checklist tecnico implementado no backend com API REST, vinculo com OS/aparelho, Firestore/fallback local e testes.
 - Tela de checklist tecnico integrada com OS real e API de checklists.
 - Checklist de saida implementado para teste final antes da entrega.
 - Modulo de produtos/estoque implementado com API REST, Firestore/fallback local, testes e tela integrada.
+- Estoque de aparelhos para venda implementado com categorias `celular_novo`, `celular_seminovo` e `celular_restaurado`, IMEI obrigatorio, origem, laudo, garantia, custo de entrada/restauracao e controle individual por unidade.
 - Movimentacoes manuais de estoque implementadas com entrada, saida, ajuste, historico por produto e bloqueio de estoque negativo.
 - Baixa automatica de pecas usadas na OS integrada ao estoque.
 - Upload de fotos no checklist funcionando com Firebase Storage, regras por custom claim e metadados salvos no checklist.
@@ -227,12 +229,13 @@ npm test
 - Relatorio basico de OS por status no dashboard.
 - Visualizacao e impressao simples de comprovante da OS.
 - Estoque integrado com API real, CRUD de produtos, movimentacoes manuais e baixa por OS.
+- Venda direta no PDV para celulares por IMEI, acessorios e servicos avulsos, com historico financeiro.
 - Atendimento WhatsApp com envio/recebimento de mensagens, midias, acoes de OS e automacoes operacionais.
 - Sincronizacao entre detalhe da OS e manutencao para valores de pecas, mao de obra e total.
 
 ## Fora do MVP inicial
 
-- PDV completo.
+- PDV fiscal completo.
 - DRE completo.
 - Integracao com MarketUP.
 - Assinatura digital.

@@ -1,13 +1,30 @@
 import type { OrdemServicoFormaPagamento } from "./ordens-servico";
 
 export type VendaStatus = "finalizada" | "cancelada";
+export type VendaTipo = "ordem_servico" | "direta";
+
+export type VendaItem = {
+  produtoId: string;
+  sku: string;
+  nome: string;
+  categoria?: string;
+  imei?: string;
+  quantidade: number;
+  valorUnitario: number;
+  valorTotal: number;
+  garantiaDias?: number;
+  garantiaAte?: string;
+};
 
 export type Venda = {
   id: string;
-  ordemServicoId: string;
-  numeroOs: number;
-  clienteId: string;
-  aparelhoId: string;
+  tipo: VendaTipo;
+  ordemServicoId?: string;
+  numeroOs?: number;
+  clienteId?: string;
+  clienteNome?: string;
+  aparelhoId?: string;
+  itens: VendaItem[];
   valorPecas: number;
   valorMaoObra: number;
   valorTotal: number;
@@ -19,7 +36,15 @@ export type Venda = {
 };
 
 export type VendaInput = {
-  ordemServicoId: string;
+  ordemServicoId?: string;
+  clienteId?: string;
+  clienteNome?: string;
+  itens?: Array<{
+    produtoId: string;
+    quantidade: number;
+    valorUnitario?: number;
+    garantiaDias?: number;
+  }>;
   formaPagamento: OrdemServicoFormaPagamento;
   valorRecebido: number;
 };

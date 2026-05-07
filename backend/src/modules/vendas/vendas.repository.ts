@@ -115,10 +115,26 @@ export class FirestoreVendasRepository implements VendasRepository {
   private fromDocument(id: string, data: FirebaseFirestore.DocumentData): Venda {
     return {
       id,
-      ordemServicoId: String(data.ordemServicoId ?? ""),
-      numeroOs: Number(data.numeroOs ?? 0),
-      clienteId: String(data.clienteId ?? ""),
-      aparelhoId: String(data.aparelhoId ?? ""),
+      tipo: String(data.tipo ?? "ordem_servico") as Venda["tipo"],
+      ordemServicoId: data.ordemServicoId ? String(data.ordemServicoId) : undefined,
+      numeroOs: data.numeroOs !== undefined ? Number(data.numeroOs) : undefined,
+      clienteId: data.clienteId ? String(data.clienteId) : undefined,
+      clienteNome: data.clienteNome ? String(data.clienteNome) : undefined,
+      aparelhoId: data.aparelhoId ? String(data.aparelhoId) : undefined,
+      itens: Array.isArray(data.itens)
+        ? data.itens.map((item) => ({
+            produtoId: String(item.produtoId ?? ""),
+            sku: String(item.sku ?? ""),
+            nome: String(item.nome ?? ""),
+            categoria: item.categoria ? String(item.categoria) : undefined,
+            imei: item.imei ? String(item.imei) : undefined,
+            quantidade: Number(item.quantidade ?? 0),
+            valorUnitario: Number(item.valorUnitario ?? 0),
+            valorTotal: Number(item.valorTotal ?? 0),
+            garantiaDias: item.garantiaDias !== undefined ? Number(item.garantiaDias) : undefined,
+            garantiaAte: item.garantiaAte ? String(item.garantiaAte) : undefined,
+          }))
+        : [],
       valorPecas: Number(data.valorPecas ?? 0),
       valorMaoObra: Number(data.valorMaoObra ?? 0),
       valorTotal: Number(data.valorTotal ?? 0),

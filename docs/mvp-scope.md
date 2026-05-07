@@ -17,8 +17,9 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 9. Impressao do checklist tecnico.
 10. Controle de status da OS.
 11. Estoque de pecas e produtos com movimentacoes manuais.
-12. Relatorio basico de ordens de servico.
-13. Visualizacao ou impressao simples de comprovante da OS.
+12. Venda direta de celular, acessorio e servico avulso no PDV.
+13. Relatorio basico de ordens de servico.
+14. Visualizacao ou impressao simples de comprovante da OS/venda.
 
 ## Estado atual do fluxo de OS
 
@@ -29,7 +30,8 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 - OS possui prioridade, prazo prometido, alerta/filtro de atraso por tecnico/status/prioridade, garantia e dados de aprovacao.
 - Checklist de saida implementado para validar aparelho testado, carga, biometria/Face ID, camera, audio, chip/rede e senha antes da entrega.
 - PDV/Caixa integrado com OS reais para registrar venda, pagamento, troco, evento de entrega e marcar OS como entregue.
-- PDV/Caixa e tela financeira exibem historico de pagamentos com OS, forma, recebido, troco e link para detalhe da OS.
+- PDV/Caixa tambem permite venda direta sem OS, com carrinho de celular, acessorios e servicos avulsos.
+- PDV/Caixa e tela financeira exibem historico de pagamentos com OS ou venda direta, forma, recebido, troco e link para detalhe da OS quando houver.
 - Checklist tecnico vinculado a OS real.
 - Checklist tecnico registra o atendente logado e envia aviso automatico ao cliente pelo WhatsApp quando criado.
 - Detalhe da OS implementado com dados reais de cliente/aparelho.
@@ -43,9 +45,12 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 
 - Backend de produtos/estoque basico implementado com CRUD, filtros, Firestore/fallback local e testes.
 - Tela de estoque integrada com API real.
+- Cadastro de aparelho para venda implementado como item de estoque com categorias `celular_novo`, `celular_seminovo` e `celular_restaurado`.
+- Celular de venda exige IMEI e estoque individual por unidade, com marca/modelo, cor, capacidade, estado de conservacao, saude da bateria, origem, custo de entrada, custo de restauracao, preco final, garantia e laudo de entrada.
 - Indicadores de SKUs ativos, estoque baixo e valor em estoque calculados a partir dos dados reais.
 - Movimentacoes manuais implementadas com entrada, saida, ajuste, historico por produto e bloqueio de estoque negativo.
 - Baixa automatica por OS implementada a partir das pecas usadas no detalhe da OS.
+- Venda direta baixa automaticamente o estoque do aparelho/acessorio vendido e preserva IMEI e garantia no historico da venda.
 
 ## Estado atual do financeiro
 

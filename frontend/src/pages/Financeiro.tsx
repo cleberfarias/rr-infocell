@@ -364,12 +364,16 @@ const Financeiro = () => {
                       {new Date(venda.createdAt).toLocaleString("pt-BR")}
                     </td>
                     <td className="px-4 py-3 font-medium">
-                      <Link
-                        className="text-primary hover:underline"
-                        to={`/app/ordens/${venda.ordemServicoId}`}
-                      >
-                        OS-{venda.numeroOs}
-                      </Link>
+                      {venda.ordemServicoId ? (
+                        <Link
+                          className="text-primary hover:underline"
+                          to={`/app/ordens/${venda.ordemServicoId}`}
+                        >
+                          OS-{venda.numeroOs}
+                        </Link>
+                      ) : (
+                        "Venda direta"
+                      )}
                     </td>
                     <td className="px-4 py-3 uppercase">{venda.formaPagamento}</td>
                     <td className="px-4 py-3 text-right font-mono">

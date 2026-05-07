@@ -55,11 +55,22 @@ type ProdutoForm = {
   ativo: boolean;
   categoria: ProdutoCategoria;
   custo: string;
+  custoRestauracao: string;
+  capacidade: string;
+  cor: string;
   estoqueAtual: string;
   estoqueMinimo: string;
+  estadoConservacao: string;
+  garantiaDias: string;
+  imei: string;
+  laudoEntrada: string;
+  marca: string;
+  modelo: string;
   nome: string;
   observacoes: string;
+  origem: "compra" | "troca" | "consignado" | "";
   precoVenda: string;
+  saudeBateria: string;
   sku: string;
 };
 
@@ -73,12 +84,23 @@ type MovimentacaoForm = {
 const emptyForm: ProdutoForm = {
   ativo: true,
   categoria: "peca",
+  capacidade: "",
+  cor: "",
   custo: "0",
+  custoRestauracao: "0",
   estoqueAtual: "0",
   estoqueMinimo: "0",
+  estadoConservacao: "",
+  garantiaDias: "90",
+  imei: "",
+  laudoEntrada: "",
+  marca: "",
+  modelo: "",
   nome: "",
   observacoes: "",
+  origem: "",
   precoVenda: "0",
+  saudeBateria: "",
   sku: "",
 };
 
@@ -91,6 +113,9 @@ const emptyMovimentacaoForm: MovimentacaoForm = {
 
 const categoriaLabels: Record<ProdutoCategoria, string> = {
   acessorio: "Acessorio",
+  celular_novo: "Celular novo",
+  celular_restaurado: "Celular restaurado",
+  celular_seminovo: "Celular seminovo",
   peca: "Peca",
   produto: "Produto",
   servico: "Servico",
@@ -101,6 +126,9 @@ const categoriaOptions: Array<ProdutoCategoria | "todos"> = [
   "peca",
   "produto",
   "acessorio",
+  "celular_novo",
+  "celular_seminovo",
+  "celular_restaurado",
   "servico",
 ];
 
@@ -177,15 +205,33 @@ const Estoque = () => {
 
   const saveMutation = useMutation({
     mutationFn: (input: ProdutoForm) => {
+      const isCelular = input.categoria.startsWith("celular_");
       const payload = {
         ativo: input.ativo,
+        capacidade: isCelular ? input.capacidade || undefined : undefined,
         categoria: input.categoria,
+        cor: isCelular ? input.cor || undefined : undefined,
         custo: parseNumber(input.custo),
+        custoRestauracao: isCelular && input.custoRestauracao
+          ? parseNumber(input.custoRestauracao)
+          : undefined,
         estoqueAtual: Math.max(0, Math.trunc(parseNumber(input.estoqueAtual))),
         estoqueMinimo: Math.max(0, Math.trunc(parseNumber(input.estoqueMinimo))),
+        estadoConservacao: isCelular ? input.estadoConservacao || undefined : undefined,
+        garantiaDias: isCelular
+          ? Math.trunc(parseNumber(input.garantiaDias)) || undefined
+          : undefined,
+        imei: isCelular ? input.imei || undefined : undefined,
+        laudoEntrada: isCelular ? input.laudoEntrada || undefined : undefined,
+        marca: isCelular ? input.marca || undefined : undefined,
+        modelo: isCelular ? input.modelo || undefined : undefined,
         nome: input.nome,
         observacoes: input.observacoes || undefined,
+        origem: isCelular ? input.origem || "compra" : undefined,
         precoVenda: parseNumber(input.precoVenda),
+        saudeBateria: isCelular && input.saudeBateria
+          ? parseNumber(input.saudeBateria)
+          : undefined,
         sku: input.sku,
       };
 
@@ -269,12 +315,23 @@ const Estoque = () => {
     setForm({
       ativo: produto.ativo,
       categoria: produto.categoria,
+      capacidade: produto.capacidade ?? "",
+      cor: produto.cor ?? "",
       custo: String(produto.custo),
+      custoRestauracao: String(produto.custoRestauracao ?? 0),
       estoqueAtual: String(produto.estoqueAtual),
       estoqueMinimo: String(produto.estoqueMinimo),
+      estadoConservacao: produto.estadoConservacao ?? "",
+      garantiaDias: String(produto.garantiaDias ?? 90),
+      imei: produto.imei ?? "",
+      laudoEntrada: produto.laudoEntrada ?? "",
+      marca: produto.marca ?? "",
+      modelo: produto.modelo ?? "",
       nome: produto.nome,
       observacoes: produto.observacoes ?? "",
+      origem: produto.origem ?? "",
       precoVenda: String(produto.precoVenda),
+      saudeBateria: produto.saudeBateria ? String(produto.saudeBateria) : "",
       sku: produto.sku,
     });
     setFormError(null);
@@ -490,7 +547,9 @@ const Estoque = () => {
               </thead>
               <tbody>
                 {produtos.map((produto) => {
-                  const lucro = produto.precoVenda - produto.custo;
+                  const custoTotal =
+                    produto.custo + (produto.custoRestauracao ?? 0);
+                  const lucro = produto.precoVenda - custoTotal;
                   const margem =
                     produto.precoVenda > 0 ? (lucro / produto.precoVenda) * 100 : 0;
                   const baixo = produto.estoqueAtual <= produto.estoqueMinimo;
@@ -508,6 +567,11 @@ const Estoque = () => {
                         {produto.observacoes && (
                           <p className="text-xs text-muted-foreground">
                             {produto.observacoes}
+                          </p>
+                        )}
+                        {produto.imei && (
+                          <p className="font-mono text-xs text-muted-foreground">
+                            IMEI {produto.imei}
                           </p>
                         )}
                       </td>
@@ -597,9 +661,22 @@ const Estoque = () => {
               <FormField id="produto-categoria" label="Categoria">
                 <Select
                   value={form.categoria}
-                  onValueChange={(value) =>
-                    updateForm("categoria", value as ProdutoCategoria)
-                  }
+                  onValueChange={(value) => {
+                    const categoria = value as ProdutoCategoria;
+                    setForm((current) => ({
+                      ...current,
+                      categoria,
+                      estoqueAtual: categoria.startsWith("celular_")
+                        ? "1"
+                        : current.estoqueAtual,
+                      estoqueMinimo: categoria.startsWith("celular_")
+                        ? "0"
+                        : current.estoqueMinimo,
+                      origem: categoria.startsWith("celular_")
+                        ? current.origem || "compra"
+                        : current.origem,
+                    }));
+                  }}
                 >
                   <SelectTrigger id="produto-categoria">
                     <SelectValue />
@@ -621,6 +698,108 @@ const Estoque = () => {
                   required
                 />
               </FormField>
+              {form.categoria.startsWith("celular_") && (
+                <>
+                  <FormField id="produto-marca" label="Marca">
+                    <Input
+                      id="produto-marca"
+                      value={form.marca}
+                      onChange={(event) => updateForm("marca", event.target.value)}
+                    />
+                  </FormField>
+                  <FormField id="produto-modelo" label="Modelo">
+                    <Input
+                      id="produto-modelo"
+                      value={form.modelo}
+                      onChange={(event) => updateForm("modelo", event.target.value)}
+                    />
+                  </FormField>
+                  <FormField id="produto-imei" label="IMEI">
+                    <Input
+                      id="produto-imei"
+                      value={form.imei}
+                      onChange={(event) => updateForm("imei", event.target.value)}
+                      required
+                    />
+                  </FormField>
+                  <FormField id="produto-capacidade" label="Capacidade">
+                    <Input
+                      id="produto-capacidade"
+                      value={form.capacidade}
+                      onChange={(event) => updateForm("capacidade", event.target.value)}
+                      placeholder="Ex.: 128 GB"
+                    />
+                  </FormField>
+                  <FormField id="produto-cor" label="Cor">
+                    <Input
+                      id="produto-cor"
+                      value={form.cor}
+                      onChange={(event) => updateForm("cor", event.target.value)}
+                    />
+                  </FormField>
+                  <FormField id="produto-bateria" label="Saude da bateria (%)">
+                    <Input
+                      id="produto-bateria"
+                      min="0"
+                      max="100"
+                      type="number"
+                      value={form.saudeBateria}
+                      onChange={(event) => updateForm("saudeBateria", event.target.value)}
+                    />
+                  </FormField>
+                  <FormField id="produto-estado" label="Estado de conservacao">
+                    <Input
+                      id="produto-estado"
+                      value={form.estadoConservacao}
+                      onChange={(event) => updateForm("estadoConservacao", event.target.value)}
+                      placeholder="Ex.: vitrine, bom, marcas leves"
+                    />
+                  </FormField>
+                  <FormField id="produto-origem" label="Origem">
+                    <Select
+                      value={form.origem || "compra"}
+                      onValueChange={(value) => updateForm("origem", value as ProdutoForm["origem"])}
+                    >
+                      <SelectTrigger id="produto-origem">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="compra">Compra</SelectItem>
+                        <SelectItem value="troca">Troca</SelectItem>
+                        <SelectItem value="consignado">Consignado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormField>
+                  <FormField id="produto-garantia" label="Garantia (dias)">
+                    <Input
+                      id="produto-garantia"
+                      min="0"
+                      step="1"
+                      type="number"
+                      value={form.garantiaDias}
+                      onChange={(event) => updateForm("garantiaDias", event.target.value)}
+                    />
+                  </FormField>
+                  <FormField id="produto-restauracao" label="Custo de restauracao">
+                    <Input
+                      id="produto-restauracao"
+                      min="0"
+                      step="0.01"
+                      type="number"
+                      value={form.custoRestauracao}
+                      onChange={(event) => updateForm("custoRestauracao", event.target.value)}
+                    />
+                  </FormField>
+                  <FormField id="produto-laudo" label="Laudo de entrada" className="sm:col-span-2">
+                    <Textarea
+                      id="produto-laudo"
+                      value={form.laudoEntrada}
+                      onChange={(event) => updateForm("laudoEntrada", event.target.value)}
+                      placeholder="Checklist, observacoes de compra/troca e restauracao."
+                    />
+                  </FormField>
+                </>
+              )}
               <FormField id="produto-estoque" label="Estoque atual">
                 <Input
                   id="produto-estoque"

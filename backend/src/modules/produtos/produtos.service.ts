@@ -31,10 +31,12 @@ export class ProdutosService {
   }
 
   async create(input: ProdutoInput) {
+    this.ensureCelularIndividual(input);
     return this.repository.create(input);
   }
 
   async update(id: string, input: ProdutoInput) {
+    this.ensureCelularIndividual(input);
     const produto = await this.repository.update(id, input);
 
     if (!produto) {
@@ -49,6 +51,17 @@ export class ProdutosService {
 
     if (!deleted) {
       throw new AppError("produto_not_found", "Produto nao encontrado.", httpStatus.notFound);
+    }
+  }
+
+  private ensureCelularIndividual(input: ProdutoInput) {
+    if (!input.categoria.startsWith("celular_")) return;
+    if (input.estoqueAtual > 1) {
+      throw new AppError(
+        "celular_estoque_individual",
+        "Celular deve ser controlado individualmente por IMEI.",
+        httpStatus.badRequest,
+      );
     }
   }
 }

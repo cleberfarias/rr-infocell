@@ -6,7 +6,7 @@ const optionalText = z
   .optional()
   .transform((value) => (value ? value : undefined));
 
-const origemSchema = z.enum(["manual", "ordem_servico"]).optional();
+const origemSchema = z.enum(["manual", "ordem_servico", "venda"]).optional();
 
 const baseSchema = {
   produtoId: z.string().trim().min(1, "Produto e obrigatorio."),
