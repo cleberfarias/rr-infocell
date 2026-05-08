@@ -37,6 +37,7 @@ import {
   listOrcamentos,
   type OrcamentoStatus,
 } from "@/services/orcamentos";
+import { enviarOrcamento } from "@/services/whatsapp";
 
 const budgetStatuses: OrdemServicoStatus[] = [
   "em_analise",
@@ -175,7 +176,7 @@ const Orcamento = () => {
           orcamentoStatus === "aprovado" ? mensagemAprovacao || undefined : undefined,
       });
 
-      return updateOrdemServico(selectedOrdem.id, {
+      const ordem = await updateOrdemServico(selectedOrdem.id, {
         clienteId: selectedOrdem.clienteId,
         aparelhoId: selectedOrdem.aparelhoId,
         checklistId: selectedOrdem.checklistId,
@@ -199,16 +200,34 @@ const Orcamento = () => {
             ? mensagemAprovacao || undefined
             : selectedOrdem.mensagemAprovacao,
       });
+
+      if (orcamentoStatus !== "enviado") {
+        return { ordem, whatsappErro: null };
+      }
+
+      try {
+        await enviarOrcamento(ordem.id);
+        return { ordem, whatsappErro: null };
+      } catch (error) {
+        return {
+          ordem,
+          whatsappErro:
+            error instanceof Error
+              ? error.message
+              : "Orcamento salvo, mas nao foi possivel enviar pelo WhatsApp.",
+        };
+      }
     },
-    onSuccess: async (ordem) => {
+    onSuccess: async ({ ordem, whatsappErro }) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["ordens-servico"] }),
         queryClient.invalidateQueries({ queryKey: ["ordem-servico", ordem.id] }),
         queryClient.invalidateQueries({ queryKey: ["orcamentos"] }),
+        queryClient.invalidateQueries({ queryKey: ["whatsapp-conversas"] }),
         queryClient.invalidateQueries({ queryKey: ["ordem-eventos"] }),
       ]);
       setSelectedOrdemId(ordem.id);
-      setActionError(null);
+      setActionError(whatsappErro);
     },
     onError: (error) => {
       setActionError(
