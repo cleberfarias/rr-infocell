@@ -9,6 +9,7 @@ const isRunningTests = env.NODE_ENV === "test" || process.env.VITEST === "true";
 const isUsingFirebaseEmulator = Boolean(
   !isRunningTests && (env.FIRESTORE_EMULATOR_HOST || env.FIREBASE_AUTH_EMULATOR_HOST),
 );
+const isCloudRuntime = env.NODE_ENV === "production" && env.FIREBASE_PROJECT_ID;
 
 export const initializeFirebaseAdmin = (): App | null => {
   if (getApps().length > 0) {
@@ -22,6 +23,13 @@ export const initializeFirebaseAdmin = (): App | null => {
   }
 
   if (!isRunningTests && env.GOOGLE_APPLICATION_CREDENTIALS && env.FIREBASE_PROJECT_ID) {
+    return initializeApp({
+      credential: applicationDefault(),
+      projectId: env.FIREBASE_PROJECT_ID,
+    });
+  }
+
+  if (!isRunningTests && isCloudRuntime) {
     return initializeApp({
       credential: applicationDefault(),
       projectId: env.FIREBASE_PROJECT_ID,

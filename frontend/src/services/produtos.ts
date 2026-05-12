@@ -1,3 +1,4 @@
+import { apiRequest } from "./api";
 export type ProdutoCategoria =
   | "peca"
   | "produto"
@@ -63,35 +64,6 @@ type ApiResponse<T> = {
   meta?: Record<string, unknown>;
 };
 
-const apiBaseUrl =
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3333/api";
-
-const request = async <T>(path: string, init?: RequestInit) => {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...init?.headers,
-    },
-    ...init,
-  });
-
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as
-      | { error?: { message?: string } }
-      | null;
-
-    throw new Error(
-      payload?.error?.message ?? "Nao foi possivel concluir a operacao.",
-    );
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return (await response.json()) as T;
-};
-
 export const listProdutos = async (
   filters: {
     query?: string;
@@ -114,7 +86,7 @@ export const listProdutos = async (
   }
 
   const suffix = search.toString() ? `?${search.toString()}` : "";
-  const response = await request<ApiResponse<Produto[]>>(
+  const response = await apiRequest<ApiResponse<Produto[]>>(
     `/produtos${suffix}`,
   );
 
@@ -122,7 +94,7 @@ export const listProdutos = async (
 };
 
 export const createProduto = async (input: ProdutoInput) => {
-  const response = await request<ApiResponse<Produto>>("/produtos", {
+  const response = await apiRequest<ApiResponse<Produto>>("/produtos", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -131,7 +103,7 @@ export const createProduto = async (input: ProdutoInput) => {
 };
 
 export const updateProduto = async (id: string, input: ProdutoInput) => {
-  const response = await request<ApiResponse<Produto>>(`/produtos/${id}`, {
+  const response = await apiRequest<ApiResponse<Produto>>(`/produtos/${id}`, {
     method: "PUT",
     body: JSON.stringify(input),
   });
@@ -140,7 +112,7 @@ export const updateProduto = async (id: string, input: ProdutoInput) => {
 };
 
 export const deleteProduto = async (id: string) => {
-  await request<void>(`/produtos/${id}`, {
+  await apiRequest<void>(`/produtos/${id}`, {
     method: "DELETE",
   });
 };

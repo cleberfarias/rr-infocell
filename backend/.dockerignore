@@ -1,0 +1,7 @@
+dist
+node_modules
+.env
+firebase-service-account.local.json
+whatsapp-auth
+coverage
+npm-debug.log

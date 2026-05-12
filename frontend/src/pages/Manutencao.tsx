@@ -41,10 +41,8 @@ import {
   type OrdemServico,
   type OrdemServicoStatus,
 } from "@/services/ordens-servico";
-import {
-  createOrdemEvento,
-  listOrdemEventos,
-} from "@/services/ordem-eventos";
+import { createOrdemEvento, listOrdemEventos } from "@/services/ordem-eventos";
+import { listTecnicos } from "@/services/usuarios";
 
 type ManutencaoForm = {
   diagnostico: string;
@@ -65,8 +63,6 @@ const statusFlow: Array<{ key: OrdemServicoStatus; label: string }> = [
   { key: "pronto_para_retirada", label: "Pronto retirada" },
   { key: "entregue", label: "Entregue" },
 ];
-
-const tecnicoOptions = ["Rafael S.", "Diego M.", "Bruno T."];
 
 const maintenanceStatuses: OrdemServicoStatus[] = [
   "recebido",
@@ -139,6 +135,11 @@ const Manutencao = () => {
     queryFn: () => listAparelhos(),
   });
 
+  const tecnicosQuery = useQuery({
+    queryKey: ["usuarios", "tecnicos"],
+    queryFn: listTecnicos,
+  });
+
   const eventosQuery = useQuery({
     queryKey: ["ordem-eventos", selectedOrdemId],
     queryFn: () => listOrdemEventos({ ordemServicoId: selectedOrdemId }),
@@ -174,6 +175,21 @@ const Manutencao = () => {
       ),
     [aparelhosQuery.data],
   );
+
+  const tecnicoOptions = useMemo(() => {
+    const tecnicos = (tecnicosQuery.data ?? [])
+      .map((tecnico) => tecnico.displayName || tecnico.email)
+      .filter((nome): nome is string => Boolean(nome));
+
+    if (
+      form?.tecnicoResponsavel &&
+      !tecnicos.includes(form.tecnicoResponsavel)
+    ) {
+      return [...tecnicos, form.tecnicoResponsavel];
+    }
+
+    return tecnicos;
+  }, [form?.tecnicoResponsavel, tecnicosQuery.data]);
 
   const selectedOrdemFromList = useMemo(() => {
     if (!selectedOrdemId) {
@@ -239,7 +255,9 @@ const Manutencao = () => {
       });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["ordens-servico"] }),
-        queryClient.invalidateQueries({ queryKey: ["ordem-servico", ordem.id] }),
+        queryClient.invalidateQueries({
+          queryKey: ["ordem-servico", ordem.id],
+        }),
         queryClient.invalidateQueries({ queryKey: ["ordem-eventos"] }),
       ]);
       setSelectedOrdemId(ordem.id);
@@ -329,7 +347,7 @@ const Manutencao = () => {
     : -1;
   const valorMaoObraAtual = form
     ? Number(form.valorMaoObra.replace(",", ".")) || 0
-    : selectedOrdem?.valorMaoObra ?? 0;
+    : (selectedOrdem?.valorMaoObra ?? 0);
   const valorTotalAtual = (selectedOrdem?.valorPecas ?? 0) + valorMaoObraAtual;
 
   if (isLoading) {
@@ -379,9 +397,7 @@ const Manutencao = () => {
       <PageHeader
         eyebrow="Manutencao"
         title={
-          selectedOrdem
-            ? `OS-${selectedOrdem.numero}`
-            : "Fluxo tecnico de OS"
+          selectedOrdem ? `OS-${selectedOrdem.numero}` : "Fluxo tecnico de OS"
         }
         description="Atualize diagnostico, responsavel, status tecnico e acompanhe as pecas usadas na OS."
         actions={
@@ -421,7 +437,11 @@ const Manutencao = () => {
       />
 
       <Card className="surface-panel flex flex-wrap items-end gap-3 p-4">
-        <FormField id="manutencao-os" label="Ordem de servico" className="flex-1">
+        <FormField
+          id="manutencao-os"
+          label="Ordem de servico"
+          className="flex-1"
+        >
           <Select value={selectedOrdemId} onValueChange={handleSelectOrdem}>
             <SelectTrigger id="manutencao-os">
               <SelectValue />
@@ -488,7 +508,10 @@ const Manutencao = () => {
                 const active = index === currentIdx;
 
                 return (
-                  <div key={status.key} className="flex flex-1 items-center gap-2">
+                  <div
+                    key={status.key}
+                    className="flex flex-1 items-center gap-2"
+                  >
                     <div className="flex min-w-[86px] flex-col items-center gap-1">
                       <div
                         className={
@@ -571,9 +594,20 @@ const Manutencao = () => {
                         onValueChange={(value) =>
                           updateForm("tecnicoResponsavel", value)
                         }
+                        disabled={
+                          tecnicosQuery.isLoading || tecnicoOptions.length === 0
+                        }
                       >
                         <SelectTrigger id="manutencao-tecnico">
-                          <SelectValue placeholder="Atribuir tecnico" />
+                          <SelectValue
+                            placeholder={
+                              tecnicosQuery.isLoading
+                                ? "Carregando tecnicos"
+                                : tecnicoOptions.length > 0
+                                  ? "Atribuir tecnico"
+                                  : "Nenhum tecnico cadastrado"
+                            }
+                          />
                         </SelectTrigger>
                         <SelectContent>
                           {tecnicoOptions.map((tecnico) => (
@@ -588,7 +622,10 @@ const Manutencao = () => {
                       <Select
                         value={form.prioridade}
                         onValueChange={(value) =>
-                          updateForm("prioridade", value as OrdemServico["prioridade"])
+                          updateForm(
+                            "prioridade",
+                            value as OrdemServico["prioridade"],
+                          )
                         }
                       >
                         <SelectTrigger id="manutencao-prioridade">
@@ -627,7 +664,10 @@ const Manutencao = () => {
                         }
                       />
                     </FormField>
-                    <FormField id="manutencao-garantia-obs" label="Observacao da garantia">
+                    <FormField
+                      id="manutencao-garantia-obs"
+                      label="Observacao da garantia"
+                    >
                       <Input
                         id="manutencao-garantia-obs"
                         value={form.garantiaObservacoes}
@@ -658,8 +698,12 @@ const Manutencao = () => {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border bg-secondary/30 text-xs uppercase tracking-wider text-muted-foreground">
-                        <th className="px-4 py-3 text-left font-medium">Item</th>
-                        <th className="px-4 py-3 text-center font-medium">Qtd.</th>
+                        <th className="px-4 py-3 text-left font-medium">
+                          Item
+                        </th>
+                        <th className="px-4 py-3 text-center font-medium">
+                          Qtd.
+                        </th>
                         <th className="px-4 py-3 text-right font-medium">
                           Unitario
                         </th>
@@ -742,7 +786,9 @@ const Manutencao = () => {
                     <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                       {formatDateTime(selectedOrdem.updatedAt)}
                     </p>
-                    <p className="text-sm font-semibold">Diagnostico atualizado</p>
+                    <p className="text-sm font-semibold">
+                      Diagnostico atualizado
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       {selectedOrdem.diagnostico}
                     </p>
@@ -754,7 +800,9 @@ const Manutencao = () => {
                     <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                       {formatDateTime(selectedOrdem.concluidaEm)}
                     </p>
-                    <p className="text-sm font-semibold">Pronta para retirada</p>
+                    <p className="text-sm font-semibold">
+                      Pronta para retirada
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       OS concluida tecnicamente.
                     </p>
@@ -823,7 +871,9 @@ const Manutencao = () => {
                   </Link>
                 </Button>
                 <Button asChild variant="outline" className="w-full">
-                  <Link to={`/app/checklist?ordemId=${selectedOrdem.id}&tipo=saida`}>
+                  <Link
+                    to={`/app/checklist?ordemId=${selectedOrdem.id}&tipo=saida`}
+                  >
                     Checklist de saida
                   </Link>
                 </Button>

@@ -88,7 +88,7 @@ const Despesas = () => {
     queryFn: () => listDespesas(),
   });
 
-  const lista = despesasQuery.data ?? [];
+  const lista = useMemo(() => despesasQuery.data ?? [], [despesasQuery.data]);
   const filtrada = useMemo(
     () =>
       filtro === "todas"

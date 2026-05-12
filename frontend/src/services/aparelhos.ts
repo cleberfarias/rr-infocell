@@ -1,3 +1,4 @@
+import { apiRequest } from "./api";
 export type Aparelho = {
   id: string;
   clienteId: string;
@@ -28,35 +29,6 @@ type ApiResponse<T> = {
   meta?: Record<string, unknown>;
 };
 
-const apiBaseUrl =
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3333/api";
-
-const request = async <T>(path: string, init?: RequestInit) => {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...init?.headers,
-    },
-    ...init,
-  });
-
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as {
-      error?: { message?: string };
-    } | null;
-
-    throw new Error(
-      payload?.error?.message ?? "Nao foi possivel concluir a operacao.",
-    );
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return (await response.json()) as T;
-};
-
 export const listAparelhos = async (
   filters: { query?: string; clienteId?: string } = {},
 ) => {
@@ -71,7 +43,7 @@ export const listAparelhos = async (
   }
 
   const suffix = search.toString() ? `?${search.toString()}` : "";
-  const response = await request<ApiResponse<Aparelho[]>>(
+  const response = await apiRequest<ApiResponse<Aparelho[]>>(
     `/aparelhos${suffix}`,
   );
 
@@ -79,13 +51,13 @@ export const listAparelhos = async (
 };
 
 export const getAparelho = async (id: string) => {
-  const response = await request<ApiResponse<Aparelho>>(`/aparelhos/${id}`);
+  const response = await apiRequest<ApiResponse<Aparelho>>(`/aparelhos/${id}`);
 
   return response.data;
 };
 
 export const createAparelho = async (input: AparelhoInput) => {
-  const response = await request<ApiResponse<Aparelho>>("/aparelhos", {
+  const response = await apiRequest<ApiResponse<Aparelho>>("/aparelhos", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -94,7 +66,7 @@ export const createAparelho = async (input: AparelhoInput) => {
 };
 
 export const updateAparelho = async (id: string, input: AparelhoInput) => {
-  const response = await request<ApiResponse<Aparelho>>(`/aparelhos/${id}`, {
+  const response = await apiRequest<ApiResponse<Aparelho>>(`/aparelhos/${id}`, {
     method: "PUT",
     body: JSON.stringify(input),
   });
@@ -103,7 +75,7 @@ export const updateAparelho = async (id: string, input: AparelhoInput) => {
 };
 
 export const deleteAparelho = async (id: string) => {
-  await request<void>(`/aparelhos/${id}`, {
+  await apiRequest<void>(`/aparelhos/${id}`, {
     method: "DELETE",
   });
 };

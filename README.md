@@ -66,7 +66,7 @@ O objetivo do projeto e centralizar o fluxo operacional da RR Infocell: clientes
 - Firebase Hosting para o frontend.
 - Firestore como banco principal.
 - Firebase Storage para fotos e comprovantes.
-- Cloud Run, Render ou Railway para API Node/Express.
+- Cloud Run para API Node/Express.
 
 ## Estrutura do repositorio
 
@@ -203,8 +203,10 @@ npm test
 - [Escopo do MVP](docs/mvp-scope.md)
 - [Arquitetura Firebase](infra/firebase/architecture.md)
 - [Setup Firebase](infra/firebase/setup.md)
+- [Cloud Run](infra/cloud-run/README.md)
 - [Estrutura do projeto](docs/project-structure.md)
 - [Regra de atualizacao do Notion](docs/notion-update-rule.md)
+- [Checklist de deploy de producao](docs/production-deploy.md)
 - [Backend](backend/README.md)
 - [Modulo clientes](backend/src/modules/clientes/README.md)
 - [Modulo aparelhos](backend/src/modules/aparelhos/README.md)

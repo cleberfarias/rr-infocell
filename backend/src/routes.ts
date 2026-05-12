@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import { requireAuth, requireRole } from "./middlewares/auth.js";
 import { aparelhosRoutes } from "./modules/aparelhos/aparelhos.routes.js";
 import { checklistsRoutes } from "./modules/checklists/checklists.routes.js";
 import { clientesRoutes } from "./modules/clientes/clientes.routes.js";
@@ -11,21 +12,32 @@ import { ordemEventosRoutes } from "./modules/ordem-eventos/ordem-eventos.routes
 import { ordensServicoRoutes } from "./modules/ordens-servico/ordens-servico.routes.js";
 import { produtosRoutes } from "./modules/produtos/produtos.routes.js";
 import { usuariosRoutes } from "./modules/usuarios/usuarios.routes.js";
+import { usuariosTecnicosRoutes } from "./modules/usuarios/usuarios-tecnicos.routes.js";
 import { vendasRoutes } from "./modules/vendas/vendas.routes.js";
 import { whatsappRoutes } from "./modules/whatsapp/whatsapp.router.js";
 
 export const routes = Router();
 
 routes.use("/health", healthRoutes);
-routes.use("/clientes", clientesRoutes);
-routes.use("/despesas", despesasRoutes);
-routes.use("/aparelhos", aparelhosRoutes);
-routes.use("/ordens-servico", ordensServicoRoutes);
-routes.use("/checklists", checklistsRoutes);
-routes.use("/ordem-eventos", ordemEventosRoutes);
-routes.use("/orcamentos", orcamentosRoutes);
-routes.use("/vendas", vendasRoutes);
-routes.use("/produtos", produtosRoutes);
-routes.use("/movimentacoes-estoque", movimentacoesEstoqueRoutes);
-routes.use("/usuarios", usuariosRoutes);
-routes.use("/whatsapp", whatsappRoutes);
+routes.use(requireAuth);
+routes.use("/clientes", requireRole("admin", "atendente", "tecnico"), clientesRoutes);
+routes.use("/despesas", requireRole("admin"), despesasRoutes);
+routes.use("/aparelhos", requireRole("admin", "atendente", "tecnico"), aparelhosRoutes);
+routes.use("/ordens-servico", requireRole("admin", "atendente", "tecnico"), ordensServicoRoutes);
+routes.use("/checklists", requireRole("admin", "atendente", "tecnico"), checklistsRoutes);
+routes.use("/ordem-eventos", requireRole("admin", "atendente", "tecnico"), ordemEventosRoutes);
+routes.use("/orcamentos", requireRole("admin", "atendente", "tecnico"), orcamentosRoutes);
+routes.use("/vendas", requireRole("admin", "atendente"), vendasRoutes);
+routes.use("/produtos", requireRole("admin", "atendente", "tecnico"), produtosRoutes);
+routes.use(
+  "/movimentacoes-estoque",
+  requireRole("admin", "atendente", "tecnico"),
+  movimentacoesEstoqueRoutes,
+);
+routes.use(
+  "/usuarios/tecnicos",
+  requireRole("admin", "atendente", "tecnico"),
+  usuariosTecnicosRoutes,
+);
+routes.use("/usuarios", requireRole("admin"), usuariosRoutes);
+routes.use("/whatsapp", requireRole("admin", "atendente", "tecnico"), whatsappRoutes);

@@ -6,13 +6,13 @@ export const NAME_KEY = "rr.nome";
 export const roleLabels: Record<Role, string> = {
   admin: "Administrador",
   atendente: "Atendente",
-  tecnico: "Técnico",
+  tecnico: "Tecnico",
 };
 
 export const roleNames: Record<Role, string> = {
-  admin: "Ricardo R.",
-  atendente: "Camila O.",
-  tecnico: "Rafael S.",
+  admin: "Administrador",
+  atendente: "Atendente",
+  tecnico: "Tecnico",
 };
 
 // Rotas permitidas por perfil (sem o prefixo /app)
@@ -44,7 +44,15 @@ export const rolePermissions: Record<Role, string[]> = {
     "aparelhos",
     "atendimento",
   ],
-  tecnico: ["", "ordens", "checklist", "manutencao", "orcamento", "estoque", "atendimento"],
+  tecnico: [
+    "",
+    "ordens",
+    "checklist",
+    "manutencao",
+    "orcamento",
+    "estoque",
+    "atendimento",
+  ],
 };
 
 export const roleHome: Record<Role, string> = {

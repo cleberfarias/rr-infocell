@@ -18,6 +18,7 @@ import {
   UserCog,
   MessageSquare,
 } from "lucide-react";
+import { DeveloperCredit } from "@/components/DeveloperCredit";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -143,8 +144,8 @@ export const AppLayout = () => {
     <div className="flex min-h-screen w-full bg-background">
       {/* Sidebar */}
       <aside className="hidden md:flex w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
-        <div className="flex h-20 items-center justify-center border-b border-sidebar-border px-4">
-          <Logo className="h-12" />
+        <div className="flex h-28 items-center justify-center border-b border-sidebar-border px-4">
+          <Logo className="h-20" />
         </div>
 
         <nav className="flex-1 space-y-1 p-3">
@@ -200,7 +201,7 @@ export const AppLayout = () => {
         {/* Topbar */}
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border bg-background/80 px-4 backdrop-blur md:px-8">
           <div className="md:hidden">
-            <Logo className="h-8" />
+            <Logo className="h-12" />
           </div>
           <div className="hidden md:flex flex-col">
             <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
@@ -239,6 +240,9 @@ export const AppLayout = () => {
         <main className="flex-1 overflow-x-hidden p-4 md:p-8 animate-fade-in">
           <Outlet />
         </main>
+        <footer className="flex justify-center border-t border-border px-4 py-3 md:px-8">
+          <DeveloperCredit />
+        </footer>
       </div>
     </div>
   );

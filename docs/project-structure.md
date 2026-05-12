@@ -59,6 +59,7 @@ Arquivos principais:
 - `src/app.ts`
 - `src/server.ts`
 - `src/routes.ts`
+- `src/middlewares/auth.ts`
 - `src/firebase/admin.ts`
 - `src/modules/health/health.routes.ts`
 - `src/modules/clientes/clientes.routes.ts`
@@ -100,6 +101,7 @@ Contem configuracoes de deploy e ambiente Firebase.
 Responsabilidades:
 
 - Firebase Hosting.
+- Google Cloud Run para API.
 - Regras do Firestore.
 - Regras do Storage.
 - Scripts de deploy.
@@ -107,10 +109,12 @@ Responsabilidades:
 
 Arquivos principais:
 
+- `infra/cloud-run/README.md`
 - `infra/firebase/firestore.rules`
 - `infra/firebase/storage.rules`
 - `infra/firebase/architecture.md`
 - `infra/firebase/setup.md`
+- `infra/scripts/deploy-backend-cloud-run.ps1`
 - `firebase.json`
 - `.firebaserc.example`
 
@@ -122,6 +126,7 @@ Arquivos principais:
 
 - `design-system.md`
 - `mvp-scope.md`
+- `production-deploy.md`
 - `project-structure.md`
 
 ## Makefile

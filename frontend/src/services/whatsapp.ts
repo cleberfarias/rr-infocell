@@ -1,3 +1,4 @@
+import { apiRequest } from "./api";
 import type { Cliente } from "./clientes";
 import type { OrdemServico } from "./ordens-servico";
 
@@ -55,34 +56,19 @@ export type ConversaDetalhe = {
   ordensAtivas: OrdemServico[];
 };
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3333/api";
-
-const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
-  const res = await fetch(`${apiBaseUrl}${path}`, {
-    headers: { "Content-Type": "application/json", ...init?.headers },
-    ...init,
-  });
-  if (!res.ok) {
-    const payload = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
-    throw new Error(payload?.error?.message ?? "Erro na requisicao.");
-  }
-  return res.json() as Promise<T>;
-};
-
 export const getStatusWhatsApp = () =>
-  request<{ status: string }>("/whatsapp/status");
+  apiRequest<{ status: string }>("/whatsapp/status");
 
-export const getQRCode = () =>
-  request<{ qr: string }>("/whatsapp/qrcode");
+export const getQRCode = () => apiRequest<{ qr: string }>("/whatsapp/qrcode");
 
 export const listarConversas = () =>
-  request<Conversa[]>("/whatsapp/conversas");
+  apiRequest<Conversa[]>("/whatsapp/conversas");
 
 export const getConversa = (telefone: string) =>
-  request<ConversaDetalhe>(`/whatsapp/conversas/${telefone}`);
+  apiRequest<ConversaDetalhe>(`/whatsapp/conversas/${telefone}`);
 
 export const enviarMensagem = (telefone: string, texto: string) =>
-  request<{ ok: boolean }>("/whatsapp/enviar", {
+  apiRequest<{ ok: boolean }>("/whatsapp/enviar", {
     method: "POST",
     body: JSON.stringify({ telefone, texto }),
   });
@@ -96,7 +82,7 @@ export const enviarMidia = (
     legenda?: string;
   },
 ) =>
-  request<{ ok: boolean }>("/whatsapp/enviar-midia", {
+  apiRequest<{ ok: boolean }>("/whatsapp/enviar-midia", {
     method: "POST",
     body: JSON.stringify({ telefone, ...arquivo }),
   });
@@ -110,19 +96,19 @@ export const atualizarConversa = (
     arquivada?: boolean;
   },
 ) =>
-  request<{ ok: boolean }>(`/whatsapp/conversas/${telefone}`, {
+  apiRequest<{ ok: boolean }>(`/whatsapp/conversas/${telefone}`, {
     method: "PATCH",
     body: JSON.stringify(dados),
   });
 
 export const enviarOrcamento = (osId: string) =>
-  request<{ ok: boolean }>("/whatsapp/acoes/enviar-orcamento", {
+  apiRequest<{ ok: boolean }>("/whatsapp/acoes/enviar-orcamento", {
     method: "POST",
     body: JSON.stringify({ osId }),
   });
 
 export const informarPronto = (osId: string) =>
-  request<{ ok: boolean }>("/whatsapp/acoes/informar-pronto", {
+  apiRequest<{ ok: boolean }>("/whatsapp/acoes/informar-pronto", {
     method: "POST",
     body: JSON.stringify({ osId }),
   });
@@ -132,13 +118,13 @@ export const confirmarPagamento = (
   formaPagamento: "pix" | "cartao" | "dinheiro",
   valorRecebido: number,
 ) =>
-  request<{ ok: boolean }>("/whatsapp/acoes/confirmar-pagamento", {
+  apiRequest<{ ok: boolean }>("/whatsapp/acoes/confirmar-pagamento", {
     method: "POST",
     body: JSON.stringify({ osId, formaPagamento, valorRecebido }),
   });
 
 export const enviarStatus = (osId: string) =>
-  request<{ ok: boolean }>("/whatsapp/acoes/enviar-status", {
+  apiRequest<{ ok: boolean }>("/whatsapp/acoes/enviar-status", {
     method: "POST",
     body: JSON.stringify({ osId }),
   });

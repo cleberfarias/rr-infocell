@@ -22,6 +22,7 @@ import {
   type OrdemServicoInput,
   type OrdemServicoStatus,
 } from "@/services/ordens-servico";
+import { listTecnicos } from "@/services/usuarios";
 
 type NovaOSForm = {
   clienteId: string;
@@ -55,8 +56,6 @@ const emptyForm: NovaOSForm = {
   previsaoEntregaEm: "",
 };
 
-const tecnicoOptions = ["Rafael S.", "Diego M.", "Bruno T."];
-
 const NovaOS = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -74,6 +73,11 @@ const NovaOS = () => {
     enabled: Boolean(form.clienteId),
   });
 
+  const tecnicosQuery = useQuery({
+    queryKey: ["usuarios", "tecnicos"],
+    queryFn: listTecnicos,
+  });
+
   const clientes = useMemo(
     () => clientesQuery.data ?? [],
     [clientesQuery.data],
@@ -81,6 +85,13 @@ const NovaOS = () => {
   const aparelhos = useMemo(
     () => aparelhosQuery.data ?? [],
     [aparelhosQuery.data],
+  );
+  const tecnicoOptions = useMemo(
+    () =>
+      (tecnicosQuery.data ?? [])
+        .map((tecnico) => tecnico.displayName || tecnico.email)
+        .filter((nome): nome is string => Boolean(nome)),
+    [tecnicosQuery.data],
   );
 
   const selectedCliente = useMemo(
@@ -315,9 +326,20 @@ const NovaOS = () => {
                   onValueChange={(value) =>
                     updateForm("tecnicoResponsavel", value)
                   }
+                  disabled={
+                    tecnicosQuery.isLoading || tecnicoOptions.length === 0
+                  }
                 >
                   <SelectTrigger id="nova-os-tecnico">
-                    <SelectValue placeholder="Atribuir tecnico" />
+                    <SelectValue
+                      placeholder={
+                        tecnicosQuery.isLoading
+                          ? "Carregando tecnicos"
+                          : tecnicoOptions.length > 0
+                            ? "Atribuir tecnico"
+                            : "Nenhum tecnico cadastrado"
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {tecnicoOptions.map((tecnico) => (

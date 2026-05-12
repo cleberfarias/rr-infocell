@@ -1,3 +1,4 @@
+import { apiRequest } from "./api";
 export type OrdemEventoTipo =
   | "comentario"
   | "diagnostico"
@@ -31,31 +32,6 @@ type ApiResponse<T> = {
   data: T;
 };
 
-const apiBaseUrl =
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3333/api";
-
-const request = async <T>(path: string, init?: RequestInit) => {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...init?.headers,
-    },
-    ...init,
-  });
-
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as {
-      error?: { message?: string };
-    } | null;
-
-    throw new Error(
-      payload?.error?.message ?? "Nao foi possivel concluir a operacao.",
-    );
-  }
-
-  return (await response.json()) as T;
-};
-
 export const listOrdemEventos = async (
   filters: {
     ordemServicoId?: string;
@@ -73,7 +49,7 @@ export const listOrdemEventos = async (
   }
 
   const suffix = search.toString() ? `?${search.toString()}` : "";
-  const response = await request<ApiResponse<OrdemEvento[]>>(
+  const response = await apiRequest<ApiResponse<OrdemEvento[]>>(
     `/ordem-eventos${suffix}`,
   );
 
@@ -81,10 +57,13 @@ export const listOrdemEventos = async (
 };
 
 export const createOrdemEvento = async (input: OrdemEventoInput) => {
-  const response = await request<ApiResponse<OrdemEvento>>("/ordem-eventos", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
+  const response = await apiRequest<ApiResponse<OrdemEvento>>(
+    "/ordem-eventos",
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
+  );
 
   return response.data;
 };

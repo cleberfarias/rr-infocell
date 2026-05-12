@@ -3,7 +3,7 @@ import logo from "@/assets/logo-rrinfocell.png";
 export const Logo = ({ className = "h-10" }: { className?: string }) => (
   <img
     src={logo}
-    alt="RR Infocell — Assistência Técnica Especializada"
+    alt="RR Infocell - Assistencia Tecnica Especializada"
     className={className}
     width={1024}
     height={1024}

@@ -1,3 +1,4 @@
+import { apiRequest } from "./api";
 export const ordemServicoStatus = [
   "recebido",
   "em_analise",
@@ -95,35 +96,6 @@ type ApiResponse<T> = {
   meta?: Record<string, unknown>;
 };
 
-const apiBaseUrl =
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3333/api";
-
-const request = async <T>(path: string, init?: RequestInit) => {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...init?.headers,
-    },
-    ...init,
-  });
-
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as {
-      error?: { message?: string };
-    } | null;
-
-    throw new Error(
-      payload?.error?.message ?? "Nao foi possivel concluir a operacao.",
-    );
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return (await response.json()) as T;
-};
-
 export const listOrdensServico = async (
   filters: {
     query?: string;
@@ -156,7 +128,7 @@ export const listOrdensServico = async (
   }
 
   const suffix = search.toString() ? `?${search.toString()}` : "";
-  const response = await request<ApiResponse<OrdemServico[]>>(
+  const response = await apiRequest<ApiResponse<OrdemServico[]>>(
     `/ordens-servico${suffix}`,
   );
 
@@ -164,7 +136,7 @@ export const listOrdensServico = async (
 };
 
 export const getOrdemServico = async (id: string) => {
-  const response = await request<ApiResponse<OrdemServico>>(
+  const response = await apiRequest<ApiResponse<OrdemServico>>(
     `/ordens-servico/${id}`,
   );
 
@@ -172,10 +144,13 @@ export const getOrdemServico = async (id: string) => {
 };
 
 export const createOrdemServico = async (input: OrdemServicoInput) => {
-  const response = await request<ApiResponse<OrdemServico>>("/ordens-servico", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
+  const response = await apiRequest<ApiResponse<OrdemServico>>(
+    "/ordens-servico",
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
+  );
 
   return response.data;
 };
@@ -184,7 +159,7 @@ export const updateOrdemServico = async (
   id: string,
   input: OrdemServicoInput,
 ) => {
-  const response = await request<ApiResponse<OrdemServico>>(
+  const response = await apiRequest<ApiResponse<OrdemServico>>(
     `/ordens-servico/${id}`,
     {
       method: "PUT",
@@ -196,7 +171,7 @@ export const updateOrdemServico = async (
 };
 
 export const deleteOrdemServico = async (id: string) => {
-  await request<void>(`/ordens-servico/${id}`, {
+  await apiRequest<void>(`/ordens-servico/${id}`, {
     method: "DELETE",
   });
 };

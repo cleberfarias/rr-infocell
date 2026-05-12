@@ -3,12 +3,7 @@ import type { UserRecord } from "firebase-admin/auth";
 import { auth } from "../../firebase/admin.js";
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
-import type {
-  Usuario,
-  UsuarioInput,
-  UsuarioRole,
-  UsuarioUpdateInput,
-} from "./usuarios.types.js";
+import type { Usuario, UsuarioInput, UsuarioRole, UsuarioUpdateInput } from "./usuarios.types.js";
 
 const mapUser = (user: UserRecord): Usuario => ({
   uid: user.uid,
@@ -38,6 +33,12 @@ export class UsuariosService {
     const result = await client.listUsers(100);
 
     return result.users.map(mapUser);
+  }
+
+  async listByRole(role: UsuarioRole) {
+    const usuarios = await this.list();
+
+    return usuarios.filter((usuario) => usuario.role === role && !usuario.disabled);
   }
 
   async create(input: UsuarioInput) {

@@ -1,3 +1,4 @@
+import { apiRequest } from "./api";
 export const checklistItemStatus = [
   "funcionando",
   "com_defeito",
@@ -48,37 +49,12 @@ type ApiResponse<T> = {
   meta?: Record<string, unknown>;
 };
 
-const apiBaseUrl =
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3333/api";
-
-const request = async <T>(path: string, init?: RequestInit) => {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...init?.headers,
-    },
-    ...init,
-  });
-
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as {
-      error?: { message?: string };
-    } | null;
-
-    throw new Error(
-      payload?.error?.message ?? "Nao foi possivel concluir a operacao.",
-    );
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return (await response.json()) as T;
-};
-
 export const listChecklists = async (
-  filters: { ordemServicoId?: string; aparelhoId?: string; tipo?: "entrada" | "saida" | "" } = {},
+  filters: {
+    ordemServicoId?: string;
+    aparelhoId?: string;
+    tipo?: "entrada" | "saida" | "";
+  } = {},
 ) => {
   const search = new URLSearchParams();
 
@@ -90,12 +66,16 @@ export const listChecklists = async (
     search.set("aparelhoId", filters.aparelhoId.trim());
   }
 
-  if ("tipo" in filters && typeof filters.tipo === "string" && filters.tipo.trim()) {
+  if (
+    "tipo" in filters &&
+    typeof filters.tipo === "string" &&
+    filters.tipo.trim()
+  ) {
     search.set("tipo", filters.tipo.trim());
   }
 
   const suffix = search.toString() ? `?${search.toString()}` : "";
-  const response = await request<ApiResponse<Checklist[]>>(
+  const response = await apiRequest<ApiResponse<Checklist[]>>(
     `/checklists${suffix}`,
   );
 
@@ -103,7 +83,7 @@ export const listChecklists = async (
 };
 
 export const createChecklist = async (input: ChecklistInput) => {
-  const response = await request<ApiResponse<Checklist>>("/checklists", {
+  const response = await apiRequest<ApiResponse<Checklist>>("/checklists", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -112,10 +92,13 @@ export const createChecklist = async (input: ChecklistInput) => {
 };
 
 export const updateChecklist = async (id: string, input: ChecklistInput) => {
-  const response = await request<ApiResponse<Checklist>>(`/checklists/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(input),
-  });
+  const response = await apiRequest<ApiResponse<Checklist>>(
+    `/checklists/${id}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(input),
+    },
+  );
 
   return response.data;
 };

@@ -105,6 +105,25 @@ npm run format:check
 npm test
 ```
 
+## Autenticacao da API
+
+`GET /api/health` fica publico para probes de deploy.
+
+Em `NODE_ENV=production`, as demais rotas exigem `Authorization: Bearer <Firebase ID token>` e validam a custom claim `role`.
+
+Em desenvolvimento e testes, a ausencia de token nao bloqueia as rotas para manter o fluxo local com `VITE_AUTH_DEV_MODE=true`. Se um token for enviado, ele e validado pelo Firebase Admin SDK.
+
+## Container
+
+O backend possui `Dockerfile` para deploy containerizado:
+
+```bash
+docker build -t rr-infocell-backend .
+docker run -p 3333:3333 --env-file .env rr-infocell-backend
+```
+
+O deploy de producao definido para o MVP e Google Cloud Run. Em Cloud Run, use a service account do servico e `FIREBASE_PROJECT_ID`; nao empacote JSON de service account no container.
+
 ## Status
 
 Base implementada com Express, TypeScript, middlewares globais, tratamento padronizado de erros, health check, modulos de clientes, despesas, aparelhos, ordens de servico, checklists, usuarios, ordem-eventos, orcamentos, vendas, produtos e movimentacoes de estoque funcionais com Firestore real/fallback local, e Firebase Admin SDK.

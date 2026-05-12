@@ -1,3 +1,4 @@
+import { apiRequest } from "./api";
 export type Cliente = {
   id: string;
   nome: string;
@@ -24,32 +25,6 @@ type ApiResponse<T> = {
   meta?: Record<string, unknown>;
 };
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3333/api";
-
-const request = async <T>(path: string, init?: RequestInit) => {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...init?.headers,
-    },
-    ...init,
-  });
-
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as
-      | { error?: { message?: string } }
-      | null;
-
-    throw new Error(payload?.error?.message ?? "Nao foi possivel concluir a operacao.");
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return (await response.json()) as T;
-};
-
 export const listClientes = async (query: string) => {
   const search = new URLSearchParams();
 
@@ -58,19 +33,21 @@ export const listClientes = async (query: string) => {
   }
 
   const suffix = search.toString() ? `?${search.toString()}` : "";
-  const response = await request<ApiResponse<Cliente[]>>(`/clientes${suffix}`);
+  const response = await apiRequest<ApiResponse<Cliente[]>>(
+    `/clientes${suffix}`,
+  );
 
   return response.data;
 };
 
 export const getCliente = async (id: string) => {
-  const response = await request<ApiResponse<Cliente>>(`/clientes/${id}`);
+  const response = await apiRequest<ApiResponse<Cliente>>(`/clientes/${id}`);
 
   return response.data;
 };
 
 export const createCliente = async (input: ClienteInput) => {
-  const response = await request<ApiResponse<Cliente>>("/clientes", {
+  const response = await apiRequest<ApiResponse<Cliente>>("/clientes", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -79,7 +56,7 @@ export const createCliente = async (input: ClienteInput) => {
 };
 
 export const updateCliente = async (id: string, input: ClienteInput) => {
-  const response = await request<ApiResponse<Cliente>>(`/clientes/${id}`, {
+  const response = await apiRequest<ApiResponse<Cliente>>(`/clientes/${id}`, {
     method: "PUT",
     body: JSON.stringify(input),
   });
@@ -88,7 +65,7 @@ export const updateCliente = async (id: string, input: ClienteInput) => {
 };
 
 export const deleteCliente = async (id: string) => {
-  await request<void>(`/clientes/${id}`, {
+  await apiRequest<void>(`/clientes/${id}`, {
     method: "DELETE",
   });
 };

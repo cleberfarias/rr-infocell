@@ -8,21 +8,21 @@ Pasta reservada para configuracoes de infraestrutura, deploy e ambiente local.
 - Auth: Firebase Auth.
 - Banco: Firestore real no projeto `rr-infocell`.
 - Arquivos futuros: Firebase Storage.
-- Backend: API Node/Express publicada em Cloud Run, Render ou Railway.
+- Backend: API Node/Express publicada no Google Cloud Run.
 
 ## Arquivos Firebase
 
 ```text
 infra/
+|-- cloud-run/
+|   `-- README.md
 |-- firebase/
 |   |-- architecture.md
 |   |-- setup.md
 |   |-- firestore.rules
 |   `-- storage.rules
 |-- scripts/
-|   |-- deploy-frontend.sh
-|   |-- deploy-backend.sh
-|   `-- deploy-all.sh
+|   `-- deploy-backend-cloud-run.ps1
 `-- README.md
 ```
 

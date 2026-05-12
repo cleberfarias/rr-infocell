@@ -1,3 +1,4 @@
+import { apiRequest } from "./api";
 import type { OrdemServicoFormaPagamento } from "./ordens-servico";
 
 export type VendaStatus = "finalizada" | "cancelada";
@@ -53,31 +54,6 @@ type ApiResponse<T> = {
   data: T;
 };
 
-const apiBaseUrl =
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3333/api";
-
-const request = async <T>(path: string, init?: RequestInit) => {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...init?.headers,
-    },
-    ...init,
-  });
-
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as {
-      error?: { message?: string };
-    } | null;
-
-    throw new Error(
-      payload?.error?.message ?? "Nao foi possivel concluir a operacao.",
-    );
-  }
-
-  return (await response.json()) as T;
-};
-
 export const listVendas = async (
   filters: {
     ordemServicoId?: string;
@@ -95,13 +71,13 @@ export const listVendas = async (
   }
 
   const suffix = search.toString() ? `?${search.toString()}` : "";
-  const response = await request<ApiResponse<Venda[]>>(`/vendas${suffix}`);
+  const response = await apiRequest<ApiResponse<Venda[]>>(`/vendas${suffix}`);
 
   return response.data;
 };
 
 export const createVenda = async (input: VendaInput) => {
-  const response = await request<ApiResponse<Venda>>("/vendas", {
+  const response = await apiRequest<ApiResponse<Venda>>("/vendas", {
     method: "POST",
     body: JSON.stringify(input),
   });
