@@ -25,6 +25,7 @@ export const rolePermissions: Record<Role, string[]> = {
     "manutencao",
     "orcamento",
     "estoque",
+    "movimentacoes",
     "pdv",
     "financeiro",
     "despesas",
@@ -51,6 +52,7 @@ export const rolePermissions: Record<Role, string[]> = {
     "manutencao",
     "orcamento",
     "estoque",
+    "movimentacoes",
     "atendimento",
   ],
 };

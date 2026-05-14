@@ -10,7 +10,19 @@ import {
   Send,
   X,
 } from "lucide-react";
-import { Link, useSearchParams } from "react-router-dom";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "@/components/ui/sonner";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { EmptyState, FormField, PageHeader } from "@/components/design-system";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -48,11 +60,11 @@ const budgetStatuses: OrdemServicoStatus[] = [
 ];
 
 const statusLabels: Record<OrdemServicoStatus, string> = {
-  aguardando_aprovacao: "Aguardando aprovacao",
-  aguardando_peca: "Aguardando peca",
+  aguardando_aprovacao: "Aguardando aprovação",
+  aguardando_peca: "Aguardando peça",
   cancelado: "Cancelado",
-  em_analise: "Em analise",
-  em_manutencao: "Em manutencao",
+  em_analise: "Em análise",
+  em_manutencao: "Em manutenção",
   entregue: "Entregue",
   pronto_para_retirada: "Pronto para retirada",
   recebido: "Recebido",
@@ -87,6 +99,7 @@ const toPecasInput = (ordem: OrdemServico) =>
 const Orcamento = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [selectedOrdemId, setSelectedOrdemId] = useState(
     searchParams.get("ordemId") ?? "",
   );
@@ -96,18 +109,24 @@ const Orcamento = () => {
   const [mensagemAprovacao, setMensagemAprovacao] = useState("");
 
   const ordensQuery = useQuery({
-    queryKey: ["ordens-servico", "orcamento"],
+    queryKey: ["ordens-servico"],
     queryFn: () => listOrdensServico(),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const clientesQuery = useQuery({
-    queryKey: ["clientes", "orcamento"],
+    queryKey: ["clientes"],
     queryFn: () => listClientes(""),
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const aparelhosQuery = useQuery({
-    queryKey: ["aparelhos", "orcamento"],
+    queryKey: ["aparelhos"],
     queryFn: () => listAparelhos(),
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const orcamentosQuery = useQuery({
@@ -214,7 +233,7 @@ const Orcamento = () => {
           whatsappErro:
             error instanceof Error
               ? error.message
-              : "Orcamento salvo, mas nao foi possivel enviar pelo WhatsApp.",
+              : "Orçamento salvo, mas não foi possível enviar pelo WhatsApp.",
         };
       }
     },
@@ -226,6 +245,21 @@ const Orcamento = () => {
         queryClient.invalidateQueries({ queryKey: ["whatsapp-conversas"] }),
         queryClient.invalidateQueries({ queryKey: ["ordem-eventos"] }),
       ]);
+
+      if (ordem.status === "em_manutencao") {
+        toast.success("Orçamento aprovado! Seguindo para manutenção.");
+        navigate(`/app/manutencao?ordemId=${ordem.id}`);
+        return;
+      }
+
+      if (ordem.status === "aguardando_aprovacao") {
+        toast.success("Orçamento enviado ao cliente via WhatsApp.");
+      }
+
+      if (ordem.status === "cancelado") {
+        toast.success("Orçamento reprovado. OS cancelada.");
+      }
+
       setSelectedOrdemId(ordem.id);
       setActionError(whatsappErro);
     },
@@ -233,7 +267,7 @@ const Orcamento = () => {
       setActionError(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel atualizar o orcamento.",
+          : "Não foi possível atualizar o orçamento.",
       );
     },
   });
@@ -279,8 +313,8 @@ const Orcamento = () => {
       <Card className="surface-panel">
         <EmptyState
           icon={FileCheck2}
-          title="Nao foi possivel carregar orcamentos"
-          description="Verifique se o backend esta rodando e tente novamente."
+          title="Não foi possível carregar orçamentos"
+          description="Verifique se o backend está rodando e tente novamente."
           actions={
             <Button variant="outline" onClick={() => ordensQuery.refetch()}>
               Tentar novamente
@@ -296,8 +330,8 @@ const Orcamento = () => {
       <Card className="surface-panel">
         <EmptyState
           icon={FileCheck2}
-          title="Nenhuma OS disponivel para orcamento"
-          description="Atualize uma OS para analise, aguardando aprovacao ou manutencao."
+          title="Nenhuma OS disponível para orçamento"
+          description="Mude o status de uma OS para Em análise ou superior para gerenciar o orçamento aqui."
           actions={
             <Button asChild>
               <Link to="/app/ordens">Ver ordens</Link>
@@ -311,9 +345,9 @@ const Orcamento = () => {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Orcamentos"
-        title={selectedOrdem ? `OS-${selectedOrdem.numero}` : "Orcamento"}
-        description="Revise valores reais da OS e registre envio, aprovacao ou reprovacao do cliente."
+        eyebrow="Orçamentos"
+        title={selectedOrdem ? `OS-${selectedOrdem.numero}` : "Orçamento"}
+        description="Preencha peças e mão de obra após o diagnóstico, depois envie, aprove ou reprove o orçamento com o cliente."
         actions={
           <div className="flex flex-wrap gap-2">
             {selectedOrdem && (
@@ -325,7 +359,7 @@ const Orcamento = () => {
                 </Button>
                 <Button asChild variant="outline">
                   <Link to={`/app/manutencao?ordemId=${selectedOrdem.id}`}>
-                    Manutencao
+                    Manutenção
                   </Link>
                 </Button>
               </>
@@ -335,7 +369,7 @@ const Orcamento = () => {
       />
 
       <Card className="surface-panel flex flex-wrap items-end gap-3 p-4">
-        <FormField id="orcamento-os" label="Ordem de servico" className="flex-1">
+        <FormField id="orcamento-os" label="Ordem de serviço" className="flex-1">
           <Select value={selectedOrdemId} onValueChange={handleSelectOrdem}>
             <SelectTrigger id="orcamento-os">
               <SelectValue />
@@ -367,7 +401,7 @@ const Orcamento = () => {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="font-mono text-xs uppercase tracking-widest text-primary">
-                    // Orcamento OS-{selectedOrdem.numero}
+                    // Orçamento OS-{selectedOrdem.numero}
                   </p>
                   <h2 className="font-display text-2xl font-bold">
                     {cliente?.nome ?? selectedOrdem.clienteId}
@@ -388,22 +422,22 @@ const Orcamento = () => {
                 <div className="inline-flex items-center gap-1.5 rounded-md border border-warning/40 bg-warning/10 px-3 py-1.5 text-xs font-medium text-warning">
                   <Clock className="h-3.5 w-3.5" />
                   {latestOrcamento
-                    ? `Orcamento ${latestOrcamento.status}`
+                    ? `Orçamento ${latestOrcamento.status}`
                     : statusLabels[selectedOrdem.status]}
                 </div>
               </div>
 
               <div className="mt-5 rounded-md border border-border bg-secondary/30 p-4">
                 <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                  Defeito e diagnostico
+                  Defeito e diagnóstico
                 </p>
                 <p className="mt-1 text-sm">{selectedOrdem.defeitoRelatado}</p>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  {selectedOrdem.diagnostico ?? "Diagnostico ainda nao informado."}
+                  {selectedOrdem.diagnostico ?? "Diagnóstico não informado — preencha na tela de manutenção antes de enviar ao cliente."}
                 </p>
                 {latestOrcamento && (
                   <p className="mt-2 text-xs text-muted-foreground">
-                    Ultimo orcamento: {latestOrcamento.status} em{" "}
+                    Último orçamento: {latestOrcamento.status} em{" "}
                     {formatDateTime(latestOrcamento.updatedAt)}
                   </p>
                 )}
@@ -411,12 +445,12 @@ const Orcamento = () => {
 
               <div className="mt-5">
                 <h3 className="mb-3 font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  Pecas
+                  Peças
                 </h3>
                 <div className="space-y-2">
                   {(selectedOrdem.pecasUsadas ?? []).length === 0 ? (
                     <div className="rounded-md border border-border bg-card/50 px-4 py-3 text-sm text-muted-foreground">
-                      Nenhuma peca vinculada a esta OS.
+                      Nenhuma peça vinculada a esta OS.
                     </div>
                   ) : (
                     selectedOrdem.pecasUsadas.map((peca) => (
@@ -439,14 +473,14 @@ const Orcamento = () => {
                 </div>
 
                 <h3 className="mb-3 mt-6 font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  Servicos
+                  Serviços
                 </h3>
                 <div className="flex items-center justify-between rounded-md border border-border bg-card/50 px-4 py-3">
                   <div>
-                    <p className="font-medium">Mao de obra tecnica</p>
+                    <p className="font-medium">Mão de obra técnica</p>
                     <p className="text-xs text-muted-foreground">
-                      Responsavel:{" "}
-                      {selectedOrdem.tecnicoResponsavel ?? "nao definido"}
+                      Responsável:{" "}
+                      {selectedOrdem.tecnicoResponsavel ?? "não definido"}
                     </p>
                   </div>
                   <p className="font-mono font-semibold">
@@ -465,14 +499,34 @@ const Orcamento = () => {
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    className="border-destructive/40 text-destructive hover:bg-destructive/10"
-                    disabled={statusMutation.isPending}
-                    onClick={() => statusMutation.mutate("cancelado")}
-                  >
-                    <X className="h-4 w-4" /> Reprovar
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="border-destructive/40 text-destructive hover:bg-destructive/10"
+                        disabled={statusMutation.isPending}
+                      >
+                        <X className="h-4 w-4" /> Reprovar
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Reprovar orçamento?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          A OS será marcada como cancelada. Essa ação não pode ser desfeita.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Voltar</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          onClick={() => statusMutation.mutate("cancelado")}
+                        >
+                          Confirmar reprovação
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                   <Button
                     className="bg-success text-success-foreground hover:bg-success/90"
                     disabled={statusMutation.isPending}
@@ -516,7 +570,7 @@ const Orcamento = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                      <SelectItem value="balcao">Balcao</SelectItem>
+                      <SelectItem value="balcao">Balcão</SelectItem>
                       <SelectItem value="telefone">Telefone</SelectItem>
                     </SelectContent>
                   </Select>
@@ -539,15 +593,15 @@ const Orcamento = () => {
 
           <Card className="surface-panel p-5">
             <h3 className="mb-1 font-display text-base font-semibold">
-              Historico recente
+              Histórico recente
             </h3>
             <p className="mb-4 text-xs text-muted-foreground">
-              Ultimas decisoes registradas por status da OS.
+              Últimas decisões registradas por status da OS.
             </p>
             <ul className="space-y-3">
               {historico.length === 0 ? (
                 <li className="rounded-md border border-border bg-secondary/30 p-3 text-sm text-muted-foreground">
-                  Nenhuma decisao registrada ainda.
+                  Nenhuma decisão registrada ainda.
                 </li>
               ) : (
                 historico.map((ordem) => {

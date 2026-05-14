@@ -103,7 +103,7 @@ const Aparelhos = () => {
       setFormError(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel salvar o aparelho.",
+          : "Não foi possível salvar o aparelho.",
       );
     },
   });
@@ -170,7 +170,7 @@ const Aparelhos = () => {
   const getClienteName = (clienteId: string) => {
     const cliente = clienteById.get(clienteId);
 
-    return cliente ? cliente.nome : "Cliente nao encontrado";
+    return cliente ? cliente.nome : "Cliente não encontrado";
   };
 
   const renderClienteSelectItems = (items: Cliente[]) =>
@@ -196,7 +196,7 @@ const Aparelhos = () => {
       <PageHeader
         eyebrow="Cadastros"
         title="Aparelhos"
-        description="Aparelhos vinculados aos clientes para abertura e historico de ordens de servico."
+        description="Aparelhos vinculados aos clientes para abertura e histórico de ordens de serviço."
         actions={
           <Button
             className="bg-gradient-primary text-primary-foreground shadow-glow"
@@ -265,8 +265,8 @@ const Aparelhos = () => {
         <Card className="surface-panel">
           <EmptyState
             icon={Smartphone}
-            title="Nao foi possivel carregar aparelhos"
-            description="Verifique se o backend esta rodando em http://localhost:3333."
+            title="Não foi possível carregar aparelhos"
+            description="Verifique se o backend está rodando em http://localhost:3333."
             actions={
               <Button
                 variant="outline"
@@ -339,22 +339,22 @@ const Aparelhos = () => {
                   <p className="font-mono text-[10px] uppercase text-muted-foreground">
                     Cor
                   </p>
-                  <p className="truncate">{aparelho.cor ?? "Nao informada"}</p>
+                  <p className="truncate">{aparelho.cor ?? "Não informada"}</p>
                 </div>
                 <div>
                   <p className="font-mono text-[10px] uppercase text-muted-foreground">
-                    Estado fisico
+                    Estado físico
                   </p>
                   <p className="truncate">
-                    {aparelho.estadoFisico ?? "Nao informado"}
+                    {aparelho.estadoFisico ?? "Não informado"}
                   </p>
                 </div>
                 <div className="sm:col-span-2">
                   <p className="font-mono text-[10px] uppercase text-muted-foreground">
-                    Acessorios
+                    Acessórios
                   </p>
                   <p className="truncate">
-                    {aparelho.acessorios ?? "Nao informado"}
+                    {aparelho.acessorios ?? "Não informado"}
                   </p>
                 </div>
               </div>
@@ -430,7 +430,7 @@ const Aparelhos = () => {
               </FormField>
               <FormField
                 id="aparelho-estado"
-                label="Estado fisico"
+                label="Estado físico"
                 className="sm:col-span-2"
               >
                 <Input
@@ -443,7 +443,7 @@ const Aparelhos = () => {
               </FormField>
               <FormField
                 id="aparelho-acessorios"
-                label="Acessorios"
+                label="Acessórios"
                 className="sm:col-span-2"
               >
                 <Input
@@ -456,7 +456,7 @@ const Aparelhos = () => {
               </FormField>
               <FormField
                 id="aparelho-observacoes"
-                label="Observacoes"
+                label="Observações"
                 className="sm:col-span-2"
               >
                 <Textarea

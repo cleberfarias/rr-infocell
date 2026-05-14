@@ -16,62 +16,66 @@ type StatusKey =
   | "pago"
   | "pendente";
 
-const map: Record<StatusKey, { label: string; className: string }> = {
+const map: Record<StatusKey, { label: string; className: string; pulse?: boolean }> = {
   recebido: {
     label: "Recebido",
-    className: "bg-muted text-muted-foreground border-border",
+    className: "bg-slate-500/10 text-slate-500 border-slate-500/30",
   },
   em_analise: {
-    label: "Em analise",
-    className: "bg-info/10 text-info border-info/30",
+    label: "Em análise",
+    className: "bg-sky-500/10 text-sky-600 border-sky-500/30",
   },
   aguardando_aprovacao: {
-    label: "Aguardando aprovacao",
-    className: "bg-warning/10 text-warning border-warning/30",
+    label: "Aguardando aprovação",
+    className: "bg-amber-500/10 text-amber-600 border-amber-500/30",
+    pulse: true,
   },
   aguardando_peca: {
-    label: "Aguardando peca",
-    className: "bg-warning/10 text-warning border-warning/30",
+    label: "Aguardando peça",
+    className: "bg-orange-500/10 text-orange-600 border-orange-500/30",
+    pulse: true,
   },
   em_manutencao: {
-    label: "Em manutencao",
-    className: "bg-primary/10 text-primary border-primary/30",
+    label: "Em manutenção",
+    className: "bg-violet-500/10 text-violet-600 border-violet-500/30",
   },
   pronto_para_retirada: {
     label: "Pronto para retirada",
-    className: "bg-success/10 text-success border-success/30",
+    className: "bg-emerald-500/15 text-emerald-600 border-emerald-500/40",
+    pulse: true,
   },
   finalizado: {
     label: "Finalizado",
-    className: "bg-success/10 text-success border-success/30",
+    className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30",
   },
   entregue: {
     label: "Entregue",
-    className: "bg-success/15 text-success border-success/40",
+    className: "bg-emerald-500/20 text-emerald-700 border-emerald-600/40",
   },
   cancelado: {
     label: "Cancelado",
-    className: "bg-destructive/10 text-destructive border-destructive/30",
+    className: "bg-red-500/10 text-red-600 border-red-500/30",
   },
   atrasado: {
     label: "Atrasado",
-    className: "bg-destructive/10 text-destructive border-destructive/30",
+    className: "bg-red-500/15 text-red-600 border-red-500/40",
+    pulse: true,
   },
   aprovado: {
     label: "Aprovado",
-    className: "bg-success/10 text-success border-success/30",
+    className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30",
   },
   reprovado: {
     label: "Reprovado",
-    className: "bg-destructive/10 text-destructive border-destructive/30",
+    className: "bg-red-500/10 text-red-600 border-red-500/30",
   },
   pago: {
     label: "Pago",
-    className: "bg-success/10 text-success border-success/30",
+    className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30",
   },
   pendente: {
     label: "Pendente",
-    className: "bg-warning/10 text-warning border-warning/30",
+    className: "bg-amber-500/10 text-amber-600 border-amber-500/30",
   },
 };
 
@@ -91,7 +95,12 @@ export const StatusBadge = ({
         className,
       )}
     >
-      <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
+      <span
+        className={cn(
+          "h-1.5 w-1.5 rounded-full bg-current opacity-80",
+          s.pulse && "animate-pulse",
+        )}
+      />
       {s.label}
     </span>
   );

@@ -40,7 +40,7 @@ const paymentOptions: Array<{
   icon: typeof QrCode;
 }> = [
   { key: "pix", label: "PIX", icon: QrCode },
-  { key: "cartao", label: "Cartao", icon: CreditCard },
+  { key: "cartao", label: "Cartão", icon: CreditCard },
   { key: "dinheiro", label: "Dinheiro", icon: Banknote },
 ];
 
@@ -189,7 +189,7 @@ const PDV = () => {
       setFormError(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel finalizar a venda.",
+          : "Não foi possível finalizar a venda.",
       );
     },
   });
@@ -225,7 +225,7 @@ const PDV = () => {
       setFormError(null);
     },
     onError: (error) => {
-      setFormError(error instanceof Error ? error.message : "Nao foi possivel finalizar a venda.");
+      setFormError(error instanceof Error ? error.message : "Não foi possível finalizar a venda.");
     },
   });
 
@@ -328,7 +328,7 @@ const PDV = () => {
       <Card className="surface-panel">
         <EmptyState
           icon={Receipt}
-          title="Nao foi possivel carregar o caixa"
+          title="Não foi possível carregar o caixa"
           description="Verifique se o backend esta rodando e tente novamente."
           actions={
             <Button variant="outline" onClick={() => ordensQuery.refetch()}>
@@ -347,7 +347,7 @@ const PDV = () => {
         <PageHeader
           eyebrow="PDV / Caixa"
           title={modoVenda === "os" ? "Fechamento de OS" : "Venda direta"}
-          description="Registre pagamento de OS, celular, acessorios ou servicos avulsos."
+          description="Registre pagamento de OS, celular, acessórios ou serviços avulsos."
         />
 
         <Card className="surface-panel flex gap-2 p-3">
@@ -384,7 +384,7 @@ const PDV = () => {
                   id="pdv-cliente-direto"
                   value={clienteVendaDireta}
                   onChange={(event) => setClienteVendaDireta(event.target.value)}
-                  placeholder="Nome do cliente ou venda balcao"
+                  placeholder="Nome do cliente ou venda balcão"
                 />
               </FormField>
               <FormField id="pdv-produto-direto" label="Item">
@@ -421,9 +421,9 @@ const PDV = () => {
                   <tr className="border-b border-border bg-secondary/30 text-xs uppercase tracking-wider text-muted-foreground">
                     <th className="px-4 py-3 text-left font-medium">Item</th>
                     <th className="px-4 py-3 text-center font-medium">Qtd.</th>
-                    <th className="px-4 py-3 text-right font-medium">Unitario</th>
+                    <th className="px-4 py-3 text-right font-medium">Unitário</th>
                     <th className="px-4 py-3 text-right font-medium">Total</th>
-                    <th className="px-4 py-3 text-right font-medium">Acoes</th>
+                    <th className="px-4 py-3 text-right font-medium">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -477,17 +477,17 @@ const PDV = () => {
             <EmptyState
               icon={Receipt}
               title="Nenhuma OS pronta para caixa"
-              description="Finalize a manutencao de uma OS para liberar o fechamento no PDV."
+              description="Finalize a manutenção de uma OS para liberar o fechamento no PDV."
               actions={
                 <Button asChild>
-                  <Link to="/app/manutencao">Ir para manutencao</Link>
+                  <Link to="/app/manutencao">Ir para manutenção</Link>
                 </Button>
               }
             />
           </Card>
         ) : (
           <Card className="surface-panel flex flex-wrap items-end gap-3 p-4">
-            <FormField id="pdv-os" label="Ordem de servico" className="flex-1">
+            <FormField id="pdv-os" label="Ordem de serviço" className="flex-1">
               <Select value={selectedOrdemId} onValueChange={handleSelectOrdem}>
                 <SelectTrigger id="pdv-os">
                   <SelectValue />
@@ -551,7 +551,7 @@ const PDV = () => {
                   <div>
                     <p className="font-medium">{peca.nome}</p>
                     <p className="text-xs text-muted-foreground">
-                      Peca - {peca.quantidade}x
+                      Peça - {peca.quantidade}x
                     </p>
                   </div>
                   <p className="font-mono font-semibold">
@@ -561,8 +561,8 @@ const PDV = () => {
               ))}
               <div className="flex items-center justify-between rounded-md border border-border bg-card/50 px-4 py-3">
                 <div>
-                  <p className="font-medium">Mao de obra</p>
-                  <p className="text-xs text-muted-foreground">Servico tecnico</p>
+                  <p className="font-medium">Mão de obra</p>
+                  <p className="text-xs text-muted-foreground">Serviço técnico</p>
                 </div>
                 <p className="font-mono font-semibold">
                   {formatBRL(selectedOrdem.valorMaoObra)}
@@ -787,10 +787,10 @@ const PDV = () => {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <div>
             <h3 className="font-display text-base font-semibold">
-              Historico de pagamentos
+              Histórico de pagamentos
             </h3>
             <p className="text-xs text-muted-foreground">
-              Ultimas OS fechadas no caixa.
+              Últimas OS fechadas no caixa.
             </p>
           </div>
           <Button asChild variant="outline" size="sm">

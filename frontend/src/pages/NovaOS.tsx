@@ -1,12 +1,21 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, ClipboardCheck, Loader2, Plus, Save } from "lucide-react";
+import { ArrowRight, Check, ChevronsUpDown, ClipboardCheck, Loader2, Plus, Save } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { FormField, PageHeader } from "@/components/design-system";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -14,7 +23,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/components/ui/sonner";
 import { createAparelho, listAparelhos } from "@/services/aparelhos";
 import { createCliente, listClientes } from "@/services/clientes";
 import {
@@ -94,15 +105,24 @@ const emptyQuickAparelho: QuickAparelhoForm = {
 
 const parseCurrency = (value: string) => Number(value.replace(",", ".")) || 0;
 
+const DRAFT_KEY = "rr-nova-os-rascunho";
+
 const NovaOS = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [form, setForm] = useState<NovaOSForm>(emptyForm);
+  const [form, setForm] = useState<NovaOSForm>(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) return { ...emptyForm, ...JSON.parse(saved) };
+    } catch {}
+    return emptyForm;
+  });
   const [quickCliente, setQuickCliente] = useState<QuickClienteForm>(emptyQuickCliente);
   const [quickAparelho, setQuickAparelho] = useState<QuickAparelhoForm>(emptyQuickAparelho);
   const [formError, setFormError] = useState<string | null>(null);
-  const [quickClienteError, setQuickClienteError] = useState<string | null>(null);
-  const [quickAparelhoError, setQuickAparelhoError] = useState<string | null>(null);
+  const [cadastroRapidoError, setCadastroRapidoError] = useState<string | null>(null);
+  const [clienteOpen, setClienteOpen] = useState(false);
+  const [aparelhoOpen, setAparelhoOpen] = useState(false);
 
   const clientesQuery = useQuery({
     queryKey: ["clientes", "nova-os"],
@@ -146,47 +166,44 @@ const NovaOS = () => {
     [aparelhos, form.aparelhoId],
   );
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const { clienteId, aparelhoId, ...rest } = form;
+      if (rest.defeitoRelatado || rest.diagnostico) {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(rest));
+      }
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [form]);
+
   const valorTotal = parseCurrency(form.valorPecas) + parseCurrency(form.valorMaoObra);
 
   const createMutation = useMutation({
     mutationFn: (input: OrdemServicoInput) => createOrdemServico(input),
     onSuccess: async (ordem) => {
       await queryClient.invalidateQueries({ queryKey: ["ordens-servico"] });
+      localStorage.removeItem(DRAFT_KEY);
+      toast.success("OS criada! Seguindo para o checklist.");
       navigate(`/app/checklist?ordemId=${ordem.id}`);
     },
     onError: (error) => {
-      setFormError(
-        error instanceof Error ? error.message : "Nao foi possivel criar a OS.",
-      );
+      const msg = error instanceof Error ? error.message : "Não foi possível criar a OS.";
+      setFormError(msg);
+      toast.error(msg);
     },
   });
 
-  const createClienteMutation = useMutation({
-    mutationFn: () =>
-      createCliente({
+  const createCadastroRapidoMutation = useMutation({
+    mutationFn: async () => {
+      const cliente = await createCliente({
         nome: quickCliente.nome.trim(),
         telefone: quickCliente.telefone.trim(),
         documento: quickCliente.documento.trim() || undefined,
         email: quickCliente.email.trim() || undefined,
         observacoes: quickCliente.observacoes.trim() || undefined,
-      }),
-    onSuccess: async (cliente) => {
-      await queryClient.invalidateQueries({ queryKey: ["clientes"] });
-      setForm((current) => ({ ...current, clienteId: cliente.id, aparelhoId: "" }));
-      setQuickCliente(emptyQuickCliente);
-      setQuickClienteError(null);
-    },
-    onError: (error) => {
-      setQuickClienteError(
-        error instanceof Error ? error.message : "Nao foi possivel cadastrar o cliente.",
-      );
-    },
-  });
-
-  const createAparelhoMutation = useMutation({
-    mutationFn: () =>
-      createAparelho({
-        clienteId: form.clienteId,
+      });
+      const aparelho = await createAparelho({
+        clienteId: cliente.id,
         marca: quickAparelho.marca.trim(),
         modelo: quickAparelho.modelo.trim(),
         cor: quickAparelho.cor.trim() || undefined,
@@ -194,17 +211,26 @@ const NovaOS = () => {
         estadoFisico: quickAparelho.estadoFisico.trim() || undefined,
         acessorios: quickAparelho.acessorios.trim() || undefined,
         observacoes: quickAparelho.observacoes.trim() || undefined,
-      }),
-    onSuccess: async (aparelho) => {
+      });
+      return { cliente, aparelho };
+    },
+    onSuccess: async ({ cliente, aparelho }) => {
+      await queryClient.invalidateQueries({ queryKey: ["clientes"] });
       await queryClient.invalidateQueries({ queryKey: ["aparelhos"] });
-      setForm((current) => ({ ...current, aparelhoId: aparelho.id }));
+      setForm((current) => ({
+        ...current,
+        clienteId: cliente.id,
+        aparelhoId: aparelho.id,
+      }));
+      setQuickCliente(emptyQuickCliente);
       setQuickAparelho(emptyQuickAparelho);
-      setQuickAparelhoError(null);
+      setCadastroRapidoError(null);
+      toast.success(`${cliente.nome} e ${aparelho.marca} ${aparelho.modelo} cadastrados.`);
     },
     onError: (error) => {
-      setQuickAparelhoError(
-        error instanceof Error ? error.message : "Nao foi possivel cadastrar o aparelho.",
-      );
+      const msg = error instanceof Error ? error.message : "Não foi possível cadastrar cliente e aparelho.";
+      setCadastroRapidoError(msg);
+      toast.error(msg);
     },
   });
 
@@ -224,31 +250,20 @@ const NovaOS = () => {
     setQuickAparelho((current) => ({ ...current, [field]: value }));
   };
 
-  const handleCreateQuickCliente = () => {
-    setQuickClienteError(null);
+  const handleCreateCadastroRapido = () => {
+    setCadastroRapidoError(null);
 
     if (!quickCliente.nome.trim() || !quickCliente.telefone.trim()) {
-      setQuickClienteError("Informe nome e telefone para cadastrar o cliente rapido.");
-      return;
-    }
-
-    createClienteMutation.mutate();
-  };
-
-  const handleCreateQuickAparelho = () => {
-    setQuickAparelhoError(null);
-
-    if (!form.clienteId) {
-      setQuickAparelhoError("Selecione ou cadastre um cliente antes do aparelho.");
+      setCadastroRapidoError("Informe nome e telefone do cliente.");
       return;
     }
 
     if (!quickAparelho.marca.trim() || !quickAparelho.modelo.trim()) {
-      setQuickAparelhoError("Informe marca e modelo para cadastrar o aparelho rapido.");
+      setCadastroRapidoError("Informe marca e modelo do aparelho.");
       return;
     }
 
-    createAparelhoMutation.mutate();
+    createCadastroRapidoMutation.mutate();
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -278,19 +293,19 @@ const NovaOS = () => {
   const canSubmit = Boolean(
     form.clienteId && form.aparelhoId && form.defeitoRelatado.trim(),
   );
-  const canCreateQuickCliente = Boolean(
-    quickCliente.nome.trim() && quickCliente.telefone.trim(),
-  );
-  const canCreateQuickAparelho = Boolean(
-    form.clienteId && quickAparelho.marca.trim() && quickAparelho.modelo.trim(),
+  const canCreateCadastroRapido = Boolean(
+    quickCliente.nome.trim() &&
+      quickCliente.telefone.trim() &&
+      quickAparelho.marca.trim() &&
+      quickAparelho.modelo.trim(),
   );
 
   return (
     <form className="space-y-5" onSubmit={handleSubmit}>
       <PageHeader
         eyebrow="Etapa 1 de 3"
-        title="Nova ordem de servico"
-        description="Abra a OS no balcao com cliente, aparelho e defeito relatado. Valores podem ficar zerados ate o diagnostico."
+        title="Nova ordem de serviço"
+        description="Abra a OS no balcão com cliente, aparelho e defeito relatado. Valores podem ficar zerados até o diagnóstico."
         actions={
           <div className="hidden items-center gap-2 text-xs md:flex">
             <span className="rounded-md bg-primary/15 px-3 py-1.5 font-mono text-primary">
@@ -302,7 +317,7 @@ const NovaOS = () => {
             </span>
             <ArrowRight className="h-3 w-3 text-muted-foreground" />
             <span className="rounded-md bg-secondary px-3 py-1.5 font-mono text-muted-foreground">
-              3. Diagnostico
+              3. Diagnóstico
             </span>
           </div>
         }
@@ -321,177 +336,211 @@ const NovaOS = () => {
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField id="nova-os-cliente" label="Cliente existente">
-                <Select
-                  value={form.clienteId}
-                  onValueChange={(value) => updateForm("clienteId", value)}
-                >
-                  <SelectTrigger id="nova-os-cliente">
-                    <SelectValue placeholder="Selecione o cliente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clientes.map((cliente) => (
-                      <SelectItem key={cliente.id} value={cliente.id}>
-                        {cliente.nome} - {cliente.telefone}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={clienteOpen} onOpenChange={setClienteOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between font-normal"
+                    >
+                      {form.clienteId
+                        ? clientes.find((c) => c.id === form.clienteId)?.nome
+                        : "Buscar cliente..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="p-0 w-full min-w-[320px]">
+                    <Command>
+                      <CommandInput placeholder="Nome ou telefone..." />
+                      <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                      <CommandList>
+                        <CommandGroup>
+                          {clientes.map((cliente) => (
+                            <CommandItem
+                              key={cliente.id}
+                              value={`${cliente.nome} ${cliente.telefone}`}
+                              onSelect={() => {
+                                updateForm("clienteId", cliente.id);
+                                setClienteOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  form.clienteId === cliente.id ? "opacity-100" : "opacity-0",
+                                )}
+                              />
+                              {cliente.nome} — {cliente.telefone}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </FormField>
               <FormField id="nova-os-aparelho" label="Aparelho existente">
-                <Select
-                  value={form.aparelhoId}
-                  onValueChange={(value) => updateForm("aparelhoId", value)}
-                  disabled={!form.clienteId || aparelhos.length === 0}
+                <Popover
+                  open={aparelhoOpen}
+                  onOpenChange={(open) => {
+                    if (!form.clienteId) return;
+                    setAparelhoOpen(open);
+                  }}
                 >
-                  <SelectTrigger id="nova-os-aparelho">
-                    <SelectValue
-                      placeholder={
-                        form.clienteId
-                          ? aparelhos.length > 0
-                            ? "Selecione o aparelho"
-                            : "Nenhum aparelho cadastrado"
-                          : "Selecione o cliente"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {aparelhos.map((aparelho) => (
-                      <SelectItem key={aparelho.id} value={aparelho.id}>
-                        {aparelho.marca} {aparelho.modelo}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      disabled={!form.clienteId}
+                      className="w-full justify-between font-normal"
+                    >
+                      {form.aparelhoId
+                        ? (() => {
+                            const a = aparelhos.find((ap) => ap.id === form.aparelhoId);
+                            return a
+                              ? `${a.marca} ${a.modelo}${a.imeiSerial ? ` — ${a.imeiSerial}` : ""}`
+                              : "Buscar aparelho...";
+                          })()
+                        : form.clienteId
+                          ? "Buscar aparelho..."
+                          : "Selecione o cliente primeiro"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="p-0 w-full min-w-[320px]">
+                    <Command>
+                      <CommandInput placeholder="Marca, modelo ou IMEI..." />
+                      <CommandEmpty>
+                        {aparelhos.length === 0
+                          ? "Nenhum aparelho cadastrado para este cliente."
+                          : "Nenhum aparelho encontrado."}
+                      </CommandEmpty>
+                      <CommandList>
+                        <CommandGroup>
+                          {aparelhos.map((aparelho) => (
+                            <CommandItem
+                              key={aparelho.id}
+                              value={`${aparelho.marca} ${aparelho.modelo} ${aparelho.imeiSerial ?? ""}`}
+                              onSelect={() => {
+                                updateForm("aparelhoId", aparelho.id);
+                                setAparelhoOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  form.aparelhoId === aparelho.id ? "opacity-100" : "opacity-0",
+                                )}
+                              />
+                              {aparelho.marca} {aparelho.modelo}
+                              {aparelho.imeiSerial ? ` — ${aparelho.imeiSerial}` : ""}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </FormField>
             </div>
 
-            <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-2">
-              <div className="rounded-md border border-border bg-secondary/20 p-4">
-                <div className="mb-3">
-                  <p className="font-display text-sm font-semibold">Cliente rapido</p>
-                  <p className="text-xs text-muted-foreground">
-                    Use quando o cliente ainda nao existe no sistema.
-                  </p>
-                </div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <Input
-                    value={quickCliente.nome}
-                    onChange={(event) => updateQuickCliente("nome", event.target.value)}
-                    placeholder="Nome do cliente"
-                  />
-                  <Input
-                    value={quickCliente.telefone}
-                    onChange={(event) => updateQuickCliente("telefone", event.target.value)}
-                    placeholder="Telefone/WhatsApp"
-                  />
-                  <Input
-                    value={quickCliente.documento}
-                    onChange={(event) => updateQuickCliente("documento", event.target.value)}
-                    placeholder="CPF/CNPJ opcional"
-                  />
-                  <Input
-                    value={quickCliente.email}
-                    onChange={(event) => updateQuickCliente("email", event.target.value)}
-                    placeholder="E-mail opcional"
-                  />
-                  <Textarea
-                    className="sm:col-span-2"
-                    rows={2}
-                    value={quickCliente.observacoes}
-                    onChange={(event) => updateQuickCliente("observacoes", event.target.value)}
-                    placeholder="Observacoes do cliente"
-                  />
-                </div>
-                {quickClienteError && (
-                  <p className="mt-3 text-xs text-destructive">{quickClienteError}</p>
-                )}
-                <Button
-                  className="mt-3"
-                  type="button"
-                  variant="outline"
-                  disabled={!canCreateQuickCliente || createClienteMutation.isPending}
-                  onClick={handleCreateQuickCliente}
-                >
-                  {createClienteMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Plus className="h-4 w-4" />
-                  )}
-                  Criar e selecionar cliente
-                </Button>
+            <div className="mt-5 rounded-md border border-border bg-secondary/20 p-4">
+              <div className="mb-4">
+                <p className="font-display text-sm font-semibold">Cadastro rápido</p>
+                <p className="text-xs text-muted-foreground">
+                  Preencha cliente e aparelho e salve tudo de uma vez sem sair da OS.
+                </p>
               </div>
-
-              <div className="rounded-md border border-border bg-secondary/20 p-4">
-                <div className="mb-3">
-                  <p className="font-display text-sm font-semibold">Aparelho rapido</p>
-                  <p className="text-xs text-muted-foreground">
-                    Cadastre o aparelho direto para o cliente selecionado.
-                  </p>
-                </div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <Input
-                    value={quickAparelho.marca}
-                    onChange={(event) => updateQuickAparelho("marca", event.target.value)}
-                    placeholder="Marca"
-                    disabled={!form.clienteId}
-                  />
-                  <Input
-                    value={quickAparelho.modelo}
-                    onChange={(event) => updateQuickAparelho("modelo", event.target.value)}
-                    placeholder="Modelo"
-                    disabled={!form.clienteId}
-                  />
-                  <Input
-                    value={quickAparelho.cor}
-                    onChange={(event) => updateQuickAparelho("cor", event.target.value)}
-                    placeholder="Cor opcional"
-                    disabled={!form.clienteId}
-                  />
-                  <Input
-                    value={quickAparelho.imeiSerial}
-                    onChange={(event) => updateQuickAparelho("imeiSerial", event.target.value)}
-                    placeholder="IMEI/serie opcional"
-                    disabled={!form.clienteId}
-                  />
-                  <Input
-                    value={quickAparelho.estadoFisico}
-                    onChange={(event) => updateQuickAparelho("estadoFisico", event.target.value)}
-                    placeholder="Estado fisico"
-                    disabled={!form.clienteId}
-                  />
-                  <Input
-                    value={quickAparelho.acessorios}
-                    onChange={(event) => updateQuickAparelho("acessorios", event.target.value)}
-                    placeholder="Acessorios entregues"
-                    disabled={!form.clienteId}
-                  />
-                  <Textarea
-                    className="sm:col-span-2"
-                    rows={2}
-                    value={quickAparelho.observacoes}
-                    onChange={(event) => updateQuickAparelho("observacoes", event.target.value)}
-                    placeholder="Observacoes do aparelho"
-                    disabled={!form.clienteId}
-                  />
-                </div>
-                {quickAparelhoError && (
-                  <p className="mt-3 text-xs text-destructive">{quickAparelhoError}</p>
-                )}
-                <Button
-                  className="mt-3"
-                  type="button"
-                  variant="outline"
-                  disabled={!canCreateQuickAparelho || createAparelhoMutation.isPending}
-                  onClick={handleCreateQuickAparelho}
-                >
-                  {createAparelhoMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Plus className="h-4 w-4" />
-                  )}
-                  Criar e selecionar aparelho
-                </Button>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Cliente
+              </p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Input
+                  value={quickCliente.nome}
+                  onChange={(event) => updateQuickCliente("nome", event.target.value)}
+                  placeholder="Nome do cliente"
+                />
+                <Input
+                  value={quickCliente.telefone}
+                  onChange={(event) => updateQuickCliente("telefone", event.target.value)}
+                  placeholder="Telefone/WhatsApp"
+                />
+                <Input
+                  value={quickCliente.documento}
+                  onChange={(event) => updateQuickCliente("documento", event.target.value)}
+                  placeholder="CPF/CNPJ opcional"
+                />
+                <Input
+                  value={quickCliente.email}
+                  onChange={(event) => updateQuickCliente("email", event.target.value)}
+                  placeholder="E-mail opcional"
+                />
+                <Textarea
+                  className="sm:col-span-2"
+                  rows={2}
+                  value={quickCliente.observacoes}
+                  onChange={(event) => updateQuickCliente("observacoes", event.target.value)}
+                  placeholder="Observações do cliente"
+                />
               </div>
+              <p className="mb-2 mt-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Aparelho
+              </p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Input
+                  value={quickAparelho.marca}
+                  onChange={(event) => updateQuickAparelho("marca", event.target.value)}
+                  placeholder="Marca"
+                />
+                <Input
+                  value={quickAparelho.modelo}
+                  onChange={(event) => updateQuickAparelho("modelo", event.target.value)}
+                  placeholder="Modelo"
+                />
+                <Input
+                  value={quickAparelho.cor}
+                  onChange={(event) => updateQuickAparelho("cor", event.target.value)}
+                  placeholder="Cor opcional"
+                />
+                <Input
+                  value={quickAparelho.imeiSerial}
+                  onChange={(event) => updateQuickAparelho("imeiSerial", event.target.value)}
+                  placeholder="IMEI/série opcional"
+                />
+                <Input
+                  value={quickAparelho.estadoFisico}
+                  onChange={(event) => updateQuickAparelho("estadoFisico", event.target.value)}
+                  placeholder="Estado físico"
+                />
+                <Input
+                  value={quickAparelho.acessorios}
+                  onChange={(event) => updateQuickAparelho("acessorios", event.target.value)}
+                  placeholder="Acessórios entregues"
+                />
+                <Textarea
+                  className="sm:col-span-2"
+                  rows={2}
+                  value={quickAparelho.observacoes}
+                  onChange={(event) => updateQuickAparelho("observacoes", event.target.value)}
+                  placeholder="Observações do aparelho"
+                />
+              </div>
+              {cadastroRapidoError && (
+                <p className="mt-3 text-xs text-destructive">{cadastroRapidoError}</p>
+              )}
+              <Button
+                className="mt-4 w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
+                type="button"
+                disabled={!canCreateCadastroRapido || createCadastroRapidoMutation.isPending}
+                onClick={handleCreateCadastroRapido}
+              >
+                {createCadastroRapidoMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
+                Salvar cliente e aparelho
+              </Button>
             </div>
 
             <div className="mt-5 rounded-md border border-border bg-secondary/30 p-3 text-sm">
@@ -499,19 +548,19 @@ const NovaOS = () => {
                 Resumo
               </p>
               <p className="mt-1 font-medium">
-                {selectedCliente?.nome ?? "Cliente nao selecionado"}
+                {selectedCliente?.nome ?? "Cliente não selecionado"}
               </p>
               <p className="text-muted-foreground">
                 {selectedAparelho
                   ? `${selectedAparelho.marca} ${selectedAparelho.modelo} ${selectedAparelho.imeiSerial ? `- ${selectedAparelho.imeiSerial}` : ""}`
-                  : "Aparelho nao selecionado"}
+                  : "Aparelho não selecionado"}
               </p>
             </div>
           </Card>
 
           <Card className="surface-panel p-6">
             <h3 className="mb-4 font-display text-base font-semibold">
-              Defeito e diagnostico
+              Defeito e diagnóstico
             </h3>
             <div className="space-y-4">
               <FormField
@@ -529,7 +578,7 @@ const NovaOS = () => {
                   required
                 />
               </FormField>
-              <FormField id="nova-os-diagnostico" label="Diagnostico inicial">
+              <FormField id="nova-os-diagnostico" label="Diagnóstico inicial">
                 <Textarea
                   id="nova-os-diagnostico"
                   rows={2}
@@ -537,7 +586,7 @@ const NovaOS = () => {
                   onChange={(event) =>
                     updateForm("diagnostico", event.target.value)
                   }
-                  placeholder="Opcional: teste rapido, primeira avaliacao ou notas internas..."
+                  placeholder="Opcional: teste rápido, primeira avaliação ou notas internas..."
                 />
               </FormField>
             </div>
@@ -547,7 +596,7 @@ const NovaOS = () => {
         <div className="space-y-5">
           <Card className="surface-panel p-6">
             <h3 className="mb-4 font-display text-base font-semibold">
-              Operacao
+              Operação
             </h3>
             <div className="space-y-4">
               <FormField id="nova-os-entrada" label="Data de entrada">
@@ -560,7 +609,7 @@ const NovaOS = () => {
                   }
                 />
               </FormField>
-              <FormField id="nova-os-previsao" label="Previsao de entrega">
+              <FormField id="nova-os-previsao" label="Previsão de entrega">
                 <Input
                   id="nova-os-previsao"
                   type="date"
@@ -585,7 +634,7 @@ const NovaOS = () => {
                   </SelectContent>
                 </Select>
               </FormField>
-              <FormField id="nova-os-tecnico" label="Tecnico responsavel">
+              <FormField id="nova-os-tecnico" label="Técnico responsável">
                 <Select
                   value={form.tecnicoResponsavel}
                   onValueChange={(value) =>
@@ -599,10 +648,10 @@ const NovaOS = () => {
                     <SelectValue
                       placeholder={
                         tecnicosQuery.isLoading
-                          ? "Carregando tecnicos"
+                          ? "Carregando técnicos"
                           : tecnicoOptions.length > 0
-                            ? "Atribuir tecnico"
-                            : "Nenhum tecnico cadastrado"
+                            ? "Atribuir técnico"
+                            : "Nenhum técnico cadastrado"
                       }
                     />
                   </SelectTrigger>
@@ -625,11 +674,11 @@ const NovaOS = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="recebido">Recebido</SelectItem>
-                    <SelectItem value="em_analise">Em analise</SelectItem>
+                    <SelectItem value="em_analise">Em análise</SelectItem>
                   </SelectContent>
                 </Select>
               </FormField>
-              <FormField id="nova-os-garantia" label="Garantia padrao (dias)">
+              <FormField id="nova-os-garantia" label="Garantia padrão (dias)">
                 <Input
                   id="nova-os-garantia"
                   type="number"
@@ -649,10 +698,10 @@ const NovaOS = () => {
               Valores opcionais
             </h3>
             <p className="mb-4 text-xs text-muted-foreground">
-              Para aparelhos em analise ou orcamento, deixe zerado e preencha depois do diagnostico.
+              Para aparelhos em análise ou orçamento, deixe zerado e preencha depois do diagnóstico.
             </p>
             <div className="space-y-4">
-              <FormField id="nova-os-pecas" label="Valor de pecas">
+              <FormField id="nova-os-pecas" label="Valor de peças">
                 <Input
                   id="nova-os-pecas"
                   type="number"
@@ -664,7 +713,7 @@ const NovaOS = () => {
                   }
                 />
               </FormField>
-              <FormField id="nova-os-mao-obra" label="Valor de mao de obra">
+              <FormField id="nova-os-mao-obra" label="Valor de mão de obra">
                 <Input
                   id="nova-os-mao-obra"
                   type="number"
@@ -692,13 +741,13 @@ const NovaOS = () => {
 
           <Card className="surface-panel p-6">
             <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              Proximo passo
+              Próximo passo
             </p>
             <h3 className="mt-1 font-display text-base font-semibold">
               Checklist do aparelho
             </h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              Ao salvar, voce sera levado diretamente ao checklist desta OS.
+              Ao salvar, você será levado diretamente ao checklist desta OS.
             </p>
             {formError && (
               <p className="mt-3 text-sm text-destructive">{formError}</p>

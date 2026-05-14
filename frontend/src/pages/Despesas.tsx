@@ -113,7 +113,7 @@ const Despesas = () => {
         title:
           error instanceof Error
             ? error.message
-            : "Nao foi possivel cadastrar a despesa",
+            : "Não foi possível cadastrar a despesa",
         variant: "destructive",
       });
     },
@@ -132,7 +132,7 @@ const Despesas = () => {
         title:
           error instanceof Error
             ? error.message
-            : "Nao foi possivel atualizar a despesa",
+            : "Não foi possível atualizar a despesa",
         variant: "destructive",
       });
     },
@@ -149,7 +149,7 @@ const Despesas = () => {
         title:
           error instanceof Error
             ? error.message
-            : "Nao foi possivel remover a despesa",
+            : "Não foi possível remover a despesa",
         variant: "destructive",
       });
     },
@@ -177,7 +177,7 @@ const Despesas = () => {
 
   const salvar = () => {
     if (!form.descricao || form.valor <= 0) {
-      toast({ title: "Preencha descricao e valor", variant: "destructive" });
+      toast({ title: "Preencha descrição e valor", variant: "destructive" });
       return;
     }
 
@@ -224,7 +224,7 @@ const Despesas = () => {
           <Receipt className="h-8 w-8 text-muted-foreground" />
           <div>
             <h2 className="font-display text-xl font-semibold">
-              Nao foi possivel carregar despesas
+              Não foi possível carregar despesas
             </h2>
             <p className="text-sm text-muted-foreground">
               Verifique se o backend esta rodando e tente novamente.
@@ -288,7 +288,7 @@ const Despesas = () => {
               </DialogHeader>
               <div className="grid gap-4 py-2">
                 <div className="space-y-2">
-                  <Label>Descricao</Label>
+                  <Label>Descrição</Label>
                   <Input
                     placeholder="Ex.: Aluguel da loja"
                     value={form.descricao}
@@ -394,7 +394,7 @@ const Despesas = () => {
                   className="bg-gradient-primary text-primary-foreground"
                 >
                   {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {editingId ? "Salvar alteracoes" : "Cadastrar despesa"}
+                  {editingId ? "Salvar alterações" : "Cadastrar despesa"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -411,7 +411,7 @@ const Despesas = () => {
             {formatBRL(total)}
           </p>
           <p className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
-            <Receipt className="h-3 w-3" /> {filtrada.length} lancamentos
+            <Receipt className="h-3 w-3" /> {filtrada.length} lançamentos
           </p>
         </Card>
         <Card className="surface-panel p-5">
@@ -444,7 +444,7 @@ const Despesas = () => {
             {recorrentes}
           </p>
           <p className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
-            <Repeat className="h-3 w-3" /> Repetem todo mes
+            <Repeat className="h-3 w-3" /> Repetem todo mês
           </p>
         </Card>
       </div>
@@ -454,7 +454,7 @@ const Despesas = () => {
           <TableHeader>
             <TableRow className="border-border hover:bg-transparent">
               <TableHead className="text-xs uppercase tracking-wider">
-                Descricao
+                Descrição
               </TableHead>
               <TableHead className="text-xs uppercase tracking-wider">
                 Categoria
@@ -472,7 +472,7 @@ const Despesas = () => {
                 Status
               </TableHead>
               <TableHead className="w-32 text-right text-xs uppercase tracking-wider">
-                Acoes
+                Ações
               </TableHead>
             </TableRow>
           </TableHeader>
