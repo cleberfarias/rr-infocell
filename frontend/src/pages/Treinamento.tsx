@@ -52,7 +52,7 @@ const modulos: Modulo[] = [
     titulo: "Ordens de Serviço",
     descricao: "Aprenda a abrir, acompanhar e fechar uma OS do início ao fim com cadastro rápido de cliente.",
     icone: HiWrenchScrewdriver,
-    gradiente: "from-blue-900/80 via-blue-800/60 to-transparent",
+    gradiente: "from-blue-600 via-blue-500 to-cyan-500",
     screenshot: "/screenshots/os.jpg",
     rota: ROUTES.novaOS,
     nivel: "básico",
@@ -85,7 +85,7 @@ const modulos: Modulo[] = [
     titulo: "Checklist Técnico",
     descricao: "Registre o estado do aparelho na entrada e saída. Proteção para a loja e transparência para o cliente.",
     icone: MdChecklist,
-    gradiente: "from-sky-900/80 via-sky-800/60 to-transparent",
+    gradiente: "from-sky-600 via-sky-500 to-blue-400",
     screenshot: "/screenshots/checklist.jpg",
     rota: ROUTES.checklist,
     nivel: "básico",
@@ -116,7 +116,7 @@ const modulos: Modulo[] = [
     titulo: "Manutenção",
     descricao: "Gerencie o diagnóstico técnico, peças utilizadas e acompanhe o progresso da OS em tempo real.",
     icone: MdHandyman,
-    gradiente: "from-violet-900/80 via-violet-800/60 to-transparent",
+    gradiente: "from-violet-600 via-purple-500 to-fuchsia-500",
     screenshot: "/screenshots/manutencao.jpg",
     rota: ROUTES.manutencao,
     nivel: "intermediário",
@@ -152,7 +152,7 @@ const modulos: Modulo[] = [
     titulo: "Orçamentos",
     descricao: "Envie, aprove ou reprove orçamentos. Integração direta com WhatsApp para comunicação rápida.",
     icone: TbFileCheck,
-    gradiente: "from-amber-900/80 via-amber-800/60 to-transparent",
+    gradiente: "from-amber-500 via-orange-500 to-yellow-400",
     screenshot: "/screenshots/orcamento.jpg",
     rota: ROUTES.orcamento,
     nivel: "intermediário",
@@ -183,7 +183,7 @@ const modulos: Modulo[] = [
     titulo: "Estoque",
     descricao: "Controle produtos, peças e acessórios. Monitore o nível de estoque e receba alertas automáticos.",
     icone: MdInventory2,
-    gradiente: "from-emerald-900/80 via-emerald-800/60 to-transparent",
+    gradiente: "from-emerald-600 via-green-500 to-teal-400",
     screenshot: "/screenshots/estoque.jpg",
     rota: ROUTES.estoque,
     nivel: "básico",
@@ -215,7 +215,7 @@ const modulos: Modulo[] = [
     titulo: "PDV / Caixa",
     descricao: "Feche ordens de serviço com pagamento e realize vendas diretas de produtos e acessórios.",
     icone: MdPointOfSale,
-    gradiente: "from-orange-900/80 via-orange-800/60 to-transparent",
+    gradiente: "from-orange-600 via-red-500 to-pink-500",
     screenshot: "/screenshots/pdv.jpg",
     rota: ROUTES.pdv,
     nivel: "básico",
@@ -242,7 +242,7 @@ const modulos: Modulo[] = [
     titulo: "Financeiro",
     descricao: "Acompanhe receitas, despesas, lucro líquido e saldos bancários. Exporte o DRE em PDF.",
     icone: MdAccountBalance,
-    gradiente: "from-blue-900/80 via-indigo-900/60 to-transparent",
+    gradiente: "from-blue-700 via-indigo-600 to-blue-500",
     screenshot: "/screenshots/financeiro.jpg",
     rota: ROUTES.financeiro,
     nivel: "intermediário",
@@ -272,7 +272,7 @@ const modulos: Modulo[] = [
     titulo: "Atendimento WhatsApp",
     descricao: "Gerencie conversas, envie orçamentos e confirme pagamentos diretamente pelo WhatsApp integrado.",
     icone: FaWhatsapp,
-    gradiente: "from-green-900/80 via-emerald-900/60 to-transparent",
+    gradiente: "from-green-600 via-emerald-500 to-teal-500",
     screenshot: "/screenshots/atendimento.jpg",
     rota: ROUTES.atendimento,
     nivel: "avançado",
@@ -305,7 +305,7 @@ const modulos: Modulo[] = [
     titulo: "Aparelhos",
     descricao: "Consulte e gerencie o histórico de aparelhos por cliente. Útil para atendimentos recorrentes.",
     icone: MdPhoneAndroid,
-    gradiente: "from-slate-900/80 via-gray-900/60 to-transparent",
+    gradiente: "from-slate-600 via-gray-500 to-zinc-400",
     screenshot: "/screenshots/aparelhos.jpg",
     rota: ROUTES.aparelhos,
     nivel: "básico",
@@ -394,31 +394,23 @@ export default function Treinamento() {
                 concluido ? "border-emerald-500/40" : "border-border",
               )}
             >
-              {/* Screenshot com overlay */}
-              <div className="relative h-40 overflow-hidden bg-secondary">
-                {/* Screenshot real da tela */}
-                <img
-                  src={modulo.screenshot}
-                  alt={modulo.titulo}
-                  className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+              {/* Cabeçalho do card com gradiente */}
+              <div className={cn("relative flex h-36 items-center justify-center bg-gradient-to-br", modulo.gradiente)}>
+                <div className="absolute inset-0 opacity-10"
+                  style={{ backgroundImage: "radial-gradient(circle at 30% 50%, white 1px, transparent 1px)", backgroundSize: "28px 28px" }}
                 />
-                {/* Overlay gradiente para legibilidade */}
-                <div className={cn("absolute inset-0 bg-gradient-to-t", modulo.gradiente)} />
-                {/* Ícone no canto */}
-                <div className="absolute left-3 top-3 flex h-9 w-9 items-center justify-center rounded-lg bg-black/30 backdrop-blur-sm">
-                  <Icon className="h-5 w-5 text-white" />
-                </div>
+                <Icon className="relative h-14 w-14 text-white/90 drop-shadow-lg" />
                 {concluido && (
-                  <div className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/80 backdrop-blur-sm">
+                  <div className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
                     <CheckCircle2 className="h-4 w-4 text-white" />
                   </div>
                 )}
                 <div className="absolute bottom-3 left-3">
-                  <Badge variant="outline" className="text-[10px] border bg-black/30 text-white border-white/20 backdrop-blur-sm">
+                  <Badge variant="outline" className="text-[10px] border bg-black/20 text-white border-white/20 backdrop-blur-sm">
                     {modulo.nivel}
                   </Badge>
                 </div>
-                <div className="absolute bottom-3 right-3 text-[10px] text-white/80 drop-shadow">
+                <div className="absolute bottom-3 right-3 text-[10px] text-white/70">
                   ~{modulo.tempoMinutos} min · {modulo.passos.length} passos
                 </div>
               </div>
@@ -523,16 +515,30 @@ export default function Treinamento() {
                 </div>
 
                 {/* Conteúdo do passo */}
-                <div className="flex-1 overflow-y-auto p-6">
-                  <h3 className="font-display text-lg font-semibold mb-3">{passoAtual.titulo}</h3>
-                  <p className="text-sm leading-relaxed text-foreground/80">{passoAtual.descricao}</p>
+                <div className="flex-1 overflow-y-auto">
+                  {/* Screenshot da tela */}
+                  <div className="relative mx-4 mt-4 overflow-hidden rounded-xl border border-border shadow-lg">
+                    <img
+                      src={moduloAberto.screenshot}
+                      alt={`Tela de ${moduloAberto.titulo}`}
+                      className="w-full object-cover object-top"
+                      style={{ maxHeight: 220 }}
+                    />
+                    {/* Gradiente embaixo da imagem */}
+                    <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background to-transparent" />
+                  </div>
 
-                  {passoAtual.dica && (
-                    <div className="mt-4 flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3">
-                      <span className="shrink-0 text-base">💡</span>
-                      <p className="text-sm text-primary/80">{passoAtual.dica}</p>
-                    </div>
-                  )}
+                  <div className="p-5">
+                    <h3 className="font-display text-lg font-semibold mb-3">{passoAtual.titulo}</h3>
+                    <p className="text-sm leading-relaxed text-foreground/80">{passoAtual.descricao}</p>
+
+                    {passoAtual.dica && (
+                      <div className="mt-4 flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3">
+                        <span className="shrink-0 text-base">💡</span>
+                        <p className="text-sm text-primary/80">{passoAtual.dica}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Footer */}
