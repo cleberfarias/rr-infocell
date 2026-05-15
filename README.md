@@ -180,6 +180,11 @@ cd backend && npm run build && npm run lint
 
 ## Documentação
 
+- [Regras de Negócio](docs/business-rules.md)
+- [Escopo do MVP](docs/mvp-scope.md)
+- [Design System](docs/design-system.md)
+- [Estrutura do Projeto](docs/project-structure.md)
+- [Deploy em Produção](docs/production-deploy.md)
 - [Backend](backend/README.md)
 - [Infra](infra/README.md)
 - [WhatsApp](whatsapp/README.md)
