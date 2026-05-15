@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { formatBRL } from "@/data/mock";
+import { formatBRL } from "@/lib/formatters";
 import { listCategorias } from "@/services/categorias";
 import { listMarcas } from "@/services/marcas";
 import { createMovimentacaoEstoque } from "@/services/movimentacoes-estoque";
@@ -64,20 +64,20 @@ const Estoque = () => {
   const produtosQuery = useQuery({
     queryKey: ["produtos"],
     queryFn: () => listProdutos({ ativo: true }),
-    staleTime: 60_000,
+    staleTime: STALE_TIME.short,
     refetchOnWindowFocus: false,
   });
 
   const categoriasQuery = useQuery({
     queryKey: ["categorias"],
     queryFn: listCategorias,
-    staleTime: 10 * 60_000,
+    staleTime: STALE_TIME.long,
   });
 
   const marcasQuery = useQuery({
     queryKey: ["marcas"],
     queryFn: listMarcas,
-    staleTime: 10 * 60_000,
+    staleTime: STALE_TIME.long,
   });
 
   const criarProdutoMutation = useMutation({

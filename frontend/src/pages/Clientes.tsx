@@ -25,7 +25,7 @@ import {
 } from "@/services/clientes";
 import { listAparelhos } from "@/services/aparelhos";
 import { listOrdensServico, type OrdemServico } from "@/services/ordens-servico";
-import { formatBRL } from "@/data/mock";
+import { formatBRL } from "@/lib/formatters";
 import {
   Edit,
   History,

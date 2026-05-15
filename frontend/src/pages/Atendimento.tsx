@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { OS_STATUS_LABELS } from "@/constants/status";
+import { POLL_INTERVAL } from "@/constants/query";
+import { WHATSAPP_EMOJIS, WHATSAPP_RESPOSTAS_RAPIDAS } from "@/constants/business";
 import {
   Archive,
   ArrowLeft,
@@ -52,27 +55,9 @@ import {
 } from "@/services/whatsapp";
 import type { OrdemServico } from "@/services/ordens-servico";
 
-const STATUS_LABEL: Record<string, string> = {
-  recebido: "Recebido",
-  em_analise: "Em análise",
-  aguardando_aprovacao: "Aguardando aprovação",
-  aguardando_peca: "Aguardando peça",
-  em_manutencao: "Em manutenção",
-  pronto_para_retirada: "Pronto para retirada",
-  entregue: "Entregue",
-  cancelado: "Cancelado",
-};
-
-const EMOJIS = ["😀", "👍", "🙏", "✅", "📱", "🔧", "💰", "🧾", "⏳", "❌"];
-
-const RESPOSTAS_RAPIDAS = [
-  "Olá! Como posso ajudar?",
-  "Pode nos enviar uma foto ou vídeo do aparelho?",
-  "Recebemos sua mensagem e já vamos verificar.",
-  "Seu aparelho está em análise técnica.",
-  "Assim que houver atualização da OS, avisaremos por aqui.",
-  "Obrigado pelo contato. RR Infocell agradece!",
-];
+const STATUS_LABEL = OS_STATUS_LABELS;
+const EMOJIS = WHATSAPP_EMOJIS;
+const RESPOSTAS_RAPIDAS = WHATSAPP_RESPOSTAS_RAPIDAS;
 
 function hora(ts: string) {
   return new Date(ts).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
@@ -515,7 +500,7 @@ export default function Atendimento() {
       } catch { /* silencioso */ }
     };
     poll();
-    const id = setInterval(poll, 5000);
+    const id = setInterval(poll, POLL_INTERVAL.conversas);
     return () => clearInterval(id);
   }, []);
 
@@ -528,7 +513,7 @@ export default function Atendimento() {
       } catch { /* silencioso */ }
     };
     poll();
-    const id = setInterval(poll, 3000);
+    const id = setInterval(poll, POLL_INTERVAL.mensagens);
     return () => clearInterval(id);
   }, [telefoneSelecionado]);
 

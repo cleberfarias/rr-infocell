@@ -43,7 +43,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
-import { formatBRL } from "@/data/mock";
+import { formatBRL, formatDateTime } from "@/lib/formatters";
+import { MOVIMENTACAO_TIPO_LABELS } from "@/constants/status";
+import { MOTIVOS_SAIDA, MOTIVOS_ENTRADA, MOTIVOS_AJUSTE } from "@/constants/business";
+import { STALE_TIME, POLL_INTERVAL } from "@/constants/query";
 import {
   createMovimentacaoEstoque,
   listMovimentacoesEstoque,
@@ -64,15 +67,7 @@ type Tipo = MovimentacaoEstoqueTipo | "transferencia";
 
 const today = new Date().toISOString().slice(0, 10);
 
-const tipoLabel: Record<Tipo, string> = {
-  entrada: "Entrada",
-  saida: "Saída",
-  ajuste: "Ajuste de Inventário",
-  transferencia: "Transferência",
-};
-
-const formatDateTime = (v: string) =>
-  new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(v));
+const tipoLabel = MOVIMENTACAO_TIPO_LABELS;
 
 export default function Movimentacoes() {
   const queryClient = useQueryClient();
@@ -85,10 +80,7 @@ export default function Movimentacoes() {
   const [perdasAvarias, setPerdasAvarias] = useState(false);
   const [nfe, setNfe] = useState({ numero: "", serie: "", dataEmissao: "", valorAdicional: "" });
 
-  const motivosSaida = ["Venda", "Uso interno", "Perda / Avaria", "Devolução ao fornecedor", "Ajuste de estoque", "Amostra"];
-  const motivosEntrada = ["Compra", "Devolução de cliente", "Ajuste de estoque", "Produção", "Brinde / Amostra"];
-  const motivosAjuste = ["Inventário", "Correção de estoque", "Avaria descoberta", "Contagem física"];
-  const motivosAtivos = tipo === "saida" ? motivosSaida : tipo === "entrada" ? motivosEntrada : motivosAjuste;
+  const motivosAtivos = tipo === "saida" ? MOTIVOS_SAIDA : tipo === "entrada" ? MOTIVOS_ENTRADA : MOTIVOS_AJUSTE;
 
   // Novo produto inline
   const [novoProdutoOpen, setNovoProdutoOpen] = useState(false);
@@ -106,8 +98,8 @@ export default function Movimentacoes() {
   const [qtdInput, setQtdInput] = useState("1");
   const [finalInput, setFinalInput] = useState("");
 
-  const categoriasQuery = useQuery({ queryKey: ["categorias"], queryFn: listCategorias, staleTime: 10 * 60_000 });
-  const marcasQuery = useQuery({ queryKey: ["marcas"], queryFn: listMarcas, staleTime: 10 * 60_000 });
+  const categoriasQuery = useQuery({ queryKey: ["categorias"], queryFn: listCategorias, staleTime: STALE_TIME.long });
+  const marcasQuery = useQuery({ queryKey: ["marcas"], queryFn: listMarcas, staleTime: STALE_TIME.long });
 
   const criarProdutoMutation = useMutation({
     mutationFn: () => createProduto({
@@ -137,13 +129,13 @@ export default function Movimentacoes() {
   const movQuery = useQuery({
     queryKey: ["movimentacoes-estoque"],
     queryFn: () => listMovimentacoesEstoque(),
-    staleTime: 30_000,
+    staleTime: STALE_TIME.realtime,
   });
 
   const produtosQuery = useQuery({
     queryKey: ["produtos"],
     queryFn: () => listProdutos({ ativo: true }),
-    staleTime: 5 * 60_000,
+    staleTime: STALE_TIME.medium,
   });
 
   const produtosFiltrados = useMemo(() => {

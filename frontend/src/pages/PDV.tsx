@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatBRL } from "@/data/mock";
+import { formatBRL } from "@/lib/formatters";
 import { listAparelhos } from "@/services/aparelhos";
 import { listClientes } from "@/services/clientes";
 import {

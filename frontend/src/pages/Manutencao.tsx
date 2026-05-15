@@ -31,7 +31,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { formatBRL } from "@/data/mock";
+import { formatBRL, formatDateTimeShort } from "@/lib/formatters";
+import { OS_STATUS_LABELS } from "@/constants/status";
+import { STALE_TIME } from "@/constants/query";
+import { GARANTIA_DIAS_PADRAO } from "@/constants/business";
+import { ROUTES } from "@/constants/routes";
 import { listAparelhos, type Aparelho } from "@/services/aparelhos";
 import { listClientes, type Cliente } from "@/services/clientes";
 import {
@@ -55,15 +59,11 @@ type ManutencaoForm = {
   garantiaObservacoes: string;
 };
 
-const statusFlow: Array<{ key: OrdemServicoStatus; label: string }> = [
-  { key: "recebido", label: "Recebido" },
-  { key: "em_analise", label: "Em análise" },
-  { key: "aguardando_aprovacao", label: "Aguardando aprovação" },
-  { key: "aguardando_peca", label: "Aguardando peça" },
-  { key: "em_manutencao", label: "Em manutenção" },
-  { key: "pronto_para_retirada", label: "Pronto para retirada" },
-  { key: "entregue", label: "Entregue" },
-];
+const statusFlow: Array<{ key: OrdemServicoStatus; label: string }> = (
+  Object.entries(OS_STATUS_LABELS) as Array<[OrdemServicoStatus, string]>
+)
+  .filter(([key]) => key !== "cancelado")
+  .map(([key, label]) => ({ key, label }));
 
 const maintenanceStatuses: OrdemServicoStatus[] = [
   "recebido",
@@ -74,32 +74,13 @@ const maintenanceStatuses: OrdemServicoStatus[] = [
   "pronto_para_retirada",
 ];
 
-const formatDateTime = (value?: string) => {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleString("pt-BR", {
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    month: "2-digit",
-  });
-};
-
 const buildForm = (ordem: OrdemServico): ManutencaoForm => ({
   diagnostico: ordem.diagnostico ?? "",
   status: ordem.status,
   prioridade: ordem.prioridade ?? "normal",
   tecnicoResponsavel: ordem.tecnicoResponsavel ?? "",
   valorMaoObra: String(ordem.valorMaoObra),
-  garantiaDias: String(ordem.garantiaDias ?? 90),
+  garantiaDias: String(ordem.garantiaDias ?? GARANTIA_DIAS_PADRAO),
   garantiaObservacoes: ordem.garantiaObservacoes ?? "",
 });
 
@@ -125,28 +106,28 @@ const Manutencao = () => {
   const ordensQuery = useQuery({
     queryKey: ["ordens-servico"],
     queryFn: () => listOrdensServico(),
-    staleTime: 60_000,
+    staleTime: STALE_TIME.short,
     refetchOnWindowFocus: false,
   });
 
   const clientesQuery = useQuery({
     queryKey: ["clientes"],
     queryFn: () => listClientes(""),
-    staleTime: 5 * 60_000,
+    staleTime: STALE_TIME.medium,
     refetchOnWindowFocus: false,
   });
 
   const aparelhosQuery = useQuery({
     queryKey: ["aparelhos"],
     queryFn: () => listAparelhos(),
-    staleTime: 5 * 60_000,
+    staleTime: STALE_TIME.medium,
     refetchOnWindowFocus: false,
   });
 
   const tecnicosQuery = useQuery({
     queryKey: ["usuarios", "tecnicos"],
     queryFn: listTecnicos,
-    staleTime: 10 * 60_000,
+    staleTime: STALE_TIME.long,
     refetchOnWindowFocus: false,
   });
 
@@ -273,13 +254,13 @@ const Manutencao = () => {
 
       if (input.status === "aguardando_aprovacao") {
         toast.success("OS enviada para orçamento. Aguardando aprovação do cliente.");
-        navigate(`/app/orcamento?ordemId=${ordem.id}`);
+        navigate(ROUTES.orcamentoOS(ordem.id));
         return;
       }
 
       if (input.status === "pronto_para_retirada") {
         toast.success("Aparelho pronto para retirada! Imprima o Termo de Garantia.");
-        navigate(`/app/ordens/${ordem.id}`);
+        navigate(ROUTES.ordemDetalhe(ordem.id));
         return;
       }
 
@@ -406,7 +387,7 @@ const Manutencao = () => {
           description="Abra uma OS ou mova uma ordem existente para o fluxo técnico."
           actions={
             <Button asChild>
-              <Link to="/app/ordens/nova">Nova OS</Link>
+              <Link to={ROUTES.novaOS}>Nova OS</Link>
             </Button>
           }
         />
@@ -426,7 +407,7 @@ const Manutencao = () => {
           <div className="flex flex-wrap gap-2">
             {selectedOrdem && (
               <Button asChild variant="outline">
-                <Link to={`/app/ordens/${selectedOrdem.id}`}>
+                <Link to={ROUTES.ordemDetalhe(selectedOrdem.id)}>
                   <Eye className="h-4 w-4" /> Detalhe
                 </Link>
               </Button>
@@ -435,8 +416,8 @@ const Manutencao = () => {
               <Link
                 to={
                   selectedOrdem
-                    ? `/app/orcamento?ordemId=${selectedOrdem.id}`
-                    : "/app/orcamento"
+                    ? ROUTES.orcamentoOS(selectedOrdem.id)
+                    : ROUTES.orcamento
                 }
               >
                 <Send className="h-4 w-4" /> Orçamento
@@ -512,7 +493,7 @@ const Manutencao = () => {
             <Card className="surface-panel p-4">
               <p className="text-xs text-muted-foreground">Entrada</p>
               <p className="mt-1 font-mono text-sm">
-                {formatDateTime(selectedOrdem.entradaEm)}
+                {formatDateTimeShort(selectedOrdem.entradaEm)}
               </p>
             </Card>
             <Card className="surface-panel p-4">
@@ -710,7 +691,7 @@ const Manutencao = () => {
                 title="Peças e serviços"
                 actions={
                   <Button asChild variant="outline" size="sm">
-                    <Link to={`/app/ordens/${selectedOrdem.id}`}>
+                    <Link to={ROUTES.ordemDetalhe(selectedOrdem.id)}>
                       <Package className="h-4 w-4" /> Adicionar peças
                     </Link>
                   </Button>
@@ -795,7 +776,7 @@ const Manutencao = () => {
                 <li className="relative">
                   <span className="absolute -left-[26px] top-1 h-3 w-3 rounded-full border-2 border-success bg-success" />
                   <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                    {formatDateTime(selectedOrdem.createdAt)}
+                    {formatDateTimeShort(selectedOrdem.createdAt)}
                   </p>
                   <p className="text-sm font-semibold">OS criada</p>
                   <p className="text-xs text-muted-foreground">
@@ -806,7 +787,7 @@ const Manutencao = () => {
                   <li className="relative">
                     <span className="absolute -left-[26px] top-1 h-3 w-3 rounded-full border-2 border-primary bg-primary shadow-glow" />
                     <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                      {formatDateTime(selectedOrdem.updatedAt)}
+                      {formatDateTimeShort(selectedOrdem.updatedAt)}
                     </p>
                     <p className="text-sm font-semibold">
                       Diagnóstico atualizado
@@ -820,7 +801,7 @@ const Manutencao = () => {
                   <li className="relative">
                     <span className="absolute -left-[26px] top-1 h-3 w-3 rounded-full border-2 border-success bg-success" />
                     <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                      {formatDateTime(selectedOrdem.concluidaEm)}
+                      {formatDateTimeShort(selectedOrdem.concluidaEm)}
                     </p>
                     <p className="text-sm font-semibold">
                       Pronta para retirada
@@ -834,7 +815,7 @@ const Manutencao = () => {
                   <li key={evento.id} className="relative">
                     <span className="absolute -left-[26px] top-1 h-3 w-3 rounded-full border-2 border-primary bg-primary shadow-glow" />
                     <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                      {formatDateTime(evento.createdAt)}
+                      {formatDateTimeShort(evento.createdAt)}
                     </p>
                     <p className="text-sm font-semibold">{evento.titulo}</p>
                     {evento.descricao && (
@@ -888,13 +869,13 @@ const Manutencao = () => {
                   <StatusBadge status={selectedOrdem.status} />
                 </div>
                 <Button asChild variant="outline" className="w-full">
-                  <Link to={`/app/checklist?ordemId=${selectedOrdem.id}`}>
+                  <Link to={ROUTES.checklistOS(selectedOrdem.id)}>
                     Checklist da OS
                   </Link>
                 </Button>
                 <Button asChild variant="outline" className="w-full">
                   <Link
-                    to={`/app/checklist?ordemId=${selectedOrdem.id}&tipo=saida`}
+                    to={ROUTES.checklistSaida(selectedOrdem.id)}
                   >
                     Checklist de saída
                   </Link>

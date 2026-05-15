@@ -40,7 +40,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatBRL } from "@/data/mock";
+import { formatBRL } from "@/lib/formatters";
 import { toast } from "@/hooks/use-toast";
 import {
   categoriaLabels,

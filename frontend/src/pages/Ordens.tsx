@@ -32,7 +32,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatBRL } from "@/data/mock";
+import { formatBRL, formatDateShort } from "@/lib/formatters";
+import { OS_STATUS_OPTIONS } from "@/constants/status";
+import { STALE_TIME } from "@/constants/query";
+import { ROUTES } from "@/constants/routes";
 import { listAparelhos, type Aparelho } from "@/services/aparelhos";
 import { listClientes, type Cliente } from "@/services/clientes";
 import {
@@ -40,28 +43,6 @@ import {
   type OrdemServico,
   type OrdemServicoStatus,
 } from "@/services/ordens-servico";
-
-const statusOptions: Array<{
-  value: OrdemServicoStatus | "todos";
-  label: string;
-}> = [
-  { value: "todos", label: "Todos" },
-  { value: "recebido", label: "Recebido" },
-  { value: "em_analise", label: "Em análise" },
-  { value: "aguardando_aprovacao", label: "Aguardando aprovação" },
-  { value: "aguardando_peca", label: "Aguardando peça" },
-  { value: "em_manutencao", label: "Em manutenção" },
-  { value: "pronto_para_retirada", label: "Pronto para retirada" },
-  { value: "entregue", label: "Entregue" },
-  { value: "cancelado", label: "Cancelado" },
-];
-
-const formatDate = (value?: string) => {
-  if (!value) return "Sem data";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
-};
 
 const formatPrazo = (valor?: string, status?: string) => {
   if (!valor || ["entregue", "cancelado"].includes(status ?? "")) return { label: "-", classe: "" };
@@ -97,21 +78,21 @@ const Ordens = () => {
   const ordensQuery = useQuery({
     queryKey: ["ordens-servico"],
     queryFn: () => listOrdensServico(),
-    staleTime: 60_000,
+    staleTime: STALE_TIME.short,
     refetchOnWindowFocus: false,
   });
 
   const clientesQuery = useQuery({
     queryKey: ["clientes"],
     queryFn: () => listClientes(""),
-    staleTime: 5 * 60_000,
+    staleTime: STALE_TIME.medium,
     refetchOnWindowFocus: false,
   });
 
   const aparelhosQuery = useQuery({
     queryKey: ["aparelhos"],
     queryFn: () => listAparelhos(),
-    staleTime: 5 * 60_000,
+    staleTime: STALE_TIME.medium,
     refetchOnWindowFocus: false,
   });
 
@@ -259,7 +240,7 @@ const Ordens = () => {
       key: "entrada",
       header: "Entrada",
       className: "font-mono text-xs",
-      cell: (ordem) => formatDate(ordem.entradaEm),
+      cell: (ordem) => formatDateShort(ordem.entradaEm),
     },
     {
       key: "previsao",
@@ -290,17 +271,17 @@ const Ordens = () => {
       cell: (ordem) => (
         <div className="flex justify-end gap-1">
           <Button variant="ghost" size="icon" asChild title="Detalhes">
-            <Link to={`/app/ordens/${ordem.id}`}>
+            <Link to={ROUTES.ordemDetalhe(ordem.id)}>
               <Eye className="h-4 w-4" />
             </Link>
           </Button>
           <Button variant="ghost" size="icon" asChild title="Checklist">
-            <Link to={`/app/checklist?ordemId=${ordem.id}`}>
+            <Link to={ROUTES.checklistOS(ordem.id)}>
               <ClipboardCheck className="h-4 w-4" />
             </Link>
           </Button>
           <Button variant="ghost" size="icon" asChild title="Manutenção">
-            <Link to={`/app/manutencao?ordemId=${ordem.id}`}>
+            <Link to={ROUTES.manutencaoOS(ordem.id)}>
               <Wrench className="h-4 w-4" />
             </Link>
           </Button>
@@ -342,7 +323,7 @@ const Ordens = () => {
             asChild
             className="bg-gradient-primary text-primary-foreground shadow-glow"
           >
-            <Link to="/app/ordens/nova">
+            <Link to={ROUTES.novaOS}>
               <Plus className="h-4 w-4" /> Nova OS
             </Link>
           </Button>
@@ -377,7 +358,7 @@ const Ordens = () => {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {statusOptions.map((option) => (
+              {OS_STATUS_OPTIONS.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
@@ -485,7 +466,7 @@ const Ordens = () => {
               description="Ajuste a busca ou crie uma nova ordem de serviço."
               actions={
                 <Button asChild>
-                  <Link to="/app/ordens/nova">Nova OS</Link>
+                  <Link to={ROUTES.novaOS}>Nova OS</Link>
                 </Button>
               }
             />

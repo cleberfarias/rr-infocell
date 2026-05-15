@@ -37,6 +37,10 @@ import {
   isFirebaseClientConfigured,
 } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
+import { CHECKLIST_ENTRADA_ITENS, CHECKLIST_SAIDA_ITENS } from "@/constants/business";
+import { CHECKLIST_STATUS_LABELS } from "@/constants/status";
+import { TIMEOUT } from "@/constants/query";
+import { ROUTES } from "@/constants/routes";
 import { listAparelhos } from "@/services/aparelhos";
 import {
   createChecklist,
@@ -49,35 +53,6 @@ import {
 import { listClientes } from "@/services/clientes";
 import { toast } from "@/components/ui/sonner";
 import { listOrdensServico } from "@/services/ordens-servico";
-
-const initialItems: ChecklistItem[] = [
-  { nome: "Tela", status: "nao_testado" },
-  { nome: "Touch", status: "nao_testado" },
-  { nome: "Camera", status: "nao_testado" },
-  { nome: "Microfone", status: "nao_testado" },
-  { nome: "Alto-falante", status: "nao_testado" },
-  { nome: "Botoes", status: "nao_testado" },
-  { nome: "Conector de carga", status: "nao_testado" },
-  { nome: "Wi-Fi", status: "nao_testado" },
-  { nome: "Bluetooth", status: "nao_testado" },
-  { nome: "Bateria", status: "nao_testado" },
-];
-
-const saidaItems: ChecklistItem[] = [
-  { nome: "Aparelho testado", status: "nao_testado" },
-  { nome: "Carga funcionando", status: "nao_testado" },
-  { nome: "Biometria/Face ID", status: "nao_testado" },
-  { nome: "Camera", status: "nao_testado" },
-  { nome: "Audio", status: "nao_testado" },
-  { nome: "Chip/rede", status: "nao_testado" },
-  { nome: "Senha removida ou confirmada", status: "nao_testado" },
-];
-
-const statusLabels: Record<ChecklistItemStatus, string> = {
-  funcionando: "Funcionando",
-  com_defeito: "Com defeito",
-  nao_testado: "Não testado",
-};
 
 const statusClasses: Record<ChecklistItemStatus, string> = {
   funcionando: "border-success/40 bg-success/10",
@@ -119,7 +94,7 @@ const uploadWithTimeout = (
     const timeoutId = window.setTimeout(() => {
       uploadTask.cancel();
       reject(new Error("Tempo limite excedido ao enviar a foto."));
-    }, 120000);
+    }, TIMEOUT.upload);
 
     uploadTask.on(
       "state_changed",
@@ -145,7 +120,7 @@ const Checklist = () => {
     searchParams.get("ordemId") ?? "",
   );
   const checklistTipo = searchParams.get("tipo") === "saida" ? "saida" : "entrada";
-  const itensBase = checklistTipo === "saida" ? saidaItems : initialItems;
+  const itensBase = checklistTipo === "saida" ? CHECKLIST_SAIDA_ITENS : CHECKLIST_ENTRADA_ITENS;
   const [itens, setItens] = useState<ChecklistItem[]>(itensBase);
   const [fotos, setFotos] = useState<ChecklistFoto[]>([]);
   const [observacoesGerais, setObservacoesGerais] = useState("");
@@ -251,10 +226,10 @@ const Checklist = () => {
       setFormError(null);
       if (checklistTipo === "entrada" && selectedOrdemId) {
         toast.success("Checklist de entrada salvo! Seguindo para manutenção.");
-        navigate(`/app/manutencao?ordemId=${selectedOrdemId}`);
+        navigate(ROUTES.manutencaoOS(selectedOrdemId));
       } else if (checklistTipo === "saida" && selectedOrdemId) {
         toast.success("Checklist de saída salvo! Gerando comprovante.");
-        navigate(`/app/ordens/${selectedOrdemId}`);
+        navigate(ROUTES.ordemDetalhe(selectedOrdemId));
       } else {
         toast.success("Checklist salvo com sucesso.");
       }
@@ -473,7 +448,7 @@ const Checklist = () => {
               {itens.map((item) => (
                 <tr key={item.nome}>
                   <td>{item.nome}</td>
-                  <td>{statusLabels[item.status]}</td>
+                  <td>{CHECKLIST_STATUS_LABELS[item.status]}</td>
                   <td>{item.observacao || "-"}</td>
                 </tr>
               ))}
@@ -528,7 +503,7 @@ const Checklist = () => {
             description="Crie uma ordem de serviço antes de registrar o checklist."
             actions={
               <Button asChild>
-                <Link to="/app/ordens/nova">Nova OS</Link>
+                <Link to={ROUTES.novaOS}>Nova OS</Link>
               </Button>
             }
           />
@@ -604,7 +579,7 @@ const Checklist = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(statusLabels).map(([value, label]) => (
+                      {Object.entries(CHECKLIST_STATUS_LABELS).map(([value, label]) => (
                         <SelectItem key={value} value={value}>
                           {label}
                         </SelectItem>

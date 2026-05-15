@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatBRL } from "@/data/mock";
+import { formatBRL, formatDate } from "@/lib/formatters";
 import { getAparelho } from "@/services/aparelhos";
 import { getCliente } from "@/services/clientes";
 import {
@@ -38,19 +38,6 @@ import {
 } from "@/services/ordens-servico";
 import { listProdutos } from "@/services/produtos";
 
-const formatDate = (value?: string) => {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleDateString("pt-BR");
-};
 
 const OrdemDetalhe = () => {
   const { ordemId } = useParams();

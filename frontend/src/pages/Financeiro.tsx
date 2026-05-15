@@ -19,7 +19,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FormField } from "@/components/design-system";
 import { toast } from "@/components/ui/sonner";
-import { formatBRL } from "@/data/mock";
+import { formatBRL } from "@/lib/formatters";
 import { listDespesas } from "@/services/despesas";
 import { listOrdensServico } from "@/services/ordens-servico";
 import { listProdutos } from "@/services/produtos";
@@ -94,7 +94,7 @@ const Financeiro = () => {
   const contasQuery = useQuery({
     queryKey: ["contas"],
     queryFn: () => listContas(),
-    staleTime: 5 * 60_000,
+    staleTime: STALE_TIME.medium,
   });
 
   // --- mutations ---

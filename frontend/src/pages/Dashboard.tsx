@@ -28,28 +28,19 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { formatBRL } from "@/data/mock";
+import { formatBRL, formatDateShort } from "@/lib/formatters";
+import { OS_STATUS_LABELS } from "@/constants/status";
+import { STALE_TIME } from "@/constants/query";
+import { ROUTES } from "@/constants/routes";
 import { listAparelhos } from "@/services/aparelhos";
 import { listClientes } from "@/services/clientes";
 import {
   listOrdensServico,
   type OrdemServico,
-  type OrdemServicoStatus,
 } from "@/services/ordens-servico";
 import { listProdutos } from "@/services/produtos";
 
-const statusLabels: Record<OrdemServicoStatus, string> = {
-  recebido: "Recebido",
-  em_analise: "Em análise",
-  aguardando_aprovacao: "Aguardando aprovação",
-  aguardando_peca: "Aguardando peça",
-  em_manutencao: "Em manutenção",
-  pronto_para_retirada: "Pronto para retirada",
-  entregue: "Entregue",
-  cancelado: "Cancelado",
-};
-
-const activeStatuses: OrdemServicoStatus[] = [
+const activeStatuses = [
   "recebido",
   "em_analise",
   "aguardando_aprovacao",
@@ -57,7 +48,7 @@ const activeStatuses: OrdemServicoStatus[] = [
   "em_manutencao",
 ];
 
-const finalStatuses: OrdemServicoStatus[] = ["pronto_para_retirada", "entregue"];
+const finalStatuses = ["pronto_para_retirada", "entregue"] as const;
 
 const isOverdue = (ordem: OrdemServico) => {
   if (!ordem.previsaoEntregaEm || ["entregue", "cancelado"].includes(ordem.status)) {
@@ -77,46 +68,32 @@ const isOverdue = (ordem: OrdemServico) => {
   return previsao < today;
 };
 
-const formatDate = (value?: string) => {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
-};
-
 const Dashboard = () => {
   const ordensQuery = useQuery({
     queryKey: ["ordens-servico"],
     queryFn: () => listOrdensServico(),
-    staleTime: 60_000,
+    staleTime: STALE_TIME.short,
     refetchOnWindowFocus: false,
   });
 
   const clientesQuery = useQuery({
     queryKey: ["clientes"],
     queryFn: () => listClientes(""),
-    staleTime: 5 * 60_000,
+    staleTime: STALE_TIME.medium,
     refetchOnWindowFocus: false,
   });
 
   const aparelhosQuery = useQuery({
     queryKey: ["aparelhos"],
     queryFn: () => listAparelhos(),
-    staleTime: 5 * 60_000,
+    staleTime: STALE_TIME.medium,
     refetchOnWindowFocus: false,
   });
 
   const produtosQuery = useQuery({
     queryKey: ["produtos"],
     queryFn: () => listProdutos({ ativo: true }),
-    staleTime: 5 * 60_000,
+    staleTime: STALE_TIME.medium,
     refetchOnWindowFocus: false,
   });
 
@@ -161,7 +138,7 @@ const Dashboard = () => {
     for (const ordem of ordens) {
       counts.set(ordem.status, (counts.get(ordem.status) ?? 0) + 1);
     }
-    return Object.entries(statusLabels).map(([status, label]) => ({
+    return Object.entries(OS_STATUS_LABELS).map(([status, label]) => ({
       label,
       total: counts.get(status) ?? 0,
     }));
@@ -292,7 +269,7 @@ const Dashboard = () => {
       </div>
 
       {estoqueInfo.baixos > 0 && (
-        <Link to="/app/estoque?filtro=baixo">
+        <Link to={ROUTES.estoqueBaixo}>
           <Card
             className={cn(
               "surface-panel p-4 border cursor-pointer hover:opacity-90 transition-opacity",
@@ -432,7 +409,7 @@ const Dashboard = () => {
           className="col-span-1 lg:col-span-2"
           contentClassName="p-0"
           actions={
-            <Link to="/app/ordens" className="text-xs text-primary hover:underline">
+            <Link to={ROUTES.ordens} className="text-xs text-primary hover:underline">
               Ver todas
             </Link>
           }
@@ -459,7 +436,7 @@ const Dashboard = () => {
                       className="border-b border-border/50 transition-colors hover:bg-secondary/30"
                     >
                       <td className="px-5 py-3 font-mono text-xs text-primary">
-                        <Link to={`/app/ordens/${ordem.id}`}>OS-{ordem.numero}</Link>
+                        <Link to={ROUTES.ordemDetalhe(ordem.id)}>OS-{ordem.numero}</Link>
                       </td>
                       <td className="px-5 py-3 font-medium">
                         {cliente?.nome ?? ordem.clienteId}
@@ -495,10 +472,10 @@ const Dashboard = () => {
           <p className="mb-4 text-xs text-muted-foreground">Fluxos mais usados</p>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { to: "/app/ordens/nova", icon: Plus, label: "Nova OS", desc: "Cadastrar aparelho", primary: true },
-              { to: "/app/clientes", icon: Users, label: "Clientes", desc: "Histórico e busca" },
-              { to: "/app/estoque", icon: Package, label: "Estoque", desc: "Peças e custos" },
-              { to: "/app/pdv", icon: ShoppingCart, label: "Caixa", desc: "Fechar OS / venda" },
+              { to: ROUTES.novaOS, icon: Plus, label: "Nova OS", desc: "Cadastrar aparelho", primary: true },
+              { to: ROUTES.clientes, icon: Users, label: "Clientes", desc: "Histórico e busca" },
+              { to: ROUTES.estoque, icon: Package, label: "Estoque", desc: "Peças e custos" },
+              { to: ROUTES.pdv, icon: ShoppingCart, label: "Caixa", desc: "Fechar OS / venda" },
             ].map(({ to, icon: Icon, label, desc, primary }) => (
               <Link
                 key={to}

@@ -35,7 +35,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatBRL } from "@/data/mock";
+import { formatBRL, formatDateTimeShort } from "@/lib/formatters";
+import { OS_STATUS_LABELS } from "@/constants/status";
+import { STALE_TIME } from "@/constants/query";
+import { ROUTES } from "@/constants/routes";
 import { listAparelhos } from "@/services/aparelhos";
 import { listClientes } from "@/services/clientes";
 import {
@@ -59,36 +62,6 @@ const budgetStatuses: OrdemServicoStatus[] = [
   "pronto_para_retirada",
 ];
 
-const statusLabels: Record<OrdemServicoStatus, string> = {
-  aguardando_aprovacao: "Aguardando aprovação",
-  aguardando_peca: "Aguardando peça",
-  cancelado: "Cancelado",
-  em_analise: "Em análise",
-  em_manutencao: "Em manutenção",
-  entregue: "Entregue",
-  pronto_para_retirada: "Pronto para retirada",
-  recebido: "Recebido",
-};
-
-const formatDateTime = (value?: string) => {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleString("pt-BR", {
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    month: "2-digit",
-  });
-};
-
 const toPecasInput = (ordem: OrdemServico) =>
   (ordem.pecasUsadas ?? []).map((peca) => ({
     produtoId: peca.produtoId,
@@ -111,21 +84,21 @@ const Orcamento = () => {
   const ordensQuery = useQuery({
     queryKey: ["ordens-servico"],
     queryFn: () => listOrdensServico(),
-    staleTime: 60_000,
+    staleTime: STALE_TIME.short,
     refetchOnWindowFocus: false,
   });
 
   const clientesQuery = useQuery({
     queryKey: ["clientes"],
     queryFn: () => listClientes(""),
-    staleTime: 5 * 60_000,
+    staleTime: STALE_TIME.medium,
     refetchOnWindowFocus: false,
   });
 
   const aparelhosQuery = useQuery({
     queryKey: ["aparelhos"],
     queryFn: () => listAparelhos(),
-    staleTime: 5 * 60_000,
+    staleTime: STALE_TIME.medium,
     refetchOnWindowFocus: false,
   });
 
@@ -248,7 +221,7 @@ const Orcamento = () => {
 
       if (ordem.status === "em_manutencao") {
         toast.success("Orçamento aprovado! Seguindo para manutenção.");
-        navigate(`/app/manutencao?ordemId=${ordem.id}`);
+        navigate(ROUTES.manutencaoOS(ordem.id));
         return;
       }
 
@@ -334,7 +307,7 @@ const Orcamento = () => {
           description="Mude o status de uma OS para Em análise ou superior para gerenciar o orçamento aqui."
           actions={
             <Button asChild>
-              <Link to="/app/ordens">Ver ordens</Link>
+              <Link to={ROUTES.ordens}>Ver ordens</Link>
             </Button>
           }
         />
@@ -353,12 +326,12 @@ const Orcamento = () => {
             {selectedOrdem && (
               <>
                 <Button asChild variant="outline">
-                  <Link to={`/app/ordens/${selectedOrdem.id}`}>
+                  <Link to={ROUTES.ordemDetalhe(selectedOrdem.id)}>
                     <Eye className="h-4 w-4" /> Detalhe
                   </Link>
                 </Button>
                 <Button asChild variant="outline">
-                  <Link to={`/app/manutencao?ordemId=${selectedOrdem.id}`}>
+                  <Link to={ROUTES.manutencaoOS(selectedOrdem.id)}>
                     Manutenção
                   </Link>
                 </Button>
@@ -423,7 +396,7 @@ const Orcamento = () => {
                   <Clock className="h-3.5 w-3.5" />
                   {latestOrcamento
                     ? `Orçamento ${latestOrcamento.status}`
-                    : statusLabels[selectedOrdem.status]}
+                    : OS_STATUS_LABELS[selectedOrdem.status]}
                 </div>
               </div>
 
@@ -438,7 +411,7 @@ const Orcamento = () => {
                 {latestOrcamento && (
                   <p className="mt-2 text-xs text-muted-foreground">
                     Último orçamento: {latestOrcamento.status} em{" "}
-                    {formatDateTime(latestOrcamento.updatedAt)}
+                    {formatDateTimeShort(latestOrcamento.updatedAt)}
                   </p>
                 )}
               </div>
@@ -629,13 +602,13 @@ const Orcamento = () => {
                       </div>
                       <div className="min-w-0">
                         <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                          OS-{ordem.numero} - {formatDateTime(ordem.updatedAt)}
+                          OS-{ordem.numero} - {formatDateTimeShort(ordem.updatedAt)}
                         </p>
                         <p className="truncate text-sm font-medium">
                           {rowCliente?.nome ?? ordem.clienteId}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {statusLabels[ordem.status]} -{" "}
+                          {OS_STATUS_LABELS[ordem.status]} -{" "}
                           {formatBRL(ordem.valorTotal)}
                         </p>
                       </div>
