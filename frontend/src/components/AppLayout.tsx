@@ -155,14 +155,14 @@ export const AppLayout = () => {
     };
   }, [notifQuery.data]);
 
+  // Dark é o padrão (sem classe). Light = classe "light" no <html>.
   const [isDark, setIsDark] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("theme") === "dark" ||
-      (!localStorage.getItem("theme") && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("theme") !== "light";
   });
 
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", isDark);
+    document.documentElement.classList.toggle("light", !isDark);
     localStorage.setItem("theme", isDark ? "dark" : "light");
   }, [isDark]);
 
