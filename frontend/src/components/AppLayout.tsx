@@ -2,29 +2,23 @@ import { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useLocation, Navigate, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
-  LayoutDashboard,
-  Wrench,
-  ClipboardCheck,
-  Activity,
-  FileCheck2,
-  Package,
-  ShoppingCart,
-  LineChart,
-  Receipt,
-  Users,
   LogOut,
   Bell,
   Search,
   Plus,
-  Smartphone,
+  Users,
   UserCog,
-  MessageSquare,
+  Receipt,
   CheckCircle2,
   Clock,
   AlertTriangle,
   Moon,
   Sun,
 } from "lucide-react";
+import { MdDashboard, MdHandyman, MdInventory2, MdPointOfSale, MdAccountBalance, MdChecklist, MdPhoneAndroid } from "react-icons/md";
+import { FaWhatsapp } from "react-icons/fa";
+import { HiWrenchScrewdriver } from "react-icons/hi2";
+import { TbFileCheck, TbReceipt } from "react-icons/tb";
 import { AIAssistant } from "@/components/AIAssistant";
 import { CommandPalette } from "@/components/CommandPalette";
 import { MobileNav } from "@/components/MobileNav";
@@ -38,60 +32,20 @@ import { canAccess, roleLabels, roleHome } from "@/lib/roles";
 import { listOrdensServico } from "@/services/ordens-servico";
 
 const allNav = [
-  { to: "/app", label: "Dashboard", icon: LayoutDashboard, key: "", hidden: false },
-  { to: "/app/movimentacoes", label: "Movimentações de Estoque", icon: Receipt, key: "movimentacoes", hidden: true },
-  {
-    to: "/app/ordens",
-    label: "Ordens de Serviço",
-    icon: Wrench,
-    key: "ordens",
-  },
-  {
-    to: "/app/checklist",
-    label: "Checklist",
-    icon: ClipboardCheck,
-    key: "checklist",
-  },
-  {
-    to: "/app/manutencao",
-    label: "Manutenção",
-    icon: Activity,
-    key: "manutencao",
-  },
-  {
-    to: "/app/orcamento",
-    label: "Orçamentos",
-    icon: FileCheck2,
-    key: "orcamento",
-  },
-  { to: "/app/estoque", label: "Estoque", icon: Package, key: "estoque" },
-  { to: "/app/pdv", label: "PDV / Caixa", icon: ShoppingCart, key: "pdv" },
-  {
-    to: "/app/financeiro",
-    label: "Financeiro",
-    icon: LineChart,
-    key: "financeiro",
-  },
+  { to: "/app", label: "Dashboard", icon: MdDashboard, key: "", hidden: false },
+  { to: "/app/movimentacoes", label: "Movimentações de Estoque", icon: TbReceipt, key: "movimentacoes", hidden: true },
+  { to: "/app/ordens", label: "Ordens de Serviço", icon: HiWrenchScrewdriver, key: "ordens" },
+  { to: "/app/checklist", label: "Checklist", icon: MdChecklist, key: "checklist" },
+  { to: "/app/manutencao", label: "Manutenção", icon: MdHandyman, key: "manutencao" },
+  { to: "/app/orcamento", label: "Orçamentos", icon: TbFileCheck, key: "orcamento" },
+  { to: "/app/estoque", label: "Estoque", icon: MdInventory2, key: "estoque" },
+  { to: "/app/pdv", label: "PDV / Caixa", icon: MdPointOfSale, key: "pdv" },
+  { to: "/app/financeiro", label: "Financeiro", icon: MdAccountBalance, key: "financeiro" },
   { to: "/app/despesas", label: "Despesas", icon: Receipt, key: "despesas" },
   { to: "/app/clientes", label: "Clientes", icon: Users, key: "clientes" },
-  {
-    to: "/app/aparelhos",
-    label: "Aparelhos",
-    icon: Smartphone,
-    key: "aparelhos",
-  },
-  {
-    to: "/app/usuarios",
-    label: "Usuários",
-    icon: UserCog,
-    key: "usuarios",
-  },
-  {
-    to: "/app/atendimento",
-    label: "Atendimento",
-    icon: MessageSquare,
-    key: "atendimento",
-  },
+  { to: "/app/aparelhos", label: "Aparelhos", icon: MdPhoneAndroid, key: "aparelhos" },
+  { to: "/app/usuarios", label: "Usuários", icon: UserCog, key: "usuarios" },
+  { to: "/app/atendimento", label: "Atendimento", icon: FaWhatsapp, key: "atendimento" },
 ];
 
 const navOrder: Record<string, number> = {

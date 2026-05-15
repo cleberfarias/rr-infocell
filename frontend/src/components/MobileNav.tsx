@@ -1,15 +1,10 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import {
-  Activity,
-  LayoutDashboard,
-  LogOut,
-  Menu,
-  MessageSquare,
-  Plus,
-  Wrench,
-  X,
-} from "lucide-react";
+import { LogOut, Menu, Plus, Users, UserCog, Receipt, X } from "lucide-react";
+import { MdDashboard, MdHandyman, MdInventory2, MdPointOfSale, MdAccountBalance, MdChecklist, MdPhoneAndroid } from "react-icons/md";
+import { FaWhatsapp } from "react-icons/fa";
+import { HiWrenchScrewdriver } from "react-icons/hi2";
+import { TbFileCheck } from "react-icons/tb";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -26,47 +21,34 @@ type NavItem = {
 };
 
 const allNav: NavItem[] = [
-  { to: "/app", label: "Dashboard", icon: LayoutDashboard, key: "", end: true },
-  { to: "/app/ordens", label: "Ordens de Serviço", icon: Wrench, key: "ordens" },
-  { to: "/app/checklist", label: "Checklist", icon: Activity, key: "checklist" },
-  { to: "/app/manutencao", label: "Manutenção", icon: Activity, key: "manutencao" },
-  { to: "/app/orcamento", label: "Orçamentos", icon: Activity, key: "orcamento" },
-  { to: "/app/estoque", label: "Estoque", icon: Activity, key: "estoque" },
-  { to: "/app/pdv", label: "PDV / Caixa", icon: Activity, key: "pdv" },
-  { to: "/app/financeiro", label: "Financeiro", icon: Activity, key: "financeiro" },
-  { to: "/app/despesas", label: "Despesas", icon: Activity, key: "despesas" },
-  { to: "/app/clientes", label: "Clientes", icon: Activity, key: "clientes" },
-  { to: "/app/aparelhos", label: "Aparelhos", icon: Activity, key: "aparelhos" },
-  { to: "/app/atendimento", label: "Atendimento", icon: MessageSquare, key: "atendimento" },
-  { to: "/app/usuarios", label: "Usuários", icon: Activity, key: "usuarios" },
+  { to: "/app", label: "Dashboard", icon: MdDashboard, key: "", end: true },
+  { to: "/app/ordens", label: "Ordens de Serviço", icon: HiWrenchScrewdriver, key: "ordens" },
+  { to: "/app/checklist", label: "Checklist", icon: MdChecklist, key: "checklist" },
+  { to: "/app/manutencao", label: "Manutenção", icon: MdHandyman, key: "manutencao" },
+  { to: "/app/orcamento", label: "Orçamentos", icon: TbFileCheck, key: "orcamento" },
+  { to: "/app/estoque", label: "Estoque", icon: MdInventory2, key: "estoque" },
+  { to: "/app/pdv", label: "PDV / Caixa", icon: MdPointOfSale, key: "pdv" },
+  { to: "/app/financeiro", label: "Financeiro", icon: MdAccountBalance, key: "financeiro" },
+  { to: "/app/despesas", label: "Despesas", icon: Receipt, key: "despesas" },
+  { to: "/app/clientes", label: "Clientes", icon: Users, key: "clientes" },
+  { to: "/app/aparelhos", label: "Aparelhos", icon: MdPhoneAndroid, key: "aparelhos" },
+  { to: "/app/atendimento", label: "Atendimento", icon: FaWhatsapp, key: "atendimento" },
+  { to: "/app/usuarios", label: "Usuários", icon: UserCog, key: "usuarios" },
 ];
 
-// Ícones individuais para o drawer
-import {
-  ClipboardCheck,
-  FileCheck2,
-  LineChart,
-  Package,
-  Receipt,
-  ShoppingCart,
-  Smartphone,
-  UserCog,
-  Users,
-} from "lucide-react";
-
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  "": LayoutDashboard,
-  ordens: Wrench,
-  checklist: ClipboardCheck,
-  manutencao: Activity,
-  orcamento: FileCheck2,
-  estoque: Package,
-  pdv: ShoppingCart,
-  financeiro: LineChart,
+  "": MdDashboard,
+  ordens: HiWrenchScrewdriver,
+  checklist: MdChecklist,
+  manutencao: MdHandyman,
+  orcamento: TbFileCheck,
+  estoque: MdInventory2,
+  pdv: MdPointOfSale,
+  financeiro: MdAccountBalance,
   despesas: Receipt,
   clientes: Users,
-  aparelhos: Smartphone,
-  atendimento: MessageSquare,
+  aparelhos: MdPhoneAndroid,
+  atendimento: FaWhatsapp,
   usuarios: UserCog,
 };
 
