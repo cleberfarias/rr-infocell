@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   Moon,
   Sun,
+  BookOpen,
 } from "lucide-react";
 import { MdDashboard, MdHandyman, MdInventory2, MdPointOfSale, MdAccountBalance, MdChecklist, MdPhoneAndroid } from "react-icons/md";
 import { FaWhatsapp } from "react-icons/fa";
@@ -46,6 +47,7 @@ const allNav = [
   { to: "/app/aparelhos", label: "Aparelhos", icon: MdPhoneAndroid, key: "aparelhos" },
   { to: "/app/usuarios", label: "Usuários", icon: UserCog, key: "usuarios" },
   { to: "/app/atendimento", label: "Atendimento", icon: FaWhatsapp, key: "atendimento" },
+  { to: "/app/treinamento", label: "Treinamento", icon: BookOpen, key: "treinamento" },
 ];
 
 const navOrder: Record<string, number> = {
