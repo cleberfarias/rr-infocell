@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/sonner";
@@ -263,8 +264,7 @@ const Estoque = () => {
                   onChange={(e) => upd("quantidade", e.target.value)} />
               </FormField>
               <FormField id="e-data" label="Data">
-                <Input id="e-data" type="date" value={novoProduto.data}
-                  onChange={(e) => upd("data", e.target.value)} />
+                <DatePicker value={novoProduto.data} onChange={(v) => upd("data", v)} />
               </FormField>
             </div>
           </div>
@@ -280,8 +280,11 @@ const Estoque = () => {
                 <Input id="e-serie" value={novoProduto.nfeSerie} onChange={(e) => upd("nfeSerie", e.target.value)} placeholder="Ex.: 1" />
               </FormField>
               <FormField id="e-nfe-data" label="Data de emissão">
-                <Input id="e-nfe-data" type="date" value={novoProduto.nfeDataEmissao}
-                  onChange={(e) => upd("nfeDataEmissao", e.target.value)} />
+                <DatePicker
+                  value={novoProduto.nfeDataEmissao}
+                  onChange={(v) => upd("nfeDataEmissao", v)}
+                  placeholder="dd/mm/aaaa"
+                />
               </FormField>
               <FormField id="e-nfe-valor" label="Valor adicional (R$)">
                 <Input id="e-nfe-valor" type="number" min="0" step="0.01" value={novoProduto.nfeValorAdicional}

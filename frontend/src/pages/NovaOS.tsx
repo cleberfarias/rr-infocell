@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, Check, ChevronsUpDown, ClipboardCheck, Loader2, Plus, Save } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { DatePicker } from "@/components/ui/date-picker";
 
 import { FormField, PageHeader } from "@/components/design-system";
 import { Button } from "@/components/ui/button";
@@ -600,23 +601,16 @@ const NovaOS = () => {
             </h3>
             <div className="space-y-4">
               <FormField id="nova-os-entrada" label="Data de entrada">
-                <Input
-                  id="nova-os-entrada"
-                  type="date"
+                <DatePicker
                   value={form.entradaEm}
-                  onChange={(event) =>
-                    updateForm("entradaEm", event.target.value)
-                  }
+                  onChange={(v) => updateForm("entradaEm", v)}
                 />
               </FormField>
               <FormField id="nova-os-previsao" label="Previsão de entrega">
-                <Input
-                  id="nova-os-previsao"
-                  type="date"
+                <DatePicker
                   value={form.previsaoEntregaEm}
-                  onChange={(event) =>
-                    updateForm("previsaoEntregaEm", event.target.value)
-                  }
+                  onChange={(v) => updateForm("previsaoEntregaEm", v)}
+                  placeholder="Sem previsão"
                 />
               </FormField>
               <FormField id="nova-os-prioridade" label="Prioridade">

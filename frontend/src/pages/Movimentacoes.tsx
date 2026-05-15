@@ -44,6 +44,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 import { formatBRL, formatDateTime } from "@/lib/formatters";
+import { DatePicker } from "@/components/ui/date-picker";
 import { MOVIMENTACAO_TIPO_LABELS } from "@/constants/status";
 import { MOTIVOS_SAIDA, MOTIVOS_ENTRADA, MOTIVOS_AJUSTE } from "@/constants/business";
 import { STALE_TIME, POLL_INTERVAL } from "@/constants/query";
@@ -237,7 +238,7 @@ export default function Movimentacoes() {
               </div>
               <div>
                 <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Data</p>
-                <Input type="date" value={data} onChange={(e) => setData(e.target.value)} className="w-40" />
+                <DatePicker value={data} onChange={setData} />
               </div>
               {/* Estoque de Origem (saída e transferência) */}
               {(tipo === "saida" || tipo === "transferencia") && (
@@ -336,10 +337,10 @@ export default function Movimentacoes() {
               </div>
               <div>
                 <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Data de emissão</p>
-                <Input
-                  type="date"
+                <DatePicker
                   value={nfe.dataEmissao}
-                  onChange={(e) => setNfe((n) => ({ ...n, dataEmissao: e.target.value }))}
+                  onChange={(v) => setNfe((n) => ({ ...n, dataEmissao: v }))}
+                  placeholder="dd/mm/aaaa"
                 />
               </div>
               <div>
