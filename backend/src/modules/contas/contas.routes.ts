@@ -6,10 +6,14 @@ const COLLECTION = "contas";
 
 contasRoutes.get("/", async (_req, res, next) => {
   try {
-    const db = getFirestore();
-    const snap = await db.collection(COLLECTION).orderBy("nome").get();
-    const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    res.json({ data });
+    try {
+      const db = getFirestore();
+      const snap = await db.collection(COLLECTION).orderBy("nome").get();
+      const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      return res.json({ data });
+    } catch {
+      return res.json({ data: [] });
+    }
   } catch (error) { next(error); }
 });
 

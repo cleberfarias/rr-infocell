@@ -24,6 +24,7 @@ import { AIAssistant } from "@/components/AIAssistant";
 import { CommandPalette } from "@/components/CommandPalette";
 import { MobileNav } from "@/components/MobileNav";
 import { DeveloperCredit } from "@/components/DeveloperCredit";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -351,7 +352,9 @@ export const AppLayout = () => {
         </header>
 
         <main className="flex-1 overflow-x-hidden p-4 pb-20 md:p-8 md:pb-8 animate-fade-in">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
         <footer className="hidden md:flex justify-center border-t border-border px-4 py-3 md:px-8">
           <DeveloperCredit />

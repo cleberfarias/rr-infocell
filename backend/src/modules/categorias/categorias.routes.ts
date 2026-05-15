@@ -18,10 +18,14 @@ const CATEGORIAS_PADRAO = [
 
 categoriasRoutes.get("/", async (_req, res, next) => {
   try {
-    const db = getFirestore();
-    const snap = await db.collection(COLLECTION).orderBy("nome").get();
-    const customizadas = snap.docs.map(doc => ({ id: doc.id, ...doc.data(), padrao: false }));
-    res.json({ data: [...CATEGORIAS_PADRAO, ...customizadas] });
+    try {
+      const db = getFirestore();
+      const snap = await db.collection(COLLECTION).orderBy("nome").get();
+      const customizadas = snap.docs.map(doc => ({ id: doc.id, ...doc.data(), padrao: false }));
+      return res.json({ data: [...CATEGORIAS_PADRAO, ...customizadas] });
+    } catch {
+      return res.json({ data: CATEGORIAS_PADRAO });
+    }
   } catch (error) { next(error); }
 });
 

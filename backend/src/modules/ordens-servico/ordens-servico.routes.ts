@@ -43,10 +43,19 @@ ordensServicoRoutes.get(
       aparelhoId: filters.aparelhoId,
     });
 
+    const page = Math.max(1, parseInt(request.query.page as string) || 1);
+    const limit = Math.min(200, Math.max(1, parseInt(request.query.limit as string) || 50));
+    const total = ordens.length;
+    const totalPages = Math.ceil(total / limit);
+    const data = ordens.slice((page - 1) * limit, page * limit);
+
     response.status(httpStatus.ok).json({
-      data: ordens,
+      data,
       meta: {
-        total: ordens.length,
+        page,
+        limit,
+        total,
+        totalPages,
         query: filters.q,
         status: filters.status,
         prioridade: filters.prioridade,

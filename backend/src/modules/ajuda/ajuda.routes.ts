@@ -2,6 +2,8 @@ import "dotenv/config";
 import { Router } from "express";
 import OpenAI from "openai";
 
+import { aiLimiter } from "../../config/rate-limit.js";
+
 const SYSTEM_PROMPT = `Você é o assistente do sistema RR Infocell, um sistema de gestão para assistência técnica e loja de celulares. Responda de forma clara, direta e prática. Use listas numeradas para passos. Seja objetivo com no máximo 200 palavras por resposta. Responda sempre em português.
 
 ## Fluxo completo de atendimento (automático — o sistema navega sozinho)
@@ -105,7 +107,7 @@ Na tela Financeiro, clique no botão "Exportar PDF" — abre uma nova janela com
 
 export const ajudaRoutes = Router();
 
-ajudaRoutes.post("/perguntar", async (req, res, next) => {
+ajudaRoutes.post("/perguntar", aiLimiter, async (req, res, next) => {
   try {
     const { pergunta } = req.body as { pergunta?: string };
 

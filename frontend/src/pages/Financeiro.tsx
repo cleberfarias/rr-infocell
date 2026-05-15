@@ -65,6 +65,24 @@ const ContaIcon = ({ tipo }: { tipo: ContaTipo }) => {
 const Financeiro = () => {
   const queryClient = useQueryClient();
 
+  // --- período filter ---
+  const [periodo, setPeriodo] = useState<"30d" | "mes" | "trimestre">("30d");
+
+  const dataInicio = useMemo(() => {
+    const hoje = new Date();
+    if (periodo === "30d") {
+      const d = new Date(hoje);
+      d.setDate(hoje.getDate() - 30);
+      return d;
+    }
+    if (periodo === "mes") {
+      return new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    }
+    // trimestre
+    const trimestre = Math.floor(hoje.getMonth() / 3);
+    return new Date(hoje.getFullYear(), trimestre * 3, 1);
+  }, [periodo]);
+
   // --- state for contas dialog ---
   const [contaDialogOpen, setContaDialogOpen] = useState(false);
   const [contaForm, setContaForm] = useState({ nome: "", tipo: "caixa" as ContaTipo, saldo: "0" });
@@ -150,10 +168,18 @@ const Financeiro = () => {
     const ordens = ordensQuery.data ?? [];
     const produtos = produtosQuery.data ?? [];
     const despesas = despesasQuery.data ?? [];
-    const vendas = vendasQuery.data ?? [];
+    const todasVendas = vendasQuery.data ?? [];
+
+    // Filtrar por período selecionado
+    const vendas = todasVendas.filter((v) => new Date(v.createdAt) >= dataInicio);
+    const ordensFiltradas = ordens.filter((o) => {
+      const data = o.pagoEm ?? o.entregueEm ?? o.updatedAt;
+      return data && new Date(data) >= dataInicio;
+    });
+
     const produtoById = new Map(produtos.map((produto) => [produto.id, produto]));
     const vendasOrdemIds = new Set(vendas.map((venda) => venda.ordemServicoId));
-    const ordensFaturadasFallback = ordens.filter(
+    const ordensFaturadasFallback = ordensFiltradas.filter(
       (ordem) => ordem.status === "entregue" && !vendasOrdemIds.has(ordem.id),
     );
     const receitaServicos =
@@ -163,7 +189,7 @@ const Financeiro = () => {
       vendas.reduce((sum, venda) => sum + venda.valorPecas, 0) +
       ordensFaturadasFallback.reduce((sum, ordem) => sum + ordem.valorPecas, 0);
     const ordensFaturadas = [
-      ...ordens.filter((ordem) => vendasOrdemIds.has(ordem.id)),
+      ...ordensFiltradas.filter((ordem) => vendasOrdemIds.has(ordem.id)),
       ...ordensFaturadasFallback,
     ];
     const custoPecas = ordensFaturadas.reduce(
@@ -224,7 +250,7 @@ const Financeiro = () => {
       receitaProdutos,
       receitaServicos,
     };
-  }, [despesasQuery.data, ordensQuery.data, produtosQuery.data, vendasQuery.data]);
+  }, [despesasQuery.data, ordensQuery.data, produtosQuery.data, vendasQuery.data, dataInicio]);
 
   if (isLoading) {
     return (
@@ -289,13 +315,31 @@ const Financeiro = () => {
           <p className="text-sm text-muted-foreground">
             Receita por vendas reais, custos estimados de peças e despesas cadastradas.
           </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {periodo === "30d" && "Últimos 30 dias"}
+            {periodo === "mes" && `${new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}`}
+            {periodo === "trimestre" && `${Math.floor(new Date().getMonth() / 3) + 1}º trimestre de ${new Date().getFullYear()}`}
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button
+            variant={periodo === "30d" ? "default" : "outline"}
+            onClick={() => setPeriodo("30d")}
+          >
             <Calendar className="h-4 w-4" /> 30 dias
           </Button>
-          <Button variant="outline">Mensal</Button>
-          <Button variant="outline">Trimestral</Button>
+          <Button
+            variant={periodo === "mes" ? "default" : "outline"}
+            onClick={() => setPeriodo("mes")}
+          >
+            Mensal
+          </Button>
+          <Button
+            variant={periodo === "trimestre" ? "default" : "outline"}
+            onClick={() => setPeriodo("trimestre")}
+          >
+            Trimestral
+          </Button>
           <Button
             variant="outline"
             onClick={() => {

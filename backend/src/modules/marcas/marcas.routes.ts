@@ -12,10 +12,15 @@ const MARCAS_PADRAO = [
 
 marcasRoutes.get("/", async (_req, res, next) => {
   try {
-    const db = getFirestore();
-    const snap = await db.collection(COLLECTION).orderBy("nome").get();
-    const custom = snap.docs.map(doc => ({ id: doc.id, ...doc.data(), padrao: false }));
-    res.json({ data: [...MARCAS_PADRAO, ...custom] });
+    try {
+      const db = getFirestore();
+      const snap = await db.collection(COLLECTION).orderBy("nome").get();
+      const custom = snap.docs.map(doc => ({ id: doc.id, ...doc.data(), padrao: false }));
+      return res.json({ data: [...MARCAS_PADRAO, ...custom] });
+    } catch {
+      // Firestore indisponível — retorna apenas defaults
+      return res.json({ data: MARCAS_PADRAO });
+    }
   } catch (error) { next(error); }
 });
 
