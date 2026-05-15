@@ -39,7 +39,7 @@ type Modulo = {
   descricao: string;
   icone: React.ComponentType<{ className?: string }>;
   gradiente: string;
-  iconeCor: string;
+  screenshot: string;
   rota: string;
   nivel: "básico" | "intermediário" | "avançado";
   tempoMinutos: number;
@@ -52,8 +52,8 @@ const modulos: Modulo[] = [
     titulo: "Ordens de Serviço",
     descricao: "Aprenda a abrir, acompanhar e fechar uma OS do início ao fim com cadastro rápido de cliente.",
     icone: HiWrenchScrewdriver,
-    gradiente: "from-blue-600 via-blue-500 to-cyan-500",
-    iconeCor: "text-white",
+    gradiente: "from-blue-900/80 via-blue-800/60 to-transparent",
+    screenshot: "/screenshots/os.jpg",
     rota: ROUTES.novaOS,
     nivel: "básico",
     tempoMinutos: 5,
@@ -85,8 +85,8 @@ const modulos: Modulo[] = [
     titulo: "Checklist Técnico",
     descricao: "Registre o estado do aparelho na entrada e saída. Proteção para a loja e transparência para o cliente.",
     icone: MdChecklist,
-    gradiente: "from-sky-600 via-sky-500 to-blue-400",
-    iconeCor: "text-white",
+    gradiente: "from-sky-900/80 via-sky-800/60 to-transparent",
+    screenshot: "/screenshots/checklist.jpg",
     rota: ROUTES.checklist,
     nivel: "básico",
     tempoMinutos: 3,
@@ -116,8 +116,8 @@ const modulos: Modulo[] = [
     titulo: "Manutenção",
     descricao: "Gerencie o diagnóstico técnico, peças utilizadas e acompanhe o progresso da OS em tempo real.",
     icone: MdHandyman,
-    gradiente: "from-violet-600 via-purple-500 to-fuchsia-500",
-    iconeCor: "text-white",
+    gradiente: "from-violet-900/80 via-violet-800/60 to-transparent",
+    screenshot: "/screenshots/manutencao.jpg",
     rota: ROUTES.manutencao,
     nivel: "intermediário",
     tempoMinutos: 5,
@@ -152,8 +152,8 @@ const modulos: Modulo[] = [
     titulo: "Orçamentos",
     descricao: "Envie, aprove ou reprove orçamentos. Integração direta com WhatsApp para comunicação rápida.",
     icone: TbFileCheck,
-    gradiente: "from-amber-500 via-orange-500 to-yellow-400",
-    iconeCor: "text-white",
+    gradiente: "from-amber-900/80 via-amber-800/60 to-transparent",
+    screenshot: "/screenshots/orcamento.jpg",
     rota: ROUTES.orcamento,
     nivel: "intermediário",
     tempoMinutos: 3,
@@ -183,8 +183,8 @@ const modulos: Modulo[] = [
     titulo: "Estoque",
     descricao: "Controle produtos, peças e acessórios. Monitore o nível de estoque e receba alertas automáticos.",
     icone: MdInventory2,
-    gradiente: "from-emerald-600 via-green-500 to-teal-400",
-    iconeCor: "text-white",
+    gradiente: "from-emerald-900/80 via-emerald-800/60 to-transparent",
+    screenshot: "/screenshots/estoque.jpg",
     rota: ROUTES.estoque,
     nivel: "básico",
     tempoMinutos: 5,
@@ -215,8 +215,8 @@ const modulos: Modulo[] = [
     titulo: "PDV / Caixa",
     descricao: "Feche ordens de serviço com pagamento e realize vendas diretas de produtos e acessórios.",
     icone: MdPointOfSale,
-    gradiente: "from-orange-600 via-red-500 to-pink-500",
-    iconeCor: "text-white",
+    gradiente: "from-orange-900/80 via-orange-800/60 to-transparent",
+    screenshot: "/screenshots/pdv.jpg",
     rota: ROUTES.pdv,
     nivel: "básico",
     tempoMinutos: 3,
@@ -242,8 +242,8 @@ const modulos: Modulo[] = [
     titulo: "Financeiro",
     descricao: "Acompanhe receitas, despesas, lucro líquido e saldos bancários. Exporte o DRE em PDF.",
     icone: MdAccountBalance,
-    gradiente: "from-blue-700 via-indigo-600 to-blue-500",
-    iconeCor: "text-white",
+    gradiente: "from-blue-900/80 via-indigo-900/60 to-transparent",
+    screenshot: "/screenshots/financeiro.jpg",
     rota: ROUTES.financeiro,
     nivel: "intermediário",
     tempoMinutos: 4,
@@ -272,8 +272,8 @@ const modulos: Modulo[] = [
     titulo: "Atendimento WhatsApp",
     descricao: "Gerencie conversas, envie orçamentos e confirme pagamentos diretamente pelo WhatsApp integrado.",
     icone: FaWhatsapp,
-    gradiente: "from-green-600 via-emerald-500 to-teal-500",
-    iconeCor: "text-white",
+    gradiente: "from-green-900/80 via-emerald-900/60 to-transparent",
+    screenshot: "/screenshots/atendimento.jpg",
     rota: ROUTES.atendimento,
     nivel: "avançado",
     tempoMinutos: 5,
@@ -305,8 +305,8 @@ const modulos: Modulo[] = [
     titulo: "Aparelhos",
     descricao: "Consulte e gerencie o histórico de aparelhos por cliente. Útil para atendimentos recorrentes.",
     icone: MdPhoneAndroid,
-    gradiente: "from-slate-600 via-gray-500 to-zinc-400",
-    iconeCor: "text-white",
+    gradiente: "from-slate-900/80 via-gray-900/60 to-transparent",
+    screenshot: "/screenshots/aparelhos.jpg",
     rota: ROUTES.aparelhos,
     nivel: "básico",
     tempoMinutos: 2,
@@ -394,27 +394,31 @@ export default function Treinamento() {
                 concluido ? "border-emerald-500/40" : "border-border",
               )}
             >
-              {/* Imagem / gradiente do topo */}
-              <div className={cn("relative flex h-36 items-center justify-center bg-gradient-to-br", modulo.gradiente)}>
-                {/* Padrão de fundo decorativo */}
-                <div className="absolute inset-0 opacity-20"
-                  style={{
-                    backgroundImage: "radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)",
-                    backgroundSize: "30px 30px",
-                  }}
+              {/* Screenshot com overlay */}
+              <div className="relative h-40 overflow-hidden bg-secondary">
+                {/* Screenshot real da tela */}
+                <img
+                  src={modulo.screenshot}
+                  alt={modulo.titulo}
+                  className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
                 />
-                <Icon className="relative h-16 w-16 text-white/90 drop-shadow-lg" />
+                {/* Overlay gradiente para legibilidade */}
+                <div className={cn("absolute inset-0 bg-gradient-to-t", modulo.gradiente)} />
+                {/* Ícone no canto */}
+                <div className="absolute left-3 top-3 flex h-9 w-9 items-center justify-center rounded-lg bg-black/30 backdrop-blur-sm">
+                  <Icon className="h-5 w-5 text-white" />
+                </div>
                 {concluido && (
-                  <div className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
+                  <div className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/80 backdrop-blur-sm">
                     <CheckCircle2 className="h-4 w-4 text-white" />
                   </div>
                 )}
                 <div className="absolute bottom-3 left-3">
-                  <Badge variant="outline" className={cn("text-[10px] border bg-black/20 text-white border-white/20 backdrop-blur-sm")}>
+                  <Badge variant="outline" className="text-[10px] border bg-black/30 text-white border-white/20 backdrop-blur-sm">
                     {modulo.nivel}
                   </Badge>
                 </div>
-                <div className="absolute bottom-3 right-3 text-[10px] text-white/70">
+                <div className="absolute bottom-3 right-3 text-[10px] text-white/80 drop-shadow">
                   ~{modulo.tempoMinutos} min · {modulo.passos.length} passos
                 </div>
               </div>
@@ -476,8 +480,10 @@ export default function Treinamento() {
             const Icon = moduloAberto.icone;
             return (
               <>
-                {/* Header com gradiente */}
-                <div className={cn("relative flex items-center gap-4 p-6 bg-gradient-to-br", moduloAberto.gradiente)}>
+                {/* Header com screenshot + overlay */}
+                <div className="relative flex items-center gap-4 p-6 overflow-hidden">
+                  <img src={moduloAberto.screenshot} alt="" className="absolute inset-0 h-full w-full object-cover object-top opacity-40" />
+                  <div className={cn("absolute inset-0 bg-gradient-to-r", moduloAberto.gradiente, "opacity-90")} />
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white/20">
                     <Icon className="h-6 w-6 text-white" />
                   </div>
