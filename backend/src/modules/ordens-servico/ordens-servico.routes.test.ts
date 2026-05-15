@@ -173,18 +173,16 @@ describe("ordens-servico routes", () => {
     });
     const ordem = createResponse.body.data;
 
-    const updateResponse = await request(app)
-      .put(`/api/ordens-servico/${ordem.id}`)
-      .send({
-        clienteId: ordem.clienteId,
-        aparelhoId: ordem.aparelhoId,
-        defeitoRelatado: ordem.defeitoRelatado,
-        status: "entregue",
-        valorPecas: ordem.valorPecas,
-        valorMaoObra: ordem.valorMaoObra,
-        formaPagamento: "dinheiro",
-        valorRecebido: 200,
-      });
+    const updateResponse = await request(app).put(`/api/ordens-servico/${ordem.id}`).send({
+      clienteId: ordem.clienteId,
+      aparelhoId: ordem.aparelhoId,
+      defeitoRelatado: ordem.defeitoRelatado,
+      status: "entregue",
+      valorPecas: ordem.valorPecas,
+      valorMaoObra: ordem.valorMaoObra,
+      formaPagamento: "dinheiro",
+      valorRecebido: 200,
+    });
 
     expect(updateResponse.status).toBe(200);
     expect(updateResponse.body.data.status).toBe("entregue");

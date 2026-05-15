@@ -9,7 +9,17 @@ const optionalText = z
 export const ordemEventoInputSchema = z.object({
   ordemServicoId: z.string().trim().min(1, "OS e obrigatoria."),
   tipo: z
-    .enum(["comentario", "diagnostico", "status", "orcamento", "venda", "checklist", "peca", "garantia", "entrega"])
+    .enum([
+      "comentario",
+      "diagnostico",
+      "status",
+      "orcamento",
+      "venda",
+      "checklist",
+      "peca",
+      "garantia",
+      "entrega",
+    ])
     .optional(),
   titulo: z.string().trim().min(2, "Titulo deve ter pelo menos 2 caracteres."),
   descricao: optionalText,
@@ -19,7 +29,17 @@ export const ordemEventoInputSchema = z.object({
 export const ordemEventoSearchSchema = z.object({
   ordemServicoId: z.string().trim().optional().default(""),
   tipo: z
-    .enum(["comentario", "diagnostico", "status", "orcamento", "venda", "checklist", "peca", "garantia", "entrega"])
+    .enum([
+      "comentario",
+      "diagnostico",
+      "status",
+      "orcamento",
+      "venda",
+      "checklist",
+      "peca",
+      "garantia",
+      "entrega",
+    ])
     .optional()
     .or(z.literal(""))
     .default(""),

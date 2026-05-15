@@ -18,8 +18,7 @@ type AsyncRouteHandler = (
 ) => Promise<void>;
 
 const asyncHandler =
-  (handler: AsyncRouteHandler) =>
-  (request: Request, response: Response, next: NextFunction) => {
+  (handler: AsyncRouteHandler) => (request: Request, response: Response, next: NextFunction) => {
     handler(request, response, next).catch(next);
   };
 
@@ -28,10 +27,7 @@ const parseOrThrow = <T>(parse: () => T) => {
     return parse();
   } catch (error) {
     if (error instanceof ZodError) {
-      throw new AppError(
-        "validation_error",
-        error.errors[0]?.message ?? "Dados invalidos.",
-      );
+      throw new AppError("validation_error", error.errors[0]?.message ?? "Dados invalidos.");
     }
 
     throw error;
@@ -63,9 +59,7 @@ movimentacoesEstoqueRoutes.get(
 movimentacoesEstoqueRoutes.post(
   "/",
   asyncHandler(async (request, response) => {
-    const input = parseOrThrow(() =>
-      movimentacaoEstoqueInputSchema.parse(request.body),
-    );
+    const input = parseOrThrow(() => movimentacaoEstoqueInputSchema.parse(request.body));
 
     response.status(httpStatus.created).json({
       data: await movimentacoesEstoqueService.create(input),

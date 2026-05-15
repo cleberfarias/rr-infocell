@@ -3,10 +3,7 @@ import { ZodError } from "zod";
 
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
-import {
-  ordemEventoInputSchema,
-  ordemEventoSearchSchema,
-} from "./ordem-eventos.schemas.js";
+import { ordemEventoInputSchema, ordemEventoSearchSchema } from "./ordem-eventos.schemas.js";
 import { ordemEventosService } from "./ordem-eventos.service.js";
 
 export const ordemEventosRoutes = Router();
@@ -18,8 +15,7 @@ type AsyncRouteHandler = (
 ) => Promise<void>;
 
 const asyncHandler =
-  (handler: AsyncRouteHandler) =>
-  (request: Request, response: Response, next: NextFunction) => {
+  (handler: AsyncRouteHandler) => (request: Request, response: Response, next: NextFunction) => {
     handler(request, response, next).catch(next);
   };
 
@@ -28,10 +24,7 @@ const parseOrThrow = <T>(parse: () => T) => {
     return parse();
   } catch (error) {
     if (error instanceof ZodError) {
-      throw new AppError(
-        "validation_error",
-        error.errors[0]?.message ?? "Dados invalidos.",
-      );
+      throw new AppError("validation_error", error.errors[0]?.message ?? "Dados invalidos.");
     }
 
     throw error;

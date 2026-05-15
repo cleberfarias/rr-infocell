@@ -1,16 +1,11 @@
 import { db } from "../../firebase/admin.js";
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
-import {
-  createProdutosRepository,
-  type ProdutosRepository,
-} from "./produtos.repository.js";
+import { createProdutosRepository, type ProdutosRepository } from "./produtos.repository.js";
 import type { ProdutoCategoria, ProdutoInput } from "./produtos.types.js";
 
 export class ProdutosService {
-  constructor(
-    private readonly repository: ProdutosRepository = createProdutosRepository(db),
-  ) {}
+  constructor(private readonly repository: ProdutosRepository = createProdutosRepository(db)) {}
 
   async list(filters?: {
     search?: string;

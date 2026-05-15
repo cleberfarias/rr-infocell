@@ -6,9 +6,7 @@ import type { Despesa, DespesaCategoria, DespesaInput } from "./despesas.types.j
 const now = () => new Date().toISOString();
 const despesasCollection = "despesas";
 const withoutUndefined = <T extends Record<string, unknown>>(data: T) =>
-  Object.fromEntries(
-    Object.entries(data).filter(([, value]) => value !== undefined),
-  ) as T;
+  Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as T;
 
 const seedDespesas: Despesa[] = [
   {
@@ -94,8 +92,7 @@ const filterDespesas = (
   const normalizedSearch = filters.search?.trim().toLowerCase() ?? "";
 
   return despesas.filter((despesa) => {
-    const matchesCategoria =
-      !filters.categoria || despesa.categoria === filters.categoria;
+    const matchesCategoria = !filters.categoria || despesa.categoria === filters.categoria;
     const matchesPago =
       filters.pago === "" || filters.pago === undefined || despesa.pago === filters.pago;
     const matchesSearch =
@@ -241,9 +238,7 @@ export class FirestoreDespesasRepository implements DespesasRepository {
   }
 }
 
-export const createDespesasRepository = (
-  firestore: Firestore | null,
-): DespesasRepository => {
+export const createDespesasRepository = (firestore: Firestore | null): DespesasRepository => {
   if (firestore) {
     return new FirestoreDespesasRepository(firestore);
   }

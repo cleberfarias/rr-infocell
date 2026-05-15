@@ -60,12 +60,20 @@ const filterProdutos = (
   const normalizedSearch = filters.search?.trim().toLowerCase() ?? "";
 
   return produtos.filter((produto) => {
-    const matchesCategoria =
-      !filters.categoria || produto.categoria === filters.categoria;
-    const matchesAtivo = filters.ativo === "" || filters.ativo === undefined || produto.ativo === filters.ativo;
+    const matchesCategoria = !filters.categoria || produto.categoria === filters.categoria;
+    const matchesAtivo =
+      filters.ativo === "" || filters.ativo === undefined || produto.ativo === filters.ativo;
     const matchesSearch =
       !normalizedSearch ||
-      [produto.sku, produto.nome, produto.categoria, produto.imei, produto.marca, produto.modelo, produto.observacoes]
+      [
+        produto.sku,
+        produto.nome,
+        produto.categoria,
+        produto.imei,
+        produto.marca,
+        produto.modelo,
+        produto.observacoes,
+      ]
         .filter(Boolean)
         .some((value) => value?.toLowerCase().includes(normalizedSearch));
 
@@ -229,10 +237,11 @@ export class FirestoreProdutosRepository implements ProdutosRepository {
       capacidade: data.capacidade ? String(data.capacidade) : undefined,
       estadoConservacao: data.estadoConservacao ? String(data.estadoConservacao) : undefined,
       saudeBateria: data.saudeBateria !== undefined ? Number(data.saudeBateria) : undefined,
-      origem: data.origem ? String(data.origem) as Produto["origem"] : undefined,
+      origem: data.origem ? (String(data.origem) as Produto["origem"]) : undefined,
       garantiaDias: data.garantiaDias !== undefined ? Number(data.garantiaDias) : undefined,
       laudoEntrada: data.laudoEntrada ? String(data.laudoEntrada) : undefined,
-      custoRestauracao: data.custoRestauracao !== undefined ? Number(data.custoRestauracao) : undefined,
+      custoRestauracao:
+        data.custoRestauracao !== undefined ? Number(data.custoRestauracao) : undefined,
       observacoes: data.observacoes ? String(data.observacoes) : undefined,
       createdAt: String(data.createdAt ?? ""),
       updatedAt: String(data.updatedAt ?? ""),

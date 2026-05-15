@@ -6,15 +6,17 @@ describe("movimentacoes estoque routes", () => {
   const app = createApp();
 
   const createProduto = async (estoqueAtual = 5) => {
-    const response = await request(app).post("/api/produtos").send({
-      sku: `MOV-${Date.now()}-${Math.random()}`,
-      nome: "Peca para movimentacao",
-      categoria: "peca",
-      estoqueAtual,
-      estoqueMinimo: 1,
-      custo: 20,
-      precoVenda: 40,
-    });
+    const response = await request(app)
+      .post("/api/produtos")
+      .send({
+        sku: `MOV-${Date.now()}-${Math.random()}`,
+        nome: "Peca para movimentacao",
+        categoria: "peca",
+        estoqueAtual,
+        estoqueMinimo: 1,
+        custo: 20,
+        precoVenda: 40,
+      });
 
     return response.body.data;
   };
@@ -32,9 +34,7 @@ describe("movimentacoes estoque routes", () => {
     expect(response.body.data.estoqueAnterior).toBe(5);
     expect(response.body.data.estoquePosterior).toBe(8);
 
-    const produtoResponse = await request(app).get(
-      `/api/produtos/${produto.id}`,
-    );
+    const produtoResponse = await request(app).get(`/api/produtos/${produto.id}`);
     expect(produtoResponse.body.data.estoqueAtual).toBe(8);
   });
 
@@ -51,13 +51,11 @@ describe("movimentacoes estoque routes", () => {
     expect(response.body.data.estoqueAnterior).toBe(4);
     expect(response.body.data.estoquePosterior).toBe(2);
 
-    const blockedResponse = await request(app)
-      .post("/api/movimentacoes-estoque")
-      .send({
-        produtoId: produto.id,
-        tipo: "saida",
-        quantidade: 5,
-      });
+    const blockedResponse = await request(app).post("/api/movimentacoes-estoque").send({
+      produtoId: produto.id,
+      tipo: "saida",
+      quantidade: 5,
+    });
 
     expect(blockedResponse.status).toBe(400);
     expect(blockedResponse.body.error.code).toBe("estoque_insuficiente");
@@ -85,9 +83,7 @@ describe("movimentacoes estoque routes", () => {
       quantidade: 1,
     });
 
-    const response = await request(app).get(
-      `/api/movimentacoes-estoque?produtoId=${produto.id}`,
-    );
+    const response = await request(app).get(`/api/movimentacoes-estoque?produtoId=${produto.id}`);
 
     expect(response.status).toBe(200);
     expect(response.body.data).toHaveLength(1);

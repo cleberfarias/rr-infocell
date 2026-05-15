@@ -57,7 +57,13 @@ export class OrdensServicoService {
 
     const ordem = await this.repository.create(enrichedInput);
     await this.applyPecasDeltas(ordem);
-    await this.registrarEvento(ordem.id, "status", "OS criada", `Status inicial: ${ordem.status}. Prioridade: ${ordem.prioridade}.`, ordem.tecnicoResponsavel);
+    await this.registrarEvento(
+      ordem.id,
+      "status",
+      "OS criada",
+      `Status inicial: ${ordem.status}. Prioridade: ${ordem.prioridade}.`,
+      ordem.tecnicoResponsavel,
+    );
     await automacoesAtendimentoService.aoCriarOrdem(ordem);
 
     return ordem;
@@ -147,10 +153,7 @@ export class OrdensServicoService {
     };
   }
 
-  private async ensurePositiveDeltasStock(
-    input: OrdemServicoInput,
-    current?: OrdemServico,
-  ) {
+  private async ensurePositiveDeltasStock(input: OrdemServicoInput, current?: OrdemServico) {
     const deltas = this.calculatePecasDeltas(input.pecasUsadas ?? [], current);
 
     await Promise.all(
@@ -202,15 +205,33 @@ export class OrdensServicoService {
     }
 
     if (current.prioridade !== next.prioridade) {
-      await this.registrarEvento(next.id, "status", "Prioridade alterada", `${current.prioridade} -> ${next.prioridade}`, next.tecnicoResponsavel);
+      await this.registrarEvento(
+        next.id,
+        "status",
+        "Prioridade alterada",
+        `${current.prioridade} -> ${next.prioridade}`,
+        next.tecnicoResponsavel,
+      );
     }
 
     if (!current.garantiaAte && next.garantiaAte) {
-      await this.registrarEvento(next.id, "garantia", "Garantia registrada", `Garantia ate ${new Date(next.garantiaAte).toLocaleDateString("pt-BR")}.`, next.tecnicoResponsavel);
+      await this.registrarEvento(
+        next.id,
+        "garantia",
+        "Garantia registrada",
+        `Garantia ate ${new Date(next.garantiaAte).toLocaleDateString("pt-BR")}.`,
+        next.tecnicoResponsavel,
+      );
     }
 
     if (!current.aprovadoEm && next.aprovadoEm) {
-      await this.registrarEvento(next.id, "orcamento", "Aprovacao registrada", `Aprovado por ${next.aprovadoPor ?? "cliente"} via ${next.canalAprovacao ?? "canal nao informado"}.`, next.tecnicoResponsavel);
+      await this.registrarEvento(
+        next.id,
+        "orcamento",
+        "Aprovacao registrada",
+        `Aprovado por ${next.aprovadoPor ?? "cliente"} via ${next.canalAprovacao ?? "canal nao informado"}.`,
+        next.tecnicoResponsavel,
+      );
     }
   }
 
@@ -238,9 +259,8 @@ export class OrdensServicoService {
     return nextPecas
       .map((peca) => {
         const currentQuantidade =
-          current?.pecasUsadas.find(
-            (currentPeca) => currentPeca.produtoId === peca.produtoId,
-          )?.quantidade ?? 0;
+          current?.pecasUsadas.find((currentPeca) => currentPeca.produtoId === peca.produtoId)
+            ?.quantidade ?? 0;
         const quantidade = peca.quantidade - currentQuantidade;
 
         return {

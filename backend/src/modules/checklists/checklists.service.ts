@@ -10,7 +10,11 @@ import type { ChecklistInput } from "./checklists.types.js";
 export class ChecklistsService {
   constructor(private readonly repository: ChecklistsRepository = createChecklistsRepository(db)) {}
 
-  async list(filters?: { ordemServicoId?: string; aparelhoId?: string; tipo?: "entrada" | "saida" | "" }) {
+  async list(filters?: {
+    ordemServicoId?: string;
+    aparelhoId?: string;
+    tipo?: "entrada" | "saida" | "";
+  }) {
     return this.repository.list(filters);
   }
 
@@ -32,7 +36,8 @@ export class ChecklistsService {
     await ordemEventosService.create({
       ordemServicoId: checklist.ordemServicoId,
       tipo: "checklist",
-      titulo: checklist.tipo === "saida" ? "Checklist de saida criado" : "Checklist de entrada criado",
+      titulo:
+        checklist.tipo === "saida" ? "Checklist de saida criado" : "Checklist de entrada criado",
       descricao: `${checklist.itens.length} itens registrados.`,
       criadoPor: checklist.criadoPor,
     });

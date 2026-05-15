@@ -6,23 +6,15 @@ import { ordensServicoService } from "../ordens-servico/ordens-servico.service.j
 import type { OrdemServico } from "../ordens-servico/ordens-servico.types.js";
 import { movimentacoesEstoqueService } from "../movimentacoes-estoque/movimentacoes-estoque.service.js";
 import { produtosService } from "../produtos/produtos.service.js";
-import {
-  createVendasRepository,
-  type VendasRepository,
-} from "./vendas.repository.js";
+import { createVendasRepository, type VendasRepository } from "./vendas.repository.js";
 import type { VendaInput, VendaStatus } from "./vendas.types.js";
 
 const now = () => new Date().toISOString();
 
 export class VendasService {
-  constructor(
-    private readonly repository: VendasRepository = createVendasRepository(db),
-  ) {}
+  constructor(private readonly repository: VendasRepository = createVendasRepository(db)) {}
 
-  async list(filters?: {
-    ordemServicoId?: string;
-    status?: VendaStatus | "";
-  }) {
+  async list(filters?: { ordemServicoId?: string; status?: VendaStatus | "" }) {
     return this.repository.list(filters);
   }
 

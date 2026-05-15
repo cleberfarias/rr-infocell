@@ -14,9 +14,7 @@ describe("produtos routes", () => {
   });
 
   it("filters produtos by search, categoria and ativo", async () => {
-    const response = await request(app).get(
-      "/api/produtos?q=tela&categoria=peca&ativo=true",
-    );
+    const response = await request(app).get("/api/produtos?q=tela&categoria=peca&ativo=true");
 
     expect(response.status).toBe(200);
     expect(response.body.data).toHaveLength(1);

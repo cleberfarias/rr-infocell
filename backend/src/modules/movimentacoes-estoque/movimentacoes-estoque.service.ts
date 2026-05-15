@@ -1,10 +1,7 @@
 import { db } from "../../firebase/admin.js";
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
-import {
-  produtosService,
-  type ProdutosService,
-} from "../produtos/produtos.service.js";
+import { produtosService, type ProdutosService } from "../produtos/produtos.service.js";
 import {
   createMovimentacoesEstoqueRepository,
   type MovimentacoesEstoqueRepository,
@@ -18,29 +15,22 @@ const now = () => new Date().toISOString();
 
 export class MovimentacoesEstoqueService {
   constructor(
-    private readonly repository: MovimentacoesEstoqueRepository =
-      createMovimentacoesEstoqueRepository(db),
+    private readonly repository: MovimentacoesEstoqueRepository = createMovimentacoesEstoqueRepository(
+      db,
+    ),
     private readonly produtos: ProdutosService = produtosService,
   ) {}
 
-  async list(filters?: {
-    produtoId?: string;
-    tipo?: MovimentacaoEstoqueTipo | "";
-  }) {
+  async list(filters?: { produtoId?: string; tipo?: MovimentacaoEstoqueTipo | "" }) {
     return this.repository.list(filters);
   }
 
   async create(input: MovimentacaoEstoqueInput) {
     const produto = await this.produtos.getById(input.produtoId);
     const estoqueAnterior = produto.estoqueAtual;
-    const estoquePosterior = this.calculateEstoquePosterior(
-      input,
-      estoqueAnterior,
-    );
+    const estoquePosterior = this.calculateEstoquePosterior(input, estoqueAnterior);
     const quantidade =
-      input.tipo === "ajuste"
-        ? Math.abs(estoquePosterior - estoqueAnterior)
-        : input.quantidade;
+      input.tipo === "ajuste" ? Math.abs(estoquePosterior - estoqueAnterior) : input.quantidade;
 
     const updatedProduto = {
       sku: produto.sku,

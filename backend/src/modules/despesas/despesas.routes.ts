@@ -15,8 +15,7 @@ type AsyncRouteHandler = (
 ) => Promise<void>;
 
 const asyncHandler =
-  (handler: AsyncRouteHandler) =>
-  (request: Request, response: Response, next: NextFunction) => {
+  (handler: AsyncRouteHandler) => (request: Request, response: Response, next: NextFunction) => {
     handler(request, response, next).catch(next);
   };
 
@@ -25,10 +24,7 @@ const parseOrThrow = <T>(parse: () => T) => {
     return parse();
   } catch (error) {
     if (error instanceof ZodError) {
-      throw new AppError(
-        "validation_error",
-        error.errors[0]?.message ?? "Dados invalidos.",
-      );
+      throw new AppError("validation_error", error.errors[0]?.message ?? "Dados invalidos.");
     }
 
     throw error;
@@ -38,9 +34,7 @@ const parseOrThrow = <T>(parse: () => T) => {
 despesasRoutes.get(
   "/",
   asyncHandler(async (request, response) => {
-    const { q, categoria, pago } = parseOrThrow(() =>
-      despesaSearchSchema.parse(request.query),
-    );
+    const { q, categoria, pago } = parseOrThrow(() => despesaSearchSchema.parse(request.query));
     const despesas = await despesasService.list({
       categoria,
       pago: pago === "" ? "" : pago === "true",

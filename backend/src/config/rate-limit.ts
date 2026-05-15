@@ -11,5 +11,7 @@ export const limiter = rateLimit({
 export const aiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minuto
   max: 10, // 10 requests de IA por minuto
-  message: { error: { message: "Limite de requisições ao assistente atingido. Aguarde 1 minuto." } },
+  message: {
+    error: { message: "Limite de requisições ao assistente atingido. Aguarde 1 minuto." },
+  },
 });
