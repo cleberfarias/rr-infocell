@@ -8,9 +8,7 @@ import type {
 
 const movimentacoesCollection = "movimentacoesEstoque";
 const withoutUndefined = <T extends Record<string, unknown>>(data: T) =>
-  Object.fromEntries(
-    Object.entries(data).filter(([, value]) => value !== undefined),
-  ) as T;
+  Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as T;
 
 export interface MovimentacoesEstoqueRepository {
   list(filters?: {
@@ -28,16 +26,13 @@ const filterMovimentacoes = (
   } = {},
 ) =>
   movimentacoes.filter((movimentacao) => {
-    const matchesProduto =
-      !filters.produtoId || movimentacao.produtoId === filters.produtoId;
+    const matchesProduto = !filters.produtoId || movimentacao.produtoId === filters.produtoId;
     const matchesTipo = !filters.tipo || movimentacao.tipo === filters.tipo;
 
     return matchesProduto && matchesTipo;
   });
 
-export class MemoryMovimentacoesEstoqueRepository
-  implements MovimentacoesEstoqueRepository
-{
+export class MemoryMovimentacoesEstoqueRepository implements MovimentacoesEstoqueRepository {
   private readonly movimentacoes = new Map<string, MovimentacaoEstoque>();
 
   async list(
@@ -65,9 +60,7 @@ export class MemoryMovimentacoesEstoqueRepository
   }
 }
 
-export class FirestoreMovimentacoesEstoqueRepository
-  implements MovimentacoesEstoqueRepository
-{
+export class FirestoreMovimentacoesEstoqueRepository implements MovimentacoesEstoqueRepository {
   constructor(private readonly firestore: Firestore) {}
 
   async list(
@@ -76,9 +69,7 @@ export class FirestoreMovimentacoesEstoqueRepository
       tipo?: MovimentacaoEstoqueTipo | "";
     } = {},
   ) {
-    const snapshot = await this.firestore
-      .collection(movimentacoesCollection)
-      .get();
+    const snapshot = await this.firestore.collection(movimentacoesCollection).get();
     const movimentacoes = snapshot.docs
       .map((document) => this.fromDocument(document.id, document.data()))
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -98,10 +89,7 @@ export class FirestoreMovimentacoesEstoqueRepository
     return movimentacao;
   }
 
-  private fromDocument(
-    id: string,
-    data: FirebaseFirestore.DocumentData,
-  ): MovimentacaoEstoque {
+  private fromDocument(id: string, data: FirebaseFirestore.DocumentData): MovimentacaoEstoque {
     return {
       id,
       produtoId: String(data.produtoId ?? ""),
@@ -113,9 +101,7 @@ export class FirestoreMovimentacoesEstoqueRepository
       estoquePosterior: Number(data.estoquePosterior ?? 0),
       motivo: data.motivo ? String(data.motivo) : undefined,
       origem: data.origem === "ordem_servico" ? "ordem_servico" : "manual",
-      ordemServicoId: data.ordemServicoId
-        ? String(data.ordemServicoId)
-        : undefined,
+      ordemServicoId: data.ordemServicoId ? String(data.ordemServicoId) : undefined,
       criadoPor: data.criadoPor ? String(data.criadoPor) : undefined,
       createdAt: String(data.createdAt ?? ""),
     };

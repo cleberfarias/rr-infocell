@@ -5,15 +5,10 @@ import type { OrdemEvento, OrdemEventoTipo } from "./ordem-eventos.types.js";
 
 const eventosCollection = "ordemEventos";
 const withoutUndefined = <T extends Record<string, unknown>>(data: T) =>
-  Object.fromEntries(
-    Object.entries(data).filter(([, value]) => value !== undefined),
-  ) as T;
+  Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as T;
 
 export interface OrdemEventosRepository {
-  list(filters?: {
-    ordemServicoId?: string;
-    tipo?: OrdemEventoTipo | "";
-  }): Promise<OrdemEvento[]>;
+  list(filters?: { ordemServicoId?: string; tipo?: OrdemEventoTipo | "" }): Promise<OrdemEvento[]>;
   create(input: Omit<OrdemEvento, "id">): Promise<OrdemEvento>;
 }
 
@@ -69,8 +64,7 @@ export class FirestoreOrdemEventosRepository implements OrdemEventosRepository {
       tipo?: OrdemEventoTipo | "";
     } = {},
   ) {
-    let query: FirebaseFirestore.Query =
-      this.firestore.collection(eventosCollection);
+    let query: FirebaseFirestore.Query = this.firestore.collection(eventosCollection);
 
     if (filters.ordemServicoId) {
       query = query.where("ordemServicoId", "==", filters.ordemServicoId);
@@ -100,10 +94,7 @@ export class FirestoreOrdemEventosRepository implements OrdemEventosRepository {
     return evento;
   }
 
-  private fromDocument(
-    id: string,
-    data: FirebaseFirestore.DocumentData,
-  ): OrdemEvento {
+  private fromDocument(id: string, data: FirebaseFirestore.DocumentData): OrdemEvento {
     return {
       id,
       ordemServicoId: String(data.ordemServicoId ?? ""),

@@ -55,9 +55,12 @@ describe("despesas routes", () => {
     const response = await request(app).get("/api/despesas?categoria=luz&pago=true");
 
     expect(response.status).toBe(200);
-    expect(response.body.data.every((despesa: { categoria: string; pago: boolean }) =>
-      despesa.categoria === "luz" && despesa.pago,
-    )).toBe(true);
+    expect(
+      response.body.data.every(
+        (despesa: { categoria: string; pago: boolean }) =>
+          despesa.categoria === "luz" && despesa.pago,
+      ),
+    ).toBe(true);
   });
 
   it("returns validation errors", async () => {

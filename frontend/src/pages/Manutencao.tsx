@@ -11,7 +11,7 @@ import {
   Smartphone,
   Wrench,
 } from "lucide-react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import {
   EmptyState,
@@ -31,7 +31,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { formatBRL } from "@/data/mock";
+import { formatBRL, formatDateTimeShort } from "@/lib/formatters";
+import { OS_STATUS_LABELS } from "@/constants/status";
+import { STALE_TIME } from "@/constants/query";
+import { GARANTIA_DIAS_PADRAO } from "@/constants/business";
+import { ROUTES } from "@/constants/routes";
 import { listAparelhos, type Aparelho } from "@/services/aparelhos";
 import { listClientes, type Cliente } from "@/services/clientes";
 import {
@@ -42,6 +46,7 @@ import {
   type OrdemServicoStatus,
 } from "@/services/ordens-servico";
 import { createOrdemEvento, listOrdemEventos } from "@/services/ordem-eventos";
+import { toast } from "@/components/ui/sonner";
 import { listTecnicos } from "@/services/usuarios";
 
 type ManutencaoForm = {
@@ -54,15 +59,11 @@ type ManutencaoForm = {
   garantiaObservacoes: string;
 };
 
-const statusFlow: Array<{ key: OrdemServicoStatus; label: string }> = [
-  { key: "recebido", label: "Recebido" },
-  { key: "em_analise", label: "Em analise" },
-  { key: "aguardando_aprovacao", label: "Aguardando aprovacao" },
-  { key: "aguardando_peca", label: "Aguardando peca" },
-  { key: "em_manutencao", label: "Em manutencao" },
-  { key: "pronto_para_retirada", label: "Pronto retirada" },
-  { key: "entregue", label: "Entregue" },
-];
+const statusFlow: Array<{ key: OrdemServicoStatus; label: string }> = (
+  Object.entries(OS_STATUS_LABELS) as Array<[OrdemServicoStatus, string]>
+)
+  .filter(([key]) => key !== "cancelado")
+  .map(([key, label]) => ({ key, label }));
 
 const maintenanceStatuses: OrdemServicoStatus[] = [
   "recebido",
@@ -73,32 +74,13 @@ const maintenanceStatuses: OrdemServicoStatus[] = [
   "pronto_para_retirada",
 ];
 
-const formatDateTime = (value?: string) => {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleString("pt-BR", {
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    month: "2-digit",
-  });
-};
-
 const buildForm = (ordem: OrdemServico): ManutencaoForm => ({
   diagnostico: ordem.diagnostico ?? "",
   status: ordem.status,
   prioridade: ordem.prioridade ?? "normal",
   tecnicoResponsavel: ordem.tecnicoResponsavel ?? "",
   valorMaoObra: String(ordem.valorMaoObra),
-  garantiaDias: String(ordem.garantiaDias ?? 90),
+  garantiaDias: String(ordem.garantiaDias ?? GARANTIA_DIAS_PADRAO),
   garantiaObservacoes: ordem.garantiaObservacoes ?? "",
 });
 
@@ -112,6 +94,7 @@ const toPecasInput = (ordem: OrdemServico) =>
 const Manutencao = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [selectedOrdemId, setSelectedOrdemId] = useState(
     searchParams.get("ordemId") ?? "",
   );
@@ -121,23 +104,31 @@ const Manutencao = () => {
   const [comentarioError, setComentarioError] = useState<string | null>(null);
 
   const ordensQuery = useQuery({
-    queryKey: ["ordens-servico", "manutencao"],
+    queryKey: ["ordens-servico"],
     queryFn: () => listOrdensServico(),
+    staleTime: STALE_TIME.short,
+    refetchOnWindowFocus: false,
   });
 
   const clientesQuery = useQuery({
-    queryKey: ["clientes", "manutencao"],
+    queryKey: ["clientes"],
     queryFn: () => listClientes(""),
+    staleTime: STALE_TIME.medium,
+    refetchOnWindowFocus: false,
   });
 
   const aparelhosQuery = useQuery({
-    queryKey: ["aparelhos", "manutencao"],
+    queryKey: ["aparelhos"],
     queryFn: () => listAparelhos(),
+    staleTime: STALE_TIME.medium,
+    refetchOnWindowFocus: false,
   });
 
   const tecnicosQuery = useQuery({
     queryKey: ["usuarios", "tecnicos"],
     queryFn: listTecnicos,
+    staleTime: STALE_TIME.long,
+    refetchOnWindowFocus: false,
   });
 
   const eventosQuery = useQuery({
@@ -247,9 +238,9 @@ const Manutencao = () => {
       await createOrdemEvento({
         ordemServicoId: ordem.id,
         tipo: "diagnostico",
-        titulo: "Manutencao atualizada",
-        descricao: `Status: ${input.status}. Diagnostico: ${
-          input.diagnostico || "nao informado"
+        titulo: "Manutenção atualizada",
+        descricao: `Status: ${input.status}. Diagnóstico: ${
+          input.diagnostico || "não informado"
         }`,
         criadoPor: input.tecnicoResponsavel || undefined,
       });
@@ -260,16 +251,28 @@ const Manutencao = () => {
         }),
         queryClient.invalidateQueries({ queryKey: ["ordem-eventos"] }),
       ]);
+
+      if (input.status === "aguardando_aprovacao") {
+        toast.success("OS enviada para orçamento. Aguardando aprovação do cliente.");
+        navigate(ROUTES.orcamentoOS(ordem.id));
+        return;
+      }
+
+      if (input.status === "pronto_para_retirada") {
+        toast.success("Aparelho pronto para retirada! Imprima o Termo de Garantia.");
+        navigate(ROUTES.ordemDetalhe(ordem.id));
+        return;
+      }
+
+      toast.success("Manutenção atualizada.");
       setSelectedOrdemId(ordem.id);
       setForm(buildForm(ordem));
       setFormError(null);
     },
     onError: (error) => {
-      setFormError(
-        error instanceof Error
-          ? error.message
-          : "Nao foi possivel atualizar a manutencao.",
-      );
+      const msg = error instanceof Error ? error.message : "Não foi possível atualizar a manutenção.";
+      setFormError(msg);
+      toast.error(msg);
     },
   });
 
@@ -280,13 +283,13 @@ const Manutencao = () => {
       }
 
       if (!comentario.trim()) {
-        throw new Error("Informe o comentario.");
+        throw new Error("Informe o comentário.");
       }
 
       return createOrdemEvento({
         ordemServicoId: selectedOrdem.id,
         tipo: "comentario",
-        titulo: "Comentario tecnico",
+        titulo: "Comentário técnico",
         descricao: comentario.trim(),
         criadoPor: form?.tecnicoResponsavel || selectedOrdem.tecnicoResponsavel,
       });
@@ -300,7 +303,7 @@ const Manutencao = () => {
       setComentarioError(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel registrar o comentario.",
+          : "Não foi possível registrar o comentário.",
       );
     },
   });
@@ -363,8 +366,8 @@ const Manutencao = () => {
       <Card className="surface-panel">
         <EmptyState
           icon={Wrench}
-          title="Nao foi possivel carregar manutencoes"
-          description="Verifique se o backend esta rodando e tente novamente."
+          title="Não foi possível carregar manutenções"
+          description="Verifique se o backend está rodando e tente novamente."
           actions={
             <Button variant="outline" onClick={() => ordensQuery.refetch()}>
               Tentar novamente
@@ -380,11 +383,11 @@ const Manutencao = () => {
       <Card className="surface-panel">
         <EmptyState
           icon={ClipboardList}
-          title="Nenhuma OS em manutencao"
-          description="Abra uma OS ou mova uma ordem existente para o fluxo tecnico."
+          title="Nenhuma OS em manutenção"
+          description="Abra uma OS ou mova uma ordem existente para o fluxo técnico."
           actions={
             <Button asChild>
-              <Link to="/app/ordens/nova">Nova OS</Link>
+              <Link to={ROUTES.novaOS}>Nova OS</Link>
             </Button>
           }
         />
@@ -395,16 +398,16 @@ const Manutencao = () => {
   return (
     <form className="space-y-5" onSubmit={handleSubmit}>
       <PageHeader
-        eyebrow="Manutencao"
+        eyebrow="Manutenção"
         title={
-          selectedOrdem ? `OS-${selectedOrdem.numero}` : "Fluxo tecnico de OS"
+          selectedOrdem ? `OS-${selectedOrdem.numero}` : "Fluxo técnico de OS"
         }
-        description="Atualize diagnostico, responsavel, status tecnico e acompanhe as pecas usadas na OS."
+        description="Atualize diagnóstico, responsável, status técnico e acompanhe as peças usadas na OS."
         actions={
           <div className="flex flex-wrap gap-2">
             {selectedOrdem && (
               <Button asChild variant="outline">
-                <Link to={`/app/ordens/${selectedOrdem.id}`}>
+                <Link to={ROUTES.ordemDetalhe(selectedOrdem.id)}>
                   <Eye className="h-4 w-4" /> Detalhe
                 </Link>
               </Button>
@@ -413,11 +416,11 @@ const Manutencao = () => {
               <Link
                 to={
                   selectedOrdem
-                    ? `/app/orcamento?ordemId=${selectedOrdem.id}`
-                    : "/app/orcamento"
+                    ? ROUTES.orcamentoOS(selectedOrdem.id)
+                    : ROUTES.orcamento
                 }
               >
-                <Send className="h-4 w-4" /> Orcamento
+                <Send className="h-4 w-4" /> Orçamento
               </Link>
             </Button>
             <Button
@@ -439,7 +442,7 @@ const Manutencao = () => {
       <Card className="surface-panel flex flex-wrap items-end gap-3 p-4">
         <FormField
           id="manutencao-os"
-          label="Ordem de servico"
+          label="Ordem de serviço"
           className="flex-1"
         >
           <Select value={selectedOrdemId} onValueChange={handleSelectOrdem}>
@@ -490,7 +493,7 @@ const Manutencao = () => {
             <Card className="surface-panel p-4">
               <p className="text-xs text-muted-foreground">Entrada</p>
               <p className="mt-1 font-mono text-sm">
-                {formatDateTime(selectedOrdem.entradaEm)}
+                {formatDateTimeShort(selectedOrdem.entradaEm)}
               </p>
             </Card>
             <Card className="surface-panel p-4">
@@ -554,9 +557,9 @@ const Manutencao = () => {
 
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
             <div className="space-y-5 lg:col-span-2">
-              <SectionPanel title="Diagnostico tecnico">
+              <SectionPanel title="Diagnóstico técnico">
                 <div className="space-y-4">
-                  <FormField id="manutencao-diagnostico" label="Diagnostico">
+                  <FormField id="manutencao-diagnostico" label="Diagnóstico">
                     <Textarea
                       id="manutencao-diagnostico"
                       rows={5}
@@ -564,7 +567,7 @@ const Manutencao = () => {
                       onChange={(event) =>
                         updateForm("diagnostico", event.target.value)
                       }
-                      placeholder="Registre a avaliacao tecnica, testes realizados e recomendacao."
+                      placeholder="Registre a avaliação técnica, testes realizados e recomendação."
                     />
                   </FormField>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
@@ -588,7 +591,7 @@ const Manutencao = () => {
                         </SelectContent>
                       </Select>
                     </FormField>
-                    <FormField id="manutencao-tecnico" label="Tecnico">
+                    <FormField id="manutencao-tecnico" label="Técnico">
                       <Select
                         value={form.tecnicoResponsavel}
                         onValueChange={(value) =>
@@ -602,10 +605,10 @@ const Manutencao = () => {
                           <SelectValue
                             placeholder={
                               tecnicosQuery.isLoading
-                                ? "Carregando tecnicos"
+                                ? "Carregando técnicos"
                                 : tecnicoOptions.length > 0
-                                  ? "Atribuir tecnico"
-                                  : "Nenhum tecnico cadastrado"
+                                  ? "Atribuir técnico"
+                                  : "Nenhum técnico cadastrado"
                             }
                           />
                         </SelectTrigger>
@@ -638,7 +641,7 @@ const Manutencao = () => {
                         </SelectContent>
                       </Select>
                     </FormField>
-                    <FormField id="manutencao-mao-obra" label="Mao de obra">
+                    <FormField id="manutencao-mao-obra" label="Mão de obra">
                       <Input
                         id="manutencao-mao-obra"
                         min="0"
@@ -666,7 +669,7 @@ const Manutencao = () => {
                     </FormField>
                     <FormField
                       id="manutencao-garantia-obs"
-                      label="Observacao da garantia"
+                      label="Observação da garantia"
                     >
                       <Input
                         id="manutencao-garantia-obs"
@@ -674,7 +677,7 @@ const Manutencao = () => {
                         onChange={(event) =>
                           updateForm("garantiaObservacoes", event.target.value)
                         }
-                        placeholder="Ex.: garantia de 90 dias para tela e mao de obra"
+                        placeholder="Ex.: garantia de 90 dias para tela e mão de obra"
                       />
                     </FormField>
                   </div>
@@ -685,11 +688,11 @@ const Manutencao = () => {
               </SectionPanel>
 
               <SectionPanel
-                title="Pecas e servicos"
+                title="Peças e serviços"
                 actions={
                   <Button asChild variant="outline" size="sm">
-                    <Link to={`/app/ordens/${selectedOrdem.id}`}>
-                      <Package className="h-4 w-4" /> Adicionar pecas
+                    <Link to={ROUTES.ordemDetalhe(selectedOrdem.id)}>
+                      <Package className="h-4 w-4" /> Adicionar peças
                     </Link>
                   </Button>
                 }
@@ -705,7 +708,7 @@ const Manutencao = () => {
                           Qtd.
                         </th>
                         <th className="px-4 py-3 text-right font-medium">
-                          Unitario
+                          Unitário
                         </th>
                         <th className="px-4 py-3 text-right font-medium">
                           Subtotal
@@ -719,7 +722,7 @@ const Manutencao = () => {
                             className="px-4 py-5 text-center text-muted-foreground"
                             colSpan={4}
                           >
-                            Nenhuma peca vinculada a esta OS.
+                            Nenhuma peça vinculada a esta OS.
                           </td>
                         </tr>
                       ) : (
@@ -731,7 +734,7 @@ const Manutencao = () => {
                             <td className="px-4 py-3">
                               <div className="font-medium">{peca.nome}</div>
                               <div className="font-mono text-xs text-muted-foreground">
-                                {peca.sku} - baixa automatica no estoque
+                                {peca.sku} - baixa automática no estoque
                               </div>
                             </td>
                             <td className="px-4 py-3 text-center font-mono">
@@ -748,10 +751,10 @@ const Manutencao = () => {
                       )}
                       <tr className="bg-secondary/20">
                         <td className="px-4 py-3">
-                          <div className="font-medium">Mao de obra tecnica</div>
+                          <div className="font-medium">Mão de obra técnica</div>
                           <div className="text-xs text-muted-foreground">
-                            Servico executado por{" "}
-                            {form.tecnicoResponsavel || "tecnico nao definido"}
+                            Serviço executado por{" "}
+                            {form.tecnicoResponsavel || "técnico não definido"}
                           </div>
                         </td>
                         <td className="px-4 py-3 text-center font-mono">1</td>
@@ -773,7 +776,7 @@ const Manutencao = () => {
                 <li className="relative">
                   <span className="absolute -left-[26px] top-1 h-3 w-3 rounded-full border-2 border-success bg-success" />
                   <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                    {formatDateTime(selectedOrdem.createdAt)}
+                    {formatDateTimeShort(selectedOrdem.createdAt)}
                   </p>
                   <p className="text-sm font-semibold">OS criada</p>
                   <p className="text-xs text-muted-foreground">
@@ -784,10 +787,10 @@ const Manutencao = () => {
                   <li className="relative">
                     <span className="absolute -left-[26px] top-1 h-3 w-3 rounded-full border-2 border-primary bg-primary shadow-glow" />
                     <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                      {formatDateTime(selectedOrdem.updatedAt)}
+                      {formatDateTimeShort(selectedOrdem.updatedAt)}
                     </p>
                     <p className="text-sm font-semibold">
-                      Diagnostico atualizado
+                      Diagnóstico atualizado
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {selectedOrdem.diagnostico}
@@ -798,13 +801,13 @@ const Manutencao = () => {
                   <li className="relative">
                     <span className="absolute -left-[26px] top-1 h-3 w-3 rounded-full border-2 border-success bg-success" />
                     <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                      {formatDateTime(selectedOrdem.concluidaEm)}
+                      {formatDateTimeShort(selectedOrdem.concluidaEm)}
                     </p>
                     <p className="text-sm font-semibold">
                       Pronta para retirada
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      OS concluida tecnicamente.
+                      OS concluída tecnicamente.
                     </p>
                   </li>
                 )}
@@ -812,7 +815,7 @@ const Manutencao = () => {
                   <li key={evento.id} className="relative">
                     <span className="absolute -left-[26px] top-1 h-3 w-3 rounded-full border-2 border-primary bg-primary shadow-glow" />
                     <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                      {formatDateTime(evento.createdAt)}
+                      {formatDateTimeShort(evento.createdAt)}
                     </p>
                     <p className="text-sm font-semibold">{evento.titulo}</p>
                     {evento.descricao && (
@@ -830,13 +833,13 @@ const Manutencao = () => {
               </ol>
               <div className="mt-5 space-y-3">
                 <div className="rounded-md border border-border bg-secondary/30 p-3">
-                  <FormField id="manutencao-comentario" label="Comentario">
+                  <FormField id="manutencao-comentario" label="Comentário">
                     <Textarea
                       id="manutencao-comentario"
                       rows={3}
                       value={comentario}
                       onChange={(event) => setComentario(event.target.value)}
-                      placeholder="Registre uma observacao tecnica."
+                      placeholder="Registre uma observação técnica."
                     />
                   </FormField>
                   {comentarioError && (
@@ -856,7 +859,7 @@ const Manutencao = () => {
                     ) : (
                       <MessageSquare className="h-4 w-4" />
                     )}
-                    Registrar comentario
+                    Registrar comentário
                   </Button>
                 </div>
                 <div>
@@ -866,15 +869,15 @@ const Manutencao = () => {
                   <StatusBadge status={selectedOrdem.status} />
                 </div>
                 <Button asChild variant="outline" className="w-full">
-                  <Link to={`/app/checklist?ordemId=${selectedOrdem.id}`}>
+                  <Link to={ROUTES.checklistOS(selectedOrdem.id)}>
                     Checklist da OS
                   </Link>
                 </Button>
                 <Button asChild variant="outline" className="w-full">
                   <Link
-                    to={`/app/checklist?ordemId=${selectedOrdem.id}&tipo=saida`}
+                    to={ROUTES.checklistSaida(selectedOrdem.id)}
                   >
-                    Checklist de saida
+                    Checklist de saída
                   </Link>
                 </Button>
               </div>

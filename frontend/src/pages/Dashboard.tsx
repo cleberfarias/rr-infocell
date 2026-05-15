@@ -4,7 +4,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   ClipboardList,
-  Loader2,
   Package,
   Plus,
   ShoppingCart,
@@ -27,27 +26,21 @@ import { EmptyState, MetricCard, PageHeader, SectionPanel } from "@/components/d
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { formatBRL } from "@/data/mock";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { formatBRL, formatDateShort } from "@/lib/formatters";
+import { OS_STATUS_LABELS } from "@/constants/status";
+import { STALE_TIME } from "@/constants/query";
+import { ROUTES } from "@/constants/routes";
 import { listAparelhos } from "@/services/aparelhos";
 import { listClientes } from "@/services/clientes";
 import {
   listOrdensServico,
   type OrdemServico,
-  type OrdemServicoStatus,
 } from "@/services/ordens-servico";
+import { listProdutos } from "@/services/produtos";
 
-const statusLabels: Record<OrdemServicoStatus, string> = {
-  recebido: "Recebido",
-  em_analise: "Em analise",
-  aguardando_aprovacao: "Aguardando aprovacao",
-  aguardando_peca: "Aguardando peca",
-  em_manutencao: "Em manutencao",
-  pronto_para_retirada: "Pronto retirada",
-  entregue: "Entregue",
-  cancelado: "Cancelado",
-};
-
-const activeStatuses: OrdemServicoStatus[] = [
+const activeStatuses = [
   "recebido",
   "em_analise",
   "aguardando_aprovacao",
@@ -55,7 +48,7 @@ const activeStatuses: OrdemServicoStatus[] = [
   "em_manutencao",
 ];
 
-const finalStatuses: OrdemServicoStatus[] = ["pronto_para_retirada", "entregue"];
+const finalStatuses = ["pronto_para_retirada", "entregue"] as const;
 
 const isOverdue = (ordem: OrdemServico) => {
   if (!ordem.previsaoEntregaEm || ["entregue", "cancelado"].includes(ordem.status)) {
@@ -75,34 +68,33 @@ const isOverdue = (ordem: OrdemServico) => {
   return previsao < today;
 };
 
-const formatDate = (value?: string) => {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
-};
-
 const Dashboard = () => {
   const ordensQuery = useQuery({
-    queryKey: ["ordens-servico", "dashboard"],
+    queryKey: ["ordens-servico"],
     queryFn: () => listOrdensServico(),
+    staleTime: STALE_TIME.short,
+    refetchOnWindowFocus: false,
   });
 
   const clientesQuery = useQuery({
-    queryKey: ["clientes", "dashboard"],
+    queryKey: ["clientes"],
     queryFn: () => listClientes(""),
+    staleTime: STALE_TIME.medium,
+    refetchOnWindowFocus: false,
   });
 
   const aparelhosQuery = useQuery({
-    queryKey: ["aparelhos", "dashboard"],
+    queryKey: ["aparelhos"],
     queryFn: () => listAparelhos(),
+    staleTime: STALE_TIME.medium,
+    refetchOnWindowFocus: false,
+  });
+
+  const produtosQuery = useQuery({
+    queryKey: ["produtos"],
+    queryFn: () => listProdutos({ ativo: true }),
+    staleTime: STALE_TIME.medium,
+    refetchOnWindowFocus: false,
   });
 
   const ordens = useMemo(() => ordensQuery.data ?? [], [ordensQuery.data]);
@@ -141,14 +133,16 @@ const Dashboard = () => {
     };
   }, [ordens]);
 
-  const statusChart = useMemo(
-    () =>
-      Object.entries(statusLabels).map(([status, label]) => ({
-        label,
-        total: ordens.filter((ordem) => ordem.status === status).length,
-      })),
-    [ordens],
-  );
+  const statusChart = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const ordem of ordens) {
+      counts.set(ordem.status, (counts.get(ordem.status) ?? 0) + 1);
+    }
+    return Object.entries(OS_STATUS_LABELS).map(([status, label]) => ({
+      label,
+      total: counts.get(status) ?? 0,
+    }));
+  }, [ordens]);
 
   const ordensRecentes = useMemo(
     () =>
@@ -161,6 +155,17 @@ const Dashboard = () => {
     [ordens],
   );
 
+  const estoqueInfo = useMemo(() => {
+    const produtos = produtosQuery.data ?? [];
+    const total = produtos.length;
+    const baixos = produtos.filter(
+      (p) => p.estoqueAtual <= p.estoqueMinimo && p.estoqueAtual >= 0,
+    );
+    const zerados = produtos.filter((p) => p.estoqueAtual <= 0);
+    const pct = total > 0 ? Math.round((baixos.length / total) * 100) : 0;
+    return { total, baixos: baixos.length, zerados: zerados.length, pct };
+  }, [produtosQuery.data]);
+
   const isLoading =
     ordensQuery.isLoading ||
     clientesQuery.isLoading ||
@@ -170,9 +175,24 @@ const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <Card className="surface-panel flex min-h-[320px] items-center justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      </Card>
+      <div className="space-y-5">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="surface-panel p-4">
+              <Skeleton className="h-3 w-20 mb-3" />
+              <Skeleton className="h-7 w-16" />
+            </Card>
+          ))}
+        </div>
+        <Card className="surface-panel p-6">
+          <Skeleton className="h-4 w-32 mb-4" />
+          <div className="space-y-3">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        </Card>
+      </div>
     );
   }
 
@@ -181,8 +201,8 @@ const Dashboard = () => {
       <Card className="surface-panel">
         <EmptyState
           icon={ClipboardList}
-          title="Nao foi possivel carregar o dashboard"
-          description="Verifique se o backend esta rodando em http://localhost:3333."
+          title="Não foi possível carregar o dashboard"
+          description="Verifique se o backend está rodando em http://localhost:3333."
           actions={
             <Button
               variant="outline"
@@ -203,7 +223,7 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="// Visao geral"
+        eyebrow="// Visão geral"
         title="Resumo do dia"
         description={new Date().toLocaleDateString("pt-BR", {
           weekday: "long",
@@ -215,7 +235,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <MetricCard
           icon={Smartphone}
-          label="Em manutencao"
+          label="Em manutenção"
           value={relatorio.emManutencao}
           hint="aparelhos na bancada"
         />
@@ -223,7 +243,7 @@ const Dashboard = () => {
           icon={ClipboardList}
           label="Ordens abertas"
           value={relatorio.abertas}
-          hint="aguardando acao"
+          hint="aguardando ação"
         />
         <MetricCard
           icon={CheckCircle2}
@@ -236,22 +256,91 @@ const Dashboard = () => {
           icon={AlertTriangle}
           label="Em atraso"
           value={relatorio.atrasadas}
-          hint="passaram da previsao"
+          hint="passaram da previsão"
           accentClassName="bg-destructive/10 text-destructive"
         />
         <MetricCard
           icon={TrendingUp}
           label="Total em OS"
           value={formatBRL(relatorio.valorTotal)}
-          trend={`Ticket medio ${formatBRL(relatorio.ticketMedio)}`}
+          trend={`Ticket médio ${formatBRL(relatorio.ticketMedio)}`}
           accentClassName="bg-primary/10 text-primary"
         />
       </div>
 
+      {estoqueInfo.baixos > 0 && (
+        <Link to={ROUTES.estoqueBaixo}>
+          <Card
+            className={cn(
+              "surface-panel p-4 border cursor-pointer hover:opacity-90 transition-opacity",
+              estoqueInfo.pct > 50
+                ? "border-red-500/50 bg-red-500/5"
+                : estoqueInfo.pct > 20
+                  ? "border-amber-500/50 bg-amber-500/5"
+                  : "border-orange-500/50 bg-orange-500/5",
+            )}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                  Estoque baixo
+                </p>
+                <p
+                  className={cn(
+                    "font-display text-2xl font-bold mt-1",
+                    estoqueInfo.pct > 50
+                      ? "text-red-500"
+                      : estoqueInfo.pct > 20
+                        ? "text-amber-500"
+                        : "text-orange-500",
+                  )}
+                >
+                  {estoqueInfo.pct}%
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {estoqueInfo.baixos} iten
+                  {estoqueInfo.baixos > 1 ? "s" : ""} abaixo do mínimo
+                  {estoqueInfo.zerados > 0 &&
+                    ` · ${estoqueInfo.zerados} zerado${estoqueInfo.zerados > 1 ? "s" : ""}`}
+                </p>
+              </div>
+              <div
+                className={cn(
+                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg",
+                  estoqueInfo.pct > 50
+                    ? "bg-red-500/15"
+                    : estoqueInfo.pct > 20
+                      ? "bg-amber-500/15"
+                      : "bg-orange-500/15",
+                )}
+              >
+                ⚠️
+              </div>
+            </div>
+            <p
+              className={cn(
+                "mt-2 text-[10px] font-bold uppercase tracking-widest",
+                estoqueInfo.pct > 50
+                  ? "text-red-500"
+                  : estoqueInfo.pct > 20
+                    ? "text-amber-500"
+                    : "text-orange-500",
+              )}
+            >
+              {estoqueInfo.pct > 50
+                ? "Critico - repor urgente"
+                : estoqueInfo.pct > 20
+                  ? "Atencao - repor em breve"
+                  : "Verificar estoque"}
+            </p>
+          </Card>
+        </Link>
+      )}
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <SectionPanel
-          title="Relatorio de OS"
-          description="Distribuicao por status no banco atual"
+          title="Relatório de OS"
+          description="Distribuição por status no banco atual"
           className="col-span-1 lg:col-span-2"
           contentClassName="pt-4"
         >
@@ -296,7 +385,7 @@ const Dashboard = () => {
               <dd className="font-mono font-semibold">{formatBRL(relatorio.valorTotal)}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Ticket medio</dt>
+              <dt className="text-muted-foreground">Ticket médio</dt>
               <dd className="font-mono">{formatBRL(relatorio.ticketMedio)}</dd>
             </div>
             <div className="flex justify-between gap-4">
@@ -316,11 +405,11 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <SectionPanel
           title="Ordens recentes"
-          description="Ultimas OS atualizadas"
+          description="Últimas OS atualizadas"
           className="col-span-1 lg:col-span-2"
           contentClassName="p-0"
           actions={
-            <Link to="/app/ordens" className="text-xs text-primary hover:underline">
+            <Link to={ROUTES.ordens} className="text-xs text-primary hover:underline">
               Ver todas
             </Link>
           }
@@ -347,7 +436,7 @@ const Dashboard = () => {
                       className="border-b border-border/50 transition-colors hover:bg-secondary/30"
                     >
                       <td className="px-5 py-3 font-mono text-xs text-primary">
-                        <Link to={`/app/ordens/${ordem.id}`}>OS-{ordem.numero}</Link>
+                        <Link to={ROUTES.ordemDetalhe(ordem.id)}>OS-{ordem.numero}</Link>
                       </td>
                       <td className="px-5 py-3 font-medium">
                         {cliente?.nome ?? ordem.clienteId}
@@ -379,14 +468,14 @@ const Dashboard = () => {
         </SectionPanel>
 
         <Card className="surface-panel p-5">
-          <h3 className="font-display text-base font-semibold">Atalhos rapidos</h3>
+          <h3 className="font-display text-base font-semibold">Atalhos rápidos</h3>
           <p className="mb-4 text-xs text-muted-foreground">Fluxos mais usados</p>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { to: "/app/ordens/nova", icon: Plus, label: "Nova OS", desc: "Cadastrar aparelho", primary: true },
-              { to: "/app/clientes", icon: Users, label: "Clientes", desc: "Historico e busca" },
-              { to: "/app/estoque", icon: Package, label: "Estoque", desc: "Pecas e custos" },
-              { to: "/app/pdv", icon: ShoppingCart, label: "Caixa", desc: "Fechar OS / venda" },
+              { to: ROUTES.novaOS, icon: Plus, label: "Nova OS", desc: "Cadastrar aparelho", primary: true },
+              { to: ROUTES.clientes, icon: Users, label: "Clientes", desc: "Histórico e busca" },
+              { to: ROUTES.estoque, icon: Package, label: "Estoque", desc: "Peças e custos" },
+              { to: ROUTES.pdv, icon: ShoppingCart, label: "Caixa", desc: "Fechar OS / venda" },
             ].map(({ to, icon: Icon, label, desc, primary }) => (
               <Link
                 key={to}

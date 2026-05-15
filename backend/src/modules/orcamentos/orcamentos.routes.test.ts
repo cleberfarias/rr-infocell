@@ -34,9 +34,7 @@ describe("orcamentos routes", () => {
     expect(updateResponse.body.data.id).toBe(createResponse.body.data.id);
     expect(updateResponse.body.data.status).toBe("aprovado");
 
-    const listResponse = await request(app).get(
-      `/api/orcamentos?ordemServicoId=${ordem.id}`,
-    );
+    const listResponse = await request(app).get(`/api/orcamentos?ordemServicoId=${ordem.id}`);
 
     expect(listResponse.body.data).toHaveLength(1);
   });

@@ -24,9 +24,7 @@ describe("ordem-eventos routes", () => {
     expect(createResponse.status).toBe(201);
     expect(createResponse.body.data.id).toEqual(expect.any(String));
 
-    const listResponse = await request(app).get(
-      `/api/ordem-eventos?ordemServicoId=${ordem.id}`,
-    );
+    const listResponse = await request(app).get(`/api/ordem-eventos?ordemServicoId=${ordem.id}`);
 
     expect(listResponse.status).toBe(200);
     expect(listResponse.body.data).toHaveLength(1);

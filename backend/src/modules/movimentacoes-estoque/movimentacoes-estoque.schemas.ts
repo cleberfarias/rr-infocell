@@ -45,9 +45,5 @@ export const movimentacaoEstoqueInputSchema = z.discriminatedUnion("tipo", [
 
 export const movimentacaoEstoqueSearchSchema = z.object({
   produtoId: z.string().trim().optional().default(""),
-  tipo: z
-    .enum(["entrada", "saida", "ajuste"])
-    .optional()
-    .or(z.literal(""))
-    .default(""),
+  tipo: z.enum(["entrada", "saida", "ajuste"]).optional().or(z.literal("")).default(""),
 });

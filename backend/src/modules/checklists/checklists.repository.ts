@@ -14,7 +14,11 @@ const withoutUndefined = <T extends Record<string, unknown>>(data: T) =>
   Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as T;
 
 export interface ChecklistsRepository {
-  list(filters?: { ordemServicoId?: string; aparelhoId?: string; tipo?: Checklist["tipo"] | "" }): Promise<Checklist[]>;
+  list(filters?: {
+    ordemServicoId?: string;
+    aparelhoId?: string;
+    tipo?: Checklist["tipo"] | "";
+  }): Promise<Checklist[]>;
   findById(id: string): Promise<Checklist | null>;
   create(input: ChecklistInput): Promise<Checklist>;
   update(id: string, input: ChecklistInput): Promise<Checklist | null>;
@@ -43,7 +47,9 @@ const normalizeFotos = (fotos: ChecklistFoto[] = []) =>
 export class MemoryChecklistsRepository implements ChecklistsRepository {
   private readonly checklists = new Map<string, Checklist>();
 
-  async list(filters: { ordemServicoId?: string; aparelhoId?: string; tipo?: Checklist["tipo"] | "" } = {}) {
+  async list(
+    filters: { ordemServicoId?: string; aparelhoId?: string; tipo?: Checklist["tipo"] | "" } = {},
+  ) {
     const checklists = Array.from(this.checklists.values()).sort((a, b) =>
       b.createdAt.localeCompare(a.createdAt),
     );
@@ -100,7 +106,9 @@ export class MemoryChecklistsRepository implements ChecklistsRepository {
 export class FirestoreChecklistsRepository implements ChecklistsRepository {
   constructor(private readonly firestore: Firestore) {}
 
-  async list(filters: { ordemServicoId?: string; aparelhoId?: string; tipo?: Checklist["tipo"] | "" } = {}) {
+  async list(
+    filters: { ordemServicoId?: string; aparelhoId?: string; tipo?: Checklist["tipo"] | "" } = {},
+  ) {
     let query: FirebaseFirestore.Query = this.firestore.collection(checklistsCollection);
 
     if (filters.ordemServicoId) {

@@ -3,24 +3,15 @@ import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
 import { ordemEventosService } from "../ordem-eventos/ordem-eventos.service.js";
 import { ordensServicoService } from "../ordens-servico/ordens-servico.service.js";
-import {
-  createOrcamentosRepository,
-  type OrcamentosRepository,
-} from "./orcamentos.repository.js";
+import { createOrcamentosRepository, type OrcamentosRepository } from "./orcamentos.repository.js";
 import type { OrcamentoInput, OrcamentoStatus } from "./orcamentos.types.js";
 
 const now = () => new Date().toISOString();
 
 export class OrcamentosService {
-  constructor(
-    private readonly repository: OrcamentosRepository =
-      createOrcamentosRepository(db),
-  ) {}
+  constructor(private readonly repository: OrcamentosRepository = createOrcamentosRepository(db)) {}
 
-  async list(filters?: {
-    ordemServicoId?: string;
-    status?: OrcamentoStatus | "";
-  }) {
+  async list(filters?: { ordemServicoId?: string; status?: OrcamentoStatus | "" }) {
     return this.repository.list(filters);
   }
 
@@ -40,11 +31,10 @@ export class OrcamentosService {
       valorPecas: ordem.valorPecas,
       valorMaoObra: ordem.valorMaoObra,
       valorTotal: ordem.valorTotal,
-      enviadoEm:
-        status === "enviado" ? current?.enviadoEm ?? timestamp : current?.enviadoEm,
+      enviadoEm: status === "enviado" ? (current?.enviadoEm ?? timestamp) : current?.enviadoEm,
       decididoEm:
         status === "aprovado" || status === "reprovado"
-          ? current?.decididoEm ?? timestamp
+          ? (current?.decididoEm ?? timestamp)
           : current?.decididoEm,
       aprovadoPor: input.aprovadoPor ?? current?.aprovadoPor,
       canalAprovacao: input.canalAprovacao ?? current?.canalAprovacao,
@@ -60,11 +50,7 @@ export class OrcamentosService {
         });
 
     if (!orcamento) {
-      throw new AppError(
-        "orcamento_not_found",
-        "Orcamento nao encontrado.",
-        httpStatus.notFound,
-      );
+      throw new AppError("orcamento_not_found", "Orcamento nao encontrado.", httpStatus.notFound);
     }
 
     await ordemEventosService.create({

@@ -118,7 +118,7 @@ const Usuarios = () => {
       setFormError(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel salvar o usuario.",
+          : "Não foi possível salvar o usuário.",
       );
     },
   });
@@ -168,15 +168,15 @@ const Usuarios = () => {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Administracao"
-        title="Usuarios e acessos"
-        description="Cadastre usuarios internos do Firebase Auth e defina o nivel de acesso."
+        eyebrow="Administração"
+        title="Usuários e acessos"
+        description="Cadastre usuários internos do Firebase Auth e defina o nível de acesso."
         actions={
           <Button
             className="bg-gradient-primary text-primary-foreground shadow-glow"
             onClick={openCreateDialog}
           >
-            <Plus className="h-4 w-4" /> Novo usuario
+            <Plus className="h-4 w-4" /> Novo usuário
           </Button>
         }
       />
@@ -184,7 +184,7 @@ const Usuarios = () => {
       <Card className="surface-panel flex flex-wrap items-end gap-3 p-3">
         <FormField
           id="usuarios-search"
-          label="Buscar usuario"
+          label="Buscar usuário"
           className="min-w-[240px] flex-1"
         >
           <div className="relative">
@@ -222,8 +222,8 @@ const Usuarios = () => {
         <Card className="surface-panel">
           <EmptyState
             icon={UserCog}
-            title="Nao foi possivel carregar usuarios"
-            description="Entre com um usuario admin real do Firebase Auth e verifique se o backend esta configurado com Firebase Admin SDK."
+            title="Não foi possível carregar usuários"
+            description="Entre com um usuário admin real do Firebase Auth e verifique se o backend está configurado com Firebase Admin SDK."
             actions={
               <Button variant="outline" onClick={() => usuariosQuery.refetch()}>
                 Tentar novamente
@@ -235,9 +235,9 @@ const Usuarios = () => {
         <Card className="surface-panel">
           <EmptyState
             icon={UserCog}
-            title="Nenhum usuario encontrado"
-            description="Ajuste a busca ou cadastre o primeiro usuario operacional."
-            actions={<Button onClick={openCreateDialog}>Novo usuario</Button>}
+            title="Nenhum usuário encontrado"
+            description="Ajuste a busca ou cadastre o primeiro usuário operacional."
+            actions={<Button onClick={openCreateDialog}>Novo usuário</Button>}
           />
         </Card>
       ) : (
@@ -302,7 +302,7 @@ const Usuarios = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingUsuario ? "Editar usuario" : "Novo usuario"}
+              {editingUsuario ? "Editar usuário" : "Novo usuário"}
             </DialogTitle>
           </DialogHeader>
           <form className="space-y-4" onSubmit={handleSubmit}>
@@ -345,7 +345,7 @@ const Usuarios = () => {
                   required={!editingUsuario}
                 />
               </FormField>
-              <FormField id="usuario-role" label="Nivel de acesso">
+              <FormField id="usuario-role" label="Nível de acesso">
                 <Select
                   value={form.role}
                   onValueChange={(value) => updateForm("role", value as Role)}
@@ -364,7 +364,7 @@ const Usuarios = () => {
               </FormField>
               <div className="flex items-center justify-between rounded-md border border-border bg-secondary/30 p-3 sm:col-span-2">
                 <div>
-                  <p className="text-sm font-medium">Usuario bloqueado</p>
+                  <p className="text-sm font-medium">Usuário bloqueado</p>
                   <p className="text-xs text-muted-foreground">
                     Bloqueia login sem remover o cadastro do Firebase Auth.
                   </p>

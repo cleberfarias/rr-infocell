@@ -25,7 +25,7 @@ import {
 } from "@/services/clientes";
 import { listAparelhos } from "@/services/aparelhos";
 import { listOrdensServico, type OrdemServico } from "@/services/ordens-servico";
-import { formatBRL } from "@/data/mock";
+import { formatBRL } from "@/lib/formatters";
 import {
   Edit,
   History,
@@ -121,7 +121,7 @@ const Clientes = () => {
       setFormError(null);
     },
     onError: (error) => {
-      setFormError(error instanceof Error ? error.message : "Nao foi possivel salvar o cliente.");
+      setFormError(error instanceof Error ? error.message : "Não foi possível salvar o cliente.");
     },
   });
 
@@ -182,7 +182,7 @@ const Clientes = () => {
       <PageHeader
         eyebrow="Cadastros"
         title="Clientes"
-        description="Base de clientes usada por aparelhos, ordens de servico e historico."
+        description="Base de clientes usada por aparelhos, ordens de serviço e histórico."
         actions={
           <Button className="bg-gradient-primary text-primary-foreground shadow-glow" onClick={openCreateDialog}>
             <Plus className="h-4 w-4" /> Novo cliente
@@ -227,8 +227,8 @@ const Clientes = () => {
         <Card className="surface-panel">
           <EmptyState
             icon={UserRound}
-            title="Nao foi possivel carregar clientes"
-            description="Verifique se o backend esta rodando em http://localhost:3333."
+            title="Não foi possível carregar clientes"
+            description="Verifique se o backend está rodando em http://localhost:3333."
             actions={
               <Button
                 variant="outline"
@@ -302,11 +302,11 @@ const Clientes = () => {
               <div className="mt-4 grid grid-cols-1 gap-2 border-t border-border pt-4 text-sm sm:grid-cols-2">
                 <div>
                   <p className="font-mono text-[10px] uppercase text-muted-foreground">Documento</p>
-                  <p className="truncate">{cliente.documento ?? "Nao informado"}</p>
+                  <p className="truncate">{cliente.documento ?? "Não informado"}</p>
                 </div>
                 <div>
                   <p className="font-mono text-[10px] uppercase text-muted-foreground">Endereco</p>
-                  <p className="truncate">{cliente.endereco ?? "Nao informado"}</p>
+                  <p className="truncate">{cliente.endereco ?? "Não informado"}</p>
                 </div>
               </div>
 
@@ -339,7 +339,7 @@ const Clientes = () => {
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <p className="inline-flex items-center gap-1.5 font-display text-sm font-semibold">
                       <History className="h-4 w-4 text-primary" />
-                      Historico recente
+                      Histórico recente
                     </p>
                     <Button asChild size="sm" variant="outline">
                       <Link to={`/app/aparelhos?clienteId=${cliente.id}`}>
@@ -349,7 +349,7 @@ const Clientes = () => {
                   </div>
                   {recentes.length === 0 ? (
                     <p className="text-xs text-muted-foreground">
-                      Cliente ainda nao possui ordens de servico.
+                      Cliente ainda não possui ordens de serviço.
                     </p>
                   ) : (
                     <div className="space-y-2">
@@ -420,14 +420,14 @@ const Clientes = () => {
                   onChange={(event) => updateForm("email", event.target.value)}
                 />
               </FormField>
-              <FormField id="cliente-endereco" label="Endereco" className="sm:col-span-2">
+              <FormField id="cliente-endereco" label="Endereço" className="sm:col-span-2">
                 <Input
                   id="cliente-endereco"
                   value={form.endereco}
                   onChange={(event) => updateForm("endereco", event.target.value)}
                 />
               </FormField>
-              <FormField id="cliente-observacoes" label="Observacoes" className="sm:col-span-2">
+              <FormField id="cliente-observacoes" label="Observações" className="sm:col-span-2">
                 <Textarea
                   id="cliente-observacoes"
                   value={form.observacoes}

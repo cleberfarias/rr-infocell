@@ -104,5 +104,5 @@ export const categoriaLabels: Record<DespesaCategoria, string> = {
   outros: "Outros",
 };
 
-export const formatBRL = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+// Re-export para compatibilidade retroativa
+export { formatBRL } from "@/lib/formatters";

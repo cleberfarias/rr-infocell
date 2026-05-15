@@ -1,16 +1,11 @@
 import { db } from "../../firebase/admin.js";
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
-import {
-  createDespesasRepository,
-  type DespesasRepository,
-} from "./despesas.repository.js";
+import { createDespesasRepository, type DespesasRepository } from "./despesas.repository.js";
 import type { DespesaCategoria, DespesaInput } from "./despesas.types.js";
 
 export class DespesasService {
-  constructor(
-    private readonly repository: DespesasRepository = createDespesasRepository(db),
-  ) {}
+  constructor(private readonly repository: DespesasRepository = createDespesasRepository(db)) {}
 
   async list(filters?: {
     search?: string;

@@ -75,7 +75,11 @@ const semUndefined = <T extends Record<string, unknown>>(obj: T): T =>
   Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as T;
 
 function extensaoMidia(tipo: TipoMensagem, mimeType?: string, nomeArquivo?: string): string {
-  const extNome = nomeArquivo?.split(".").pop()?.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+  const extNome = nomeArquivo
+    ?.split(".")
+    .pop()
+    ?.replace(/[^a-zA-Z0-9]/g, "")
+    .toLowerCase();
   if (extNome) return extNome;
 
   const mapa: Record<string, string> = {
@@ -118,7 +122,12 @@ async function uploadMidia(
 
 function getMensagemEnvelopada(conteudo: ConteudoMensagem): ConteudoMensagem | null {
   const record = conteudo as Record<string, unknown>;
-  const chaves = ["ephemeralMessage", "viewOnceMessage", "viewOnceMessageV2", "documentWithCaptionMessage"];
+  const chaves = [
+    "ephemeralMessage",
+    "viewOnceMessage",
+    "viewOnceMessageV2",
+    "documentWithCaptionMessage",
+  ];
 
   for (const chave of chaves) {
     const envelope = record[chave];
@@ -154,11 +163,12 @@ function extrairTipo(conteudo: ConteudoMensagem): TipoMensagem {
 }
 
 function extrairTexto(conteudo: ConteudoMensagem): string {
-  const latitude = conteudo.locationMessage?.degreesLatitude ?? conteudo.liveLocationMessage?.degreesLatitude;
-  const longitude = conteudo.locationMessage?.degreesLongitude ?? conteudo.liveLocationMessage?.degreesLongitude;
-  const localizacao = latitude && longitude
-    ? `Localizacao: https://maps.google.com/?q=${latitude},${longitude}`
-    : "";
+  const latitude =
+    conteudo.locationMessage?.degreesLatitude ?? conteudo.liveLocationMessage?.degreesLatitude;
+  const longitude =
+    conteudo.locationMessage?.degreesLongitude ?? conteudo.liveLocationMessage?.degreesLongitude;
+  const localizacao =
+    latitude && longitude ? `Localizacao: https://maps.google.com/?q=${latitude},${longitude}` : "";
 
   return (
     conteudo.conversation ||
@@ -168,7 +178,10 @@ function extrairTexto(conteudo: ConteudoMensagem): string {
     conteudo.documentMessage?.caption ||
     conteudo.documentMessage?.fileName ||
     conteudo.contactMessage?.displayName ||
-    conteudo.contactsArrayMessage?.contacts?.map((c) => c.displayName).filter(Boolean).join(", ") ||
+    conteudo.contactsArrayMessage?.contacts
+      ?.map((c) => c.displayName)
+      .filter(Boolean)
+      .join(", ") ||
     localizacao ||
     ""
   );
@@ -234,10 +247,23 @@ class MensagemService {
 
     let midiaUrl: string | undefined;
 
-    if (tipo === "imagem" || tipo === "audio" || tipo === "video" || tipo === "documento" || tipo === "sticker") {
+    if (
+      tipo === "imagem" ||
+      tipo === "audio" ||
+      tipo === "video" ||
+      tipo === "documento" ||
+      tipo === "sticker"
+    ) {
       try {
         const buffer = (await downloadMediaMessage(msg, "buffer", {})) as Buffer;
-        midiaUrl = await uploadMidia(buffer, telefone, msg.key.id ?? timestamp, tipo, midiaMimeType, midiaNome);
+        midiaUrl = await uploadMidia(
+          buffer,
+          telefone,
+          msg.key.id ?? timestamp,
+          tipo,
+          midiaMimeType,
+          midiaNome,
+        );
       } catch {
         console.error("[WhatsApp] Erro ao processar midia");
       }
@@ -264,18 +290,21 @@ class MensagemService {
     const docRef = db.collection(colMensagens).doc();
     await docRef.set(semUndefined({ ...mensagem, id: docRef.id }));
 
-    await db.collection(colConversas).doc(telefone).set(
-      {
-        clienteId,
-        nome,
-        ultimaMensagem: mensagem.texto,
-        ultimaInteracao: timestamp,
-        naoLidas: (await this.getNaoLidas(telefone)) + 1,
-        statusAtendimento: "aberto",
-        arquivada: false,
-      },
-      { merge: true },
-    );
+    await db
+      .collection(colConversas)
+      .doc(telefone)
+      .set(
+        {
+          clienteId,
+          nome,
+          ultimaMensagem: mensagem.texto,
+          ultimaInteracao: timestamp,
+          naoLidas: (await this.getNaoLidas(telefone)) + 1,
+          statusAtendimento: "aberto",
+          arquivada: false,
+        },
+        { merge: true },
+      );
 
     await botService.processarResposta(telefone, texto);
     return { processada: true, telefone };
@@ -304,32 +333,37 @@ class MensagemService {
     if (!db) return;
     const timestamp = new Date().toISOString();
     const docRef = db.collection(colMensagens).doc();
-    await docRef.set(semUndefined({
-      id: docRef.id,
-      telefone,
-      clienteId,
-      de: "atendente",
-      texto,
-      tipo,
-      midiaUrl: midia?.url,
-      midiaMimeType: midia?.mimeType,
-      midiaNome: midia?.nome,
-      midiaTamanho: midia?.tamanho,
-      waMessageId,
-      statusEnvio: waMessageId ? "enviado" : undefined,
-      timestamp,
-      lida: true,
-    }));
-    await db.collection(colConversas).doc(telefone).set(
+    await docRef.set(
       semUndefined({
+        id: docRef.id,
+        telefone,
         clienteId,
-        nome,
-        ultimaMensagem: texto,
-        ultimaInteracao: timestamp,
-        naoLidas: 0,
+        de: "atendente",
+        texto,
+        tipo,
+        midiaUrl: midia?.url,
+        midiaMimeType: midia?.mimeType,
+        midiaNome: midia?.nome,
+        midiaTamanho: midia?.tamanho,
+        waMessageId,
+        statusEnvio: waMessageId ? "enviado" : undefined,
+        timestamp,
+        lida: true,
       }),
-      { merge: true },
     );
+    await db
+      .collection(colConversas)
+      .doc(telefone)
+      .set(
+        semUndefined({
+          clienteId,
+          nome,
+          ultimaMensagem: texto,
+          ultimaInteracao: timestamp,
+          naoLidas: 0,
+        }),
+        { merge: true },
+      );
   }
 
   async listarConversas(): Promise<Conversa[]> {
@@ -347,15 +381,19 @@ class MensagemService {
     mimeType?: string,
     nomeArquivo?: string,
   ): Promise<string> {
-    return uploadMidia(buffer, telefone, `${Date.now()}_${nomeArquivo ?? tipo}`, tipo, mimeType, nomeArquivo);
+    return uploadMidia(
+      buffer,
+      telefone,
+      `${Date.now()}_${nomeArquivo ?? tipo}`,
+      tipo,
+      mimeType,
+      nomeArquivo,
+    );
   }
 
   async listarMensagens(telefone: string): Promise<Mensagem[]> {
     if (!db) return [];
-    const snap = await db
-      .collection(colMensagens)
-      .where("telefone", "==", telefone)
-      .get();
+    const snap = await db.collection(colMensagens).where("telefone", "==", telefone).get();
     return snap.docs
       .map((d) => d.data() as Mensagem)
       .sort((a, b) => (a.timestamp ?? "").localeCompare(b.timestamp ?? ""));
@@ -372,10 +410,7 @@ class MensagemService {
 
   async atualizarStatusEnvio(waMessageId: string | null | undefined, statusEnvio: StatusEnvio) {
     if (!db || !waMessageId) return;
-    const snap = await db
-      .collection(colMensagens)
-      .where("waMessageId", "==", waMessageId)
-      .get();
+    const snap = await db.collection(colMensagens).where("waMessageId", "==", waMessageId).get();
 
     await Promise.all(snap.docs.map((doc) => doc.ref.update({ statusEnvio })));
   }

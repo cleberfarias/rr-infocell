@@ -37,10 +37,19 @@ clientesRoutes.get(
     const { q } = parseOrThrow(() => clienteSearchSchema.parse(request.query));
     const clientes = await clientesService.list(q);
 
+    const page = Math.max(1, parseInt(request.query.page as string) || 1);
+    const limit = Math.min(200, Math.max(1, parseInt(request.query.limit as string) || 50));
+    const total = clientes.length;
+    const totalPages = Math.ceil(total / limit);
+    const data = clientes.slice((page - 1) * limit, page * limit);
+
     response.status(httpStatus.ok).json({
-      data: clientes,
+      data,
       meta: {
-        total: clientes.length,
+        page,
+        limit,
+        total,
+        totalPages,
         query: q,
       },
     });

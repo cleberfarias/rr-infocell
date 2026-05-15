@@ -15,8 +15,7 @@ type AsyncRouteHandler = (
 ) => Promise<void>;
 
 const asyncHandler =
-  (handler: AsyncRouteHandler) =>
-  (request: Request, response: Response, next: NextFunction) => {
+  (handler: AsyncRouteHandler) => (request: Request, response: Response, next: NextFunction) => {
     handler(request, response, next).catch(next);
   };
 
@@ -25,10 +24,7 @@ const parseOrThrow = <T>(parse: () => T) => {
     return parse();
   } catch (error) {
     if (error instanceof ZodError) {
-      throw new AppError(
-        "validation_error",
-        error.errors[0]?.message ?? "Dados invalidos.",
-      );
+      throw new AppError("validation_error", error.errors[0]?.message ?? "Dados invalidos.");
     }
 
     throw error;
@@ -38,22 +34,29 @@ const parseOrThrow = <T>(parse: () => T) => {
 produtosRoutes.get(
   "/",
   asyncHandler(async (request, response) => {
-    const { q, categoria, ativo } = parseOrThrow(() =>
-      produtoSearchSchema.parse(request.query),
-    );
+    const { q, categoria, ativo } = parseOrThrow(() => produtoSearchSchema.parse(request.query));
     const produtos = await produtosService.list({
       ativo: ativo === "" ? "" : ativo === "true",
       categoria,
       search: q,
     });
 
+    const page = Math.max(1, parseInt(request.query.page as string) || 1);
+    const limit = Math.min(200, Math.max(1, parseInt(request.query.limit as string) || 50));
+    const total = produtos.length;
+    const totalPages = Math.ceil(total / limit);
+    const data = produtos.slice((page - 1) * limit, page * limit);
+
     response.status(httpStatus.ok).json({
-      data: produtos,
+      data,
       meta: {
+        page,
+        limit,
+        total,
+        totalPages,
         ativo,
         categoria,
         query: q,
-        total: produtos.length,
       },
     });
   }),

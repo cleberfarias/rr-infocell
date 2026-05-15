@@ -15,6 +15,7 @@ import Checklist from "./pages/Checklist";
 import Manutencao from "./pages/Manutencao";
 import Orcamento from "./pages/Orcamento";
 import Estoque from "./pages/Estoque";
+import Movimentacoes from "./pages/Movimentacoes";
 import PDV from "./pages/PDV";
 import Financeiro from "./pages/Financeiro";
 import Despesas from "./pages/Despesas";
@@ -22,6 +23,7 @@ import Clientes from "./pages/Clientes";
 import Aparelhos from "./pages/Aparelhos";
 import Usuarios from "./pages/Usuarios";
 import Atendimento from "./pages/Atendimento";
+import Treinamento from "./pages/Treinamento";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +45,7 @@ const App = () => (
               <Route path="manutencao" element={<Manutencao />} />
               <Route path="orcamento" element={<Orcamento />} />
               <Route path="estoque" element={<Estoque />} />
+              <Route path="movimentacoes" element={<Movimentacoes />} />
               <Route path="pdv" element={<PDV />} />
               <Route path="financeiro" element={<Financeiro />} />
               <Route path="despesas" element={<Despesas />} />
@@ -50,6 +53,7 @@ const App = () => (
               <Route path="aparelhos" element={<Aparelhos />} />
               <Route path="usuarios" element={<Usuarios />} />
               <Route path="atendimento" element={<Atendimento />} />
+              <Route path="treinamento" element={<Treinamento />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

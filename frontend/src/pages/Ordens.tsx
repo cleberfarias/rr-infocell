@@ -4,12 +4,13 @@ import {
   ClipboardCheck,
   ClipboardList,
   Eye,
-  Loader2,
+  MessageCircle,
   Plus,
   Search,
   Wrench,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 import {
   DataTable,
@@ -23,6 +24,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -30,7 +32,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatBRL } from "@/data/mock";
+import { formatBRL, formatDateShort } from "@/lib/formatters";
+import { OS_STATUS_OPTIONS } from "@/constants/status";
+import { STALE_TIME } from "@/constants/query";
+import { ROUTES } from "@/constants/routes";
 import { listAparelhos, type Aparelho } from "@/services/aparelhos";
 import { listClientes, type Cliente } from "@/services/clientes";
 import {
@@ -39,33 +44,18 @@ import {
   type OrdemServicoStatus,
 } from "@/services/ordens-servico";
 
-const statusOptions: Array<{
-  value: OrdemServicoStatus | "todos";
-  label: string;
-}> = [
-  { value: "todos", label: "Todos" },
-  { value: "recebido", label: "Recebido" },
-  { value: "em_analise", label: "Em analise" },
-  { value: "aguardando_aprovacao", label: "Aguardando aprovacao" },
-  { value: "aguardando_peca", label: "Aguardando peca" },
-  { value: "em_manutencao", label: "Em manutencao" },
-  { value: "pronto_para_retirada", label: "Pronto para retirada" },
-  { value: "entregue", label: "Entregue" },
-  { value: "cancelado", label: "Cancelado" },
-];
-
-const formatDate = (value?: string) => {
-  if (!value) {
-    return "Sem data";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+const formatPrazo = (valor?: string, status?: string) => {
+  if (!valor || ["entregue", "cancelado"].includes(status ?? "")) return { label: "-", classe: "" };
+  const prazo = new Date(valor);
+  prazo.setHours(0, 0, 0, 0);
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const diff = Math.round((prazo.getTime() - hoje.getTime()) / 86400000);
+  if (diff < 0) return { label: `Atrasada ${Math.abs(diff)}d`, classe: "text-red-500 font-medium" };
+  if (diff === 0) return { label: "Vence hoje", classe: "text-amber-500 font-medium" };
+  if (diff === 1) return { label: "Amanhã", classe: "text-amber-400" };
+  if (diff <= 3) return { label: `${diff} dias`, classe: "text-amber-400" };
+  return { label: `${diff} dias`, classe: "text-muted-foreground" };
 };
 
 type OrdemRow = OrdemServico & {
@@ -74,31 +64,36 @@ type OrdemRow = OrdemServico & {
 };
 
 const Ordens = () => {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<
-    OrdemServicoStatus | "todos"
-  >("todos");
+  const [urlParams] = useSearchParams();
+  const [search, setSearch] = useState(urlParams.get("q") ?? "");
+  const [statusFilter, setStatusFilter] = useState<OrdemServicoStatus | "todos">(
+    (urlParams.get("status") as OrdemServicoStatus) ?? "todos",
+  );
   const [prioridadeFilter, setPrioridadeFilter] = useState<"todos" | "baixa" | "normal" | "urgente">("todos");
   const [tecnicoFilter, setTecnicoFilter] = useState("todos");
-  const [atrasoFilter, setAtrasoFilter] = useState<"todos" | "atrasadas">("todos");
+  const [atrasoFilter, setAtrasoFilter] = useState<"todos" | "atrasadas">(
+    urlParams.get("atraso") === "atrasadas" ? "atrasadas" : "todos",
+  );
 
   const ordensQuery = useQuery({
-    queryKey: ["ordens-servico", statusFilter, prioridadeFilter],
-    queryFn: () =>
-      listOrdensServico({
-        status: statusFilter === "todos" ? "" : statusFilter,
-        prioridade: prioridadeFilter === "todos" ? "" : prioridadeFilter,
-      }),
+    queryKey: ["ordens-servico"],
+    queryFn: () => listOrdensServico(),
+    staleTime: STALE_TIME.short,
+    refetchOnWindowFocus: false,
   });
 
   const clientesQuery = useQuery({
-    queryKey: ["clientes", "ordens"],
+    queryKey: ["clientes"],
     queryFn: () => listClientes(""),
+    staleTime: STALE_TIME.medium,
+    refetchOnWindowFocus: false,
   });
 
   const aparelhosQuery = useQuery({
-    queryKey: ["aparelhos", "ordens"],
+    queryKey: ["aparelhos"],
     queryFn: () => listAparelhos(),
+    staleTime: STALE_TIME.medium,
+    refetchOnWindowFocus: false,
   });
 
   const clienteById = useMemo(
@@ -129,9 +124,9 @@ const Ordens = () => {
         aparelho: aparelhoById.get(ordem.aparelhoId),
       }))
       .filter((ordem) => {
-        if (tecnicoFilter !== "todos" && (ordem.tecnicoResponsavel ?? "nao_atribuido") !== tecnicoFilter) {
-          return false;
-        }
+        if (statusFilter !== "todos" && ordem.status !== statusFilter) return false;
+        if (prioridadeFilter !== "todos" && ordem.prioridade !== prioridadeFilter) return false;
+        if (tecnicoFilter !== "todos" && (ordem.tecnicoResponsavel ?? "nao_atribuido") !== tecnicoFilter) return false;
 
         if (atrasoFilter === "atrasadas") {
           const prazo = ordem.prazoPrometidoEm ?? ordem.previsaoEntregaEm;
@@ -143,9 +138,7 @@ const Ordens = () => {
           if (!atrasada) return false;
         }
 
-        if (!normalizedSearch) {
-          return true;
-        }
+        if (!normalizedSearch) return true;
 
         return [
           String(ordem.numero),
@@ -161,7 +154,7 @@ const Ordens = () => {
           .filter(Boolean)
           .some((value) => value?.toLowerCase().includes(normalizedSearch));
       });
-  }, [aparelhoById, atrasoFilter, clienteById, ordensQuery.data, search, tecnicoFilter]);
+  }, [aparelhoById, atrasoFilter, clienteById, ordensQuery.data, prioridadeFilter, search, statusFilter, tecnicoFilter]);
 
   const tecnicos = useMemo(
     () =>
@@ -187,7 +180,7 @@ const Ordens = () => {
       cell: (ordem) => (
         <div>
           <div className="font-medium">
-            {ordem.cliente?.nome ?? "Cliente nao encontrado"}
+            {ordem.cliente?.nome ?? "Cliente não encontrado"}
           </div>
           <div className="text-xs text-muted-foreground">
             {ordem.cliente?.telefone ?? ordem.clienteId}
@@ -203,7 +196,7 @@ const Ordens = () => {
           <div className="font-medium">
             {ordem.aparelho
               ? `${ordem.aparelho.marca} ${ordem.aparelho.modelo}`
-              : "Aparelho nao encontrado"}
+              : "Aparelho não encontrado"}
           </div>
           <div className="text-xs text-muted-foreground">
             {ordem.aparelho?.imeiSerial
@@ -239,32 +232,24 @@ const Ordens = () => {
     },
     {
       key: "tecnico",
-      header: "Tecnico",
+      header: "Técnico",
       className: "text-muted-foreground",
-      cell: (ordem) => ordem.tecnicoResponsavel ?? "Nao atribuido",
+      cell: (ordem) => ordem.tecnicoResponsavel ?? "Não atribuído",
     },
     {
       key: "entrada",
       header: "Entrada",
       className: "font-mono text-xs",
-      cell: (ordem) => formatDate(ordem.entradaEm),
+      cell: (ordem) => formatDateShort(ordem.entradaEm),
     },
     {
       key: "previsao",
-      header: "Previsao",
-      className: "font-mono text-xs",
+      header: "Prazo",
+      className: "text-xs",
       cell: (ordem) => {
         const prazo = ordem.prazoPrometidoEm ?? ordem.previsaoEntregaEm;
-        const atrasada =
-          prazo &&
-          new Date(prazo) < new Date(new Date().toDateString()) &&
-          !["entregue", "cancelado"].includes(ordem.status);
-
-        return (
-          <span className={atrasada ? "text-destructive" : ""}>
-            {formatDate(prazo)}
-          </span>
-        );
+        const { label, classe } = formatPrazo(prazo, ordem.status);
+        return <span className={cn("font-mono", classe)}>{label}</span>;
       },
     },
     {
@@ -281,25 +266,40 @@ const Ordens = () => {
     },
     {
       key: "actions",
-      header: "Acoes",
+      header: "Ações",
       headerClassName: "text-right",
       cell: (ordem) => (
         <div className="flex justify-end gap-1">
           <Button variant="ghost" size="icon" asChild title="Detalhes">
-            <Link to={`/app/ordens/${ordem.id}`}>
+            <Link to={ROUTES.ordemDetalhe(ordem.id)}>
               <Eye className="h-4 w-4" />
             </Link>
           </Button>
           <Button variant="ghost" size="icon" asChild title="Checklist">
-            <Link to={`/app/checklist?ordemId=${ordem.id}`}>
+            <Link to={ROUTES.checklistOS(ordem.id)}>
               <ClipboardCheck className="h-4 w-4" />
             </Link>
           </Button>
-          <Button variant="ghost" size="icon" asChild title="Manutencao">
-            <Link to={`/app/manutencao?ordemId=${ordem.id}`}>
+          <Button variant="ghost" size="icon" asChild title="Manutenção">
+            <Link to={ROUTES.manutencaoOS(ordem.id)}>
               <Wrench className="h-4 w-4" />
             </Link>
           </Button>
+          {ordem.cliente?.telefone && (
+            <Button
+              variant="ghost"
+              size="icon"
+              title={`WhatsApp — ${ordem.cliente.telefone}`}
+              className="text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10"
+              onClick={() => {
+                const tel = ordem.cliente!.telefone.replace(/\D/g, "");
+                const fone = tel.startsWith("55") ? tel : `55${tel}`;
+                window.open(`https://wa.me/${fone}`, "_blank");
+              }}
+            >
+              <MessageCircle className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       ),
     },
@@ -315,15 +315,15 @@ const Ordens = () => {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Operacao"
-        title="Ordens de servico"
-        description="Listagem real das OS abertas, em manutencao, prontas e entregues."
+        eyebrow="Operação"
+        title="Ordens de serviço"
+        description="Listagem real das OS abertas, em manutenção, prontas e entregues."
         actions={
           <Button
             asChild
             className="bg-gradient-primary text-primary-foreground shadow-glow"
           >
-            <Link to="/app/ordens/nova">
+            <Link to={ROUTES.novaOS}>
               <Plus className="h-4 w-4" /> Nova OS
             </Link>
           </Button>
@@ -358,7 +358,7 @@ const Ordens = () => {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {statusOptions.map((option) => (
+              {OS_STATUS_OPTIONS.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
@@ -384,7 +384,7 @@ const Ordens = () => {
             </SelectContent>
           </Select>
         </FormField>
-        <FormField id="ordens-tecnico" label="Tecnico" className="min-w-[180px]">
+        <FormField id="ordens-tecnico" label="Técnico" className="min-w-[180px]">
           <Select value={tecnicoFilter} onValueChange={setTecnicoFilter}>
             <SelectTrigger id="ordens-tecnico">
               <SelectValue />
@@ -393,7 +393,7 @@ const Ordens = () => {
               <SelectItem value="todos">Todos</SelectItem>
               {tecnicos.map((tecnico) => (
                 <SelectItem key={tecnico} value={tecnico}>
-                  {tecnico === "nao_atribuido" ? "Nao atribuido" : tecnico}
+                  {tecnico === "nao_atribuido" ? "Não atribuído" : tecnico}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -416,15 +416,29 @@ const Ordens = () => {
       </div>
 
       {isLoading ? (
-        <Card className="surface-panel flex min-h-[260px] items-center justify-center">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </Card>
+        <div className="space-y-5">
+          <Card className="surface-panel p-4">
+            <div className="flex gap-3">
+              <Skeleton className="h-9 flex-1" />
+              <Skeleton className="h-9 w-36" />
+              <Skeleton className="h-9 w-36" />
+            </div>
+          </Card>
+          <Card className="surface-panel p-2">
+            <div className="space-y-1">
+              <Skeleton className="h-10 w-full rounded-md" />
+              {[...Array(6)].map((_, i) => (
+                <Skeleton key={i} className="h-14 w-full rounded-md" />
+              ))}
+            </div>
+          </Card>
+        </div>
       ) : isError ? (
         <Card className="surface-panel">
           <EmptyState
             icon={ClipboardList}
-            title="Nao foi possivel carregar ordens"
-            description="Verifique se o backend esta rodando em http://localhost:3333."
+            title="Não foi possível carregar ordens"
+            description="Verifique se o backend está rodando em http://localhost:3333."
             actions={
               <Button
                 variant="outline"
@@ -449,10 +463,10 @@ const Ordens = () => {
             <EmptyState
               icon={ClipboardList}
               title="Nenhuma ordem encontrada"
-              description="Ajuste a busca ou crie uma nova ordem de servico."
+              description="Ajuste a busca ou crie uma nova ordem de serviço."
               actions={
                 <Button asChild>
-                  <Link to="/app/ordens/nova">Nova OS</Link>
+                  <Link to={ROUTES.novaOS}>Nova OS</Link>
                 </Button>
               }
             />

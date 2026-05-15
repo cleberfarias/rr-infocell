@@ -48,16 +48,16 @@ const roles: Record<
     acesso: ["Nova OS", "Checklist", "Clientes", "PDV / Caixa"],
   },
   tecnico: {
-    titulo: "Tecnico de bancada",
-    descricao: "Foco em manutencao, diagnostico e baixa de pecas no estoque.",
+    titulo: "Técnico de bancada",
+    descricao: "Foco em manutenção, diagnóstico e baixa de peças no estoque.",
     email: "tecnico@rrinfocell.com.br",
     badge: "Bancada",
     icon: Settings2,
     acesso: [
-      "Manutencao",
-      "Diagnostico",
+      "Manutenção",
+      "Diagnóstico",
       "Estoque (consulta)",
-      "Orcamento tecnico",
+      "Orçamento técnico",
     ],
   },
 };
@@ -89,7 +89,7 @@ const Login = () => {
       navigate(nextPath);
     } catch {
       setError(
-        "Nao foi possivel entrar. Verifique e-mail, senha e usuario no Firebase Auth.",
+        "Não foi possível entrar. Verifique e-mail, senha e usuário no Firebase Auth.",
       );
     } finally {
       setIsSubmitting(false);
@@ -121,15 +121,15 @@ const Login = () => {
             .
           </h2>
           <p className="max-w-md text-base text-muted-foreground">
-            Centralize ordens de servico, checklist, pecas, PDV e financeiro em
-            uma unica plataforma pensada para a rotina da assistencia tecnica.
+            Centralize ordens de serviço, checklist, peças, PDV e financeiro em
+            uma única plataforma pensada para a rotina da assistência técnica.
           </p>
 
           <div className="flex flex-wrap gap-2 pt-4">
             {[
-              { icon: Wrench, label: "Ordem de Servico" },
+              { icon: Wrench, label: "Ordem de Serviço" },
               { icon: Cpu, label: "Estoque integrado" },
-              { icon: ShieldCheck, label: "Checklist auditavel" },
+              { icon: ShieldCheck, label: "Checklist auditável" },
             ].map(({ icon: Icon, label }) => (
               <span
                 key={label}
@@ -256,7 +256,7 @@ const Login = () => {
             {isDevelopmentMode && (
               <p className="rounded-md border border-border bg-secondary/40 px-3 py-2 text-xs text-muted-foreground">
                 Modo desenvolvimento ativo. O perfil selecionado libera o acesso
-                local sem usuario real do Firebase Auth.
+                local sem usuário real do Firebase Auth.
               </p>
             )}
             {error && (

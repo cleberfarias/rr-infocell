@@ -62,7 +62,7 @@ const printUsage = () => {
       "Uso:",
       "  npm run auth:set-role -- --email usuario@exemplo.com --role admin",
       "  npm run auth:set-role -- --uid firebase-uid --role tecnico",
-      "  npm run auth:set-role -- --email usuario@exemplo.com --password senhaInicial --display-name \"Nome\" --role atendente",
+      '  npm run auth:set-role -- --email usuario@exemplo.com --password senhaInicial --display-name "Nome" --role atendente',
       "",
       "Roles validas: admin, atendente, tecnico",
     ].join("\n"),

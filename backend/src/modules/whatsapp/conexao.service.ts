@@ -16,7 +16,12 @@ import { mensagemService } from "./mensagem.service.js";
 const noop = () => {};
 const silentLogger = {
   level: "silent",
-  trace: noop, debug: noop, info: noop, warn: noop, error: noop, fatal: noop,
+  trace: noop,
+  debug: noop,
+  info: noop,
+  warn: noop,
+  error: noop,
+  fatal: noop,
   child: () => silentLogger,
 };
 
@@ -191,35 +196,58 @@ class ConexaoService {
           }
         } catch (err) {
           this.diagnostico.ultimaMensagemIgnoradaEm = new Date().toISOString();
-          this.diagnostico.ultimaMensagemIgnoradaMotivo = err instanceof Error ? err.message : "erro ao processar";
+          this.diagnostico.ultimaMensagemIgnoradaMotivo =
+            err instanceof Error ? err.message : "erro ao processar";
           console.error("[WhatsApp] Erro ao processar mensagem:", err);
         }
       }
     });
 
     this.socket.ev.on("messages.update", async (updates) => {
-      const update = updates.at(-1);
-      if (!update) return;
+      // Processa TODOS os updates, não só o último
+      for (const update of updates) {
+        if (update.update.status != null) {
+          this.diagnostico.ultimoUpdateEm = new Date().toISOString();
+          this.diagnostico.ultimoUpdateId = update.key.id ?? null;
+          this.diagnostico.ultimoUpdateStatus = String(update.update.status);
 
-      this.diagnostico.ultimoUpdateEm = new Date().toISOString();
-      this.diagnostico.ultimoUpdateId = update.key.id ?? null;
-      this.diagnostico.ultimoUpdateStatus = update.update.status != null
-        ? String(update.update.status)
-        : null;
-
-      const statusEnvio = mapearStatusEnvio(update.update.status);
-      if (statusEnvio) {
-        await mensagemService.atualizarStatusEnvio(update.key.id, statusEnvio);
+          const statusEnvio = mapearStatusEnvio(update.update.status);
+          if (statusEnvio) {
+            await mensagemService.atualizarStatusEnvio(update.key.id, statusEnvio);
+          }
+        }
       }
     });
 
-    this.socket.ev.on("message-receipt.update", (updates) => {
-      const update = updates.at(-1);
-      if (!update) return;
+    // message-receipt.update: confirmação de entrega e leitura pelo destinatário
+    this.socket.ev.on("message-receipt.update", async (updates) => {
+      for (const update of updates) {
+        this.diagnostico.ultimoReciboEm = new Date().toISOString();
+        this.diagnostico.ultimoReciboId = update.key.id ?? null;
+        this.diagnostico.ultimoReciboDe = update.key.remoteJid ?? null;
 
-      this.diagnostico.ultimoReciboEm = new Date().toISOString();
-      this.diagnostico.ultimoReciboId = update.key.id ?? null;
-      this.diagnostico.ultimoReciboDe = update.key.remoteJid ?? null;
+        const receipt = update.receipt as
+          | {
+              readTimestamp?: number;
+              receiptTimestamp?: number;
+              playedTimestamp?: number;
+            }
+          | undefined;
+
+        if (!receipt || !update.key.id) continue;
+
+        let statusEnvio: "lido" | "entregue" | null = null;
+
+        if (receipt.readTimestamp || receipt.playedTimestamp) {
+          statusEnvio = "lido"; // ✓✓ azul
+        } else if (receipt.receiptTimestamp) {
+          statusEnvio = "entregue"; // ✓✓ cinza
+        }
+
+        if (statusEnvio) {
+          await mensagemService.atualizarStatusEnvio(update.key.id, statusEnvio);
+        }
+      }
     });
   }
 

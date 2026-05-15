@@ -32,7 +32,9 @@ describe("vendas routes", () => {
     expect(ordemResponse.body.data.formaPagamento).toBe("dinheiro");
 
     const eventosResponse = await request(app).get(`/api/ordem-eventos?ordemServicoId=${ordem.id}`);
-    expect(eventosResponse.body.data.some((evento: { tipo: string }) => evento.tipo === "venda")).toBe(true);
+    expect(
+      eventosResponse.body.data.some((evento: { tipo: string }) => evento.tipo === "venda"),
+    ).toBe(true);
   });
 
   it("rejects payment below ordem total", async () => {
@@ -68,12 +70,14 @@ describe("vendas routes", () => {
     });
     const produto = produtoResponse.body.data;
 
-    const vendaResponse = await request(app).post("/api/vendas").send({
-      clienteNome: "Cliente Balcao",
-      formaPagamento: "pix",
-      valorRecebido: 1700,
-      itens: [{ produtoId: produto.id, quantidade: 1 }],
-    });
+    const vendaResponse = await request(app)
+      .post("/api/vendas")
+      .send({
+        clienteNome: "Cliente Balcao",
+        formaPagamento: "pix",
+        valorRecebido: 1700,
+        itens: [{ produtoId: produto.id, quantidade: 1 }],
+      });
 
     expect(vendaResponse.status).toBe(201);
     expect(vendaResponse.body.data.tipo).toBe("direta");

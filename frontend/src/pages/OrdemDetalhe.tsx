@@ -7,6 +7,7 @@ import {
   Loader2,
   PackagePlus,
   Printer,
+  ShieldCheck,
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 
@@ -27,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatBRL } from "@/data/mock";
+import { formatBRL, formatDate } from "@/lib/formatters";
 import { getAparelho } from "@/services/aparelhos";
 import { getCliente } from "@/services/clientes";
 import {
@@ -37,19 +38,6 @@ import {
 } from "@/services/ordens-servico";
 import { listProdutos } from "@/services/produtos";
 
-const formatDate = (value?: string) => {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleDateString("pt-BR");
-};
 
 const OrdemDetalhe = () => {
   const { ordemId } = useParams();
@@ -86,6 +74,16 @@ const OrdemDetalhe = () => {
   const cliente = clienteQuery.data;
   const aparelho = aparelhoQuery.data;
 
+  const handlePrintGarantia = () => {
+    document.body.classList.add("print-garantia");
+    window.print();
+    const onAfterPrint = () => {
+      document.body.classList.remove("print-garantia");
+      window.removeEventListener("afterprint", onAfterPrint);
+    };
+    window.addEventListener("afterprint", onAfterPrint);
+  };
+
   const isLoading =
     ordemQuery.isLoading || clienteQuery.isLoading || aparelhoQuery.isLoading;
   const isError =
@@ -93,7 +91,7 @@ const OrdemDetalhe = () => {
 
   const deviceLabel = useMemo(() => {
     if (!aparelho) {
-      return "Aparelho nao encontrado";
+      return "Aparelho não encontrado";
     }
 
     return `${aparelho.marca} ${aparelho.modelo}`;
@@ -137,7 +135,7 @@ const OrdemDetalhe = () => {
       setPecaError(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel adicionar a peca.",
+          : "Não foi possível adicionar a peça.",
       );
     },
   });
@@ -147,7 +145,7 @@ const OrdemDetalhe = () => {
     setPecaError(null);
 
     if (!ordem || !selectedProduto) {
-      setPecaError("Selecione uma peca do estoque.");
+      setPecaError("Selecione uma peça do estoque.");
       return;
     }
 
@@ -202,8 +200,8 @@ const OrdemDetalhe = () => {
       <Card className="surface-panel">
         <EmptyState
           icon={ClipboardList}
-          title="Nao foi possivel carregar a OS"
-          description="Verifique se o backend esta rodando e tente novamente."
+          title="Não foi possível carregar a OS"
+          description="Verifique se o backend está rodando e tente novamente."
           actions={
             <Button asChild variant="outline">
               <Link to="/app/ordens">Voltar para ordens</Link>
@@ -217,7 +215,7 @@ const OrdemDetalhe = () => {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Ordem de servico"
+        eyebrow="Ordem de serviço"
         title={`OS-${ordem.numero}`}
         description="Detalhes operacionais e comprovante simples para impressao."
         actions={
@@ -236,6 +234,9 @@ const OrdemDetalhe = () => {
               <Link to={`/app/checklist?ordemId=${ordem.id}&tipo=saida`}>
                 <ClipboardCheck className="h-4 w-4" /> Saida
               </Link>
+            </Button>
+            <Button variant="outline" onClick={handlePrintGarantia}>
+              <ShieldCheck className="h-4 w-4" /> Termo de Garantia
             </Button>
             <Button onClick={() => window.print()}>
               <Printer className="h-4 w-4" /> Imprimir
@@ -307,11 +308,11 @@ const OrdemDetalhe = () => {
         <SectionPanel title="Valores" className="lg:col-span-1">
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Pecas</dt>
+              <dt className="text-muted-foreground">Peças</dt>
               <dd className="font-mono">{formatBRL(ordem.valorPecas)}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Mao de obra</dt>
+              <dt className="text-muted-foreground">Mão de obra</dt>
               <dd className="font-mono">{formatBRL(ordem.valorMaoObra)}</dd>
             </div>
             <div className="flex justify-between gap-4 border-t border-border pt-3">
@@ -332,7 +333,7 @@ const OrdemDetalhe = () => {
               <dd className="font-medium capitalize">{ordem.prioridade}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Tecnico</dt>
+              <dt className="text-muted-foreground">Técnico</dt>
               <dd>{ordem.tecnicoResponsavel ?? "-"}</dd>
             </div>
           </dl>
@@ -367,28 +368,28 @@ const OrdemDetalhe = () => {
         </SectionPanel>
       </div>
 
-      <SectionPanel title="Defeito e diagnostico">
+      <SectionPanel title="Defeito e diagnóstico">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
             <p className="text-xs text-muted-foreground">Defeito relatado</p>
             <p className="mt-1 text-sm">{ordem.defeitoRelatado}</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Diagnostico</p>
+            <p className="text-xs text-muted-foreground">Diagnóstico</p>
             <p className="mt-1 text-sm">{ordem.diagnostico ?? "-"}</p>
           </div>
         </div>
       </SectionPanel>
 
-      <SectionPanel title="Pecas usadas">
+      <SectionPanel title="Peças usadas">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
           <div className="overflow-x-auto rounded-md border border-border">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
-                  <th className="px-4 py-3 text-left font-medium">Peca</th>
+                  <th className="px-4 py-3 text-left font-medium">Peça</th>
                   <th className="px-4 py-3 text-center font-medium">Qtd.</th>
-                  <th className="px-4 py-3 text-right font-medium">Unitario</th>
+                  <th className="px-4 py-3 text-right font-medium">Unitário</th>
                   <th className="px-4 py-3 text-right font-medium">Total</th>
                 </tr>
               </thead>
@@ -399,7 +400,7 @@ const OrdemDetalhe = () => {
                       className="px-4 py-5 text-center text-muted-foreground"
                       colSpan={4}
                     >
-                      Nenhuma peca vinculada a esta OS.
+                      Nenhuma peça vinculada a esta OS.
                     </td>
                   </tr>
                 ) : (
@@ -431,14 +432,14 @@ const OrdemDetalhe = () => {
           </div>
 
           <form className="space-y-3" onSubmit={handleAddPeca}>
-            <FormField id="os-peca-produto" label="Peca do estoque">
+            <FormField id="os-peca-produto" label="Peça do estoque">
               <Select
                 value={pecaProdutoId}
                 onValueChange={setPecaProdutoId}
                 disabled={produtosQuery.isLoading}
               >
                 <SelectTrigger id="os-peca-produto">
-                  <SelectValue placeholder="Selecione a peca" />
+                  <SelectValue placeholder="Selecione a peça" />
                 </SelectTrigger>
                 <SelectContent>
                   {produtos.map((produto) => (
@@ -486,14 +487,14 @@ const OrdemDetalhe = () => {
         <header className="print-header">
           <div>
             <p className="print-kicker">RR Infocell</p>
-            <h1>Comprovante de ordem de servico</h1>
+            <h1>Comprovante de ordem de serviço</h1>
             <p>Documento simples para controle de entrada e retirada.</p>
           </div>
           <div className="print-meta">
             <strong>OS-{ordem.numero}</strong>
             <span>Status: {ordem.status.replaceAll("_", " ")}</span>
             <span>Entrada: {formatDate(ordem.entradaEm)}</span>
-            <span>Previsao: {formatDate(ordem.previsaoEntregaEm)}</span>
+            <span>Previsão: {formatDate(ordem.previsaoEntregaEm)}</span>
           </div>
         </header>
 
@@ -512,13 +513,13 @@ const OrdemDetalhe = () => {
             <span>Total previsto</span>
             <strong>{formatBRL(ordem.valorTotal)}</strong>
             <p>
-              Pecas {formatBRL(ordem.valorPecas)} + mao de obra{" "}
+              Peças {formatBRL(ordem.valorPecas)} + mão de obra{" "}
               {formatBRL(ordem.valorMaoObra)}
             </p>
           </div>
         </div>
 
-        <h2>Relato e diagnostico</h2>
+        <h2>Relato e diagnóstico</h2>
         <table className="print-table">
           <tbody>
             <tr>
@@ -526,30 +527,30 @@ const OrdemDetalhe = () => {
               <td>{ordem.defeitoRelatado}</td>
             </tr>
             <tr>
-              <th>Diagnostico</th>
+              <th>Diagnóstico</th>
               <td>{ordem.diagnostico ?? "-"}</td>
             </tr>
             <tr>
-              <th>Tecnico responsavel</th>
+              <th>Técnico responsável</th>
               <td>{ordem.tecnicoResponsavel ?? "-"}</td>
             </tr>
           </tbody>
         </table>
 
-        <h2>Pecas usadas</h2>
+        <h2>Peças usadas</h2>
         <table className="print-table">
           <thead>
             <tr>
-              <th>Peca</th>
+              <th>Peça</th>
               <th>Qtd.</th>
-              <th>Unitario</th>
+              <th>Unitário</th>
               <th>Total</th>
             </tr>
           </thead>
           <tbody>
             {(ordem.pecasUsadas ?? []).length === 0 ? (
               <tr>
-                <td colSpan={4}>Nenhuma peca vinculada.</td>
+                <td colSpan={4}>Nenhuma peça vinculada.</td>
               </tr>
             ) : (
               ordem.pecasUsadas.map((peca) => (
@@ -569,6 +570,114 @@ const OrdemDetalhe = () => {
         <div className="print-signatures">
           <div>
             <span>Cliente</span>
+          </div>
+          <div>
+            <span>RR Infocell</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="garantia-print-area">
+        <header className="print-header">
+          <div>
+            <p className="print-kicker">RR Infocell</p>
+            <h1>Termo de Garantia</h1>
+            <p>OS-{ordem.numero} — emitido em {formatDate(new Date().toISOString())}</p>
+          </div>
+          <div className="print-meta">
+            <strong>OS-{ordem.numero}</strong>
+            <span>Técnico: {ordem.tecnicoResponsavel ?? "—"}</span>
+            <span>Entrega: {formatDate(ordem.entregueEm ?? new Date().toISOString())}</span>
+          </div>
+        </header>
+
+        <div className="print-grid print-summary">
+          <div>
+            <span>Cliente</span>
+            <strong>{cliente?.nome ?? ordem.clienteId}</strong>
+            <p>{cliente?.telefone ?? "—"}</p>
+            <p>{cliente?.documento ?? "—"}</p>
+          </div>
+          <div>
+            <span>Aparelho</span>
+            <strong>{deviceLabel}</strong>
+            <p>{aparelho?.imeiSerial ? `IMEI ${aparelho.imeiSerial}` : "—"}</p>
+            <p>{aparelho?.cor ?? "—"}</p>
+          </div>
+          <div>
+            <span>Total pago</span>
+            <strong>{formatBRL(ordem.valorTotal)}</strong>
+            <p>Peças: {formatBRL(ordem.valorPecas)}</p>
+            <p>Mão de obra: {formatBRL(ordem.valorMaoObra)}</p>
+          </div>
+        </div>
+
+        <h2>Serviço realizado</h2>
+        <table className="print-table">
+          <tbody>
+            <tr>
+              <th>Diagnóstico</th>
+              <td>{ordem.diagnostico ?? "—"}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {(ordem.pecasUsadas ?? []).length > 0 && (
+          <>
+            <h2>Peças substituídas</h2>
+            <table className="print-table">
+              <thead>
+                <tr>
+                  <th>Peça</th>
+                  <th>Qtd.</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ordem.pecasUsadas.map((peca) => (
+                  <tr key={peca.produtoId}>
+                    <td>{peca.nome}</td>
+                    <td>{peca.quantidade}</td>
+                    <td>{formatBRL(peca.valorTotal)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
+
+        <div className="garantia-highlight">
+          <span>Garantia do serviço</span>
+          <strong>{ordem.garantiaDias ? `${ordem.garantiaDias} dias` : "—"}</strong>
+          <p>Válida até {formatDate(ordem.garantiaAte)}</p>
+          {ordem.garantiaObservacoes && <p>{ordem.garantiaObservacoes}</p>}
+        </div>
+
+        <div className="garantia-terms">
+          <strong>Termos da garantia</strong>
+          <p style={{ marginTop: 6 }}>
+            A RR Infocell garante os serviços realizados e as peças substituídas pelo prazo
+            acima, contado a partir da data de entrega do aparelho. A garantia cobre
+            exclusivamente defeitos relacionados ao serviço descrito neste documento.
+          </p>
+          <p style={{ marginTop: 8 }}>
+            <strong>A garantia não cobre:</strong>
+          </p>
+          <ul>
+            <li>Danos físicos, quedas, impactos ou pressão mecânica</li>
+            <li>Danos por líquidos ou umidade</li>
+            <li>Mau uso ou instalação de softwares não autorizados</li>
+            <li>Intervenção de terceiros após a realização do serviço</li>
+            <li>Desgaste natural do equipamento</li>
+          </ul>
+          <p style={{ marginTop: 8 }}>
+            Para acionar a garantia, o cliente deverá apresentar este documento na RR Infocell.
+          </p>
+        </div>
+
+        <div className="print-signatures">
+          <div>
+            <span>Cliente — {cliente?.nome ?? "—"}</span>
           </div>
           <div>
             <span>RR Infocell</span>

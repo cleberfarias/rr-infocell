@@ -16,7 +16,7 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { EmptyState, FormField, PageHeader } from "@/components/design-system";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,10 @@ import {
   isFirebaseClientConfigured,
 } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
+import { CHECKLIST_ENTRADA_ITENS, CHECKLIST_SAIDA_ITENS } from "@/constants/business";
+import { CHECKLIST_STATUS_LABELS } from "@/constants/status";
+import { TIMEOUT } from "@/constants/query";
+import { ROUTES } from "@/constants/routes";
 import { listAparelhos } from "@/services/aparelhos";
 import {
   createChecklist,
@@ -47,36 +51,8 @@ import {
   type ChecklistItemStatus,
 } from "@/services/checklists";
 import { listClientes } from "@/services/clientes";
+import { toast } from "@/components/ui/sonner";
 import { listOrdensServico } from "@/services/ordens-servico";
-
-const initialItems: ChecklistItem[] = [
-  { nome: "Tela", status: "nao_testado" },
-  { nome: "Touch", status: "nao_testado" },
-  { nome: "Camera", status: "nao_testado" },
-  { nome: "Microfone", status: "nao_testado" },
-  { nome: "Alto-falante", status: "nao_testado" },
-  { nome: "Botoes", status: "nao_testado" },
-  { nome: "Conector de carga", status: "nao_testado" },
-  { nome: "Wi-Fi", status: "nao_testado" },
-  { nome: "Bluetooth", status: "nao_testado" },
-  { nome: "Bateria", status: "nao_testado" },
-];
-
-const saidaItems: ChecklistItem[] = [
-  { nome: "Aparelho testado", status: "nao_testado" },
-  { nome: "Carga funcionando", status: "nao_testado" },
-  { nome: "Biometria/Face ID", status: "nao_testado" },
-  { nome: "Camera", status: "nao_testado" },
-  { nome: "Audio", status: "nao_testado" },
-  { nome: "Chip/rede", status: "nao_testado" },
-  { nome: "Senha removida ou confirmada", status: "nao_testado" },
-];
-
-const statusLabels: Record<ChecklistItemStatus, string> = {
-  funcionando: "Funcionando",
-  com_defeito: "Com defeito",
-  nao_testado: "Nao testado",
-};
 
 const statusClasses: Record<ChecklistItemStatus, string> = {
   funcionando: "border-success/40 bg-success/10",
@@ -118,7 +94,7 @@ const uploadWithTimeout = (
     const timeoutId = window.setTimeout(() => {
       uploadTask.cancel();
       reject(new Error("Tempo limite excedido ao enviar a foto."));
-    }, 120000);
+    }, TIMEOUT.upload);
 
     uploadTask.on(
       "state_changed",
@@ -137,13 +113,14 @@ const uploadWithTimeout = (
 const Checklist = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { displayName } = useAuth();
   const atendenteLogado = displayName.trim() || "Atendente";
   const [selectedOrdemId, setSelectedOrdemId] = useState(
     searchParams.get("ordemId") ?? "",
   );
   const checklistTipo = searchParams.get("tipo") === "saida" ? "saida" : "entrada";
-  const itensBase = checklistTipo === "saida" ? saidaItems : initialItems;
+  const itensBase = checklistTipo === "saida" ? CHECKLIST_SAIDA_ITENS : CHECKLIST_ENTRADA_ITENS;
   const [itens, setItens] = useState<ChecklistItem[]>(itensBase);
   const [fotos, setFotos] = useState<ChecklistFoto[]>([]);
   const [observacoesGerais, setObservacoesGerais] = useState("");
@@ -227,7 +204,7 @@ const Checklist = () => {
   const saveMutation = useMutation({
     mutationFn: () => {
       if (!selectedOrdem) {
-        throw new Error("Selecione uma ordem de servico.");
+        throw new Error("Selecione uma ordem de serviço.");
       }
 
       const input = {
@@ -247,13 +224,20 @@ const Checklist = () => {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["checklists"] });
       setFormError(null);
+      if (checklistTipo === "entrada" && selectedOrdemId) {
+        toast.success("Checklist de entrada salvo! Seguindo para manutenção.");
+        navigate(ROUTES.manutencaoOS(selectedOrdemId));
+      } else if (checklistTipo === "saida" && selectedOrdemId) {
+        toast.success("Checklist de saída salvo! Gerando comprovante.");
+        navigate(ROUTES.ordemDetalhe(selectedOrdemId));
+      } else {
+        toast.success("Checklist salvo com sucesso.");
+      }
     },
     onError: (error) => {
-      setFormError(
-        error instanceof Error
-          ? error.message
-          : "Nao foi possivel salvar o checklist.",
-      );
+      const msg = error instanceof Error ? error.message : "Não foi possível salvar o checklist.";
+      setFormError(msg);
+      toast.error(msg);
     },
   });
 
@@ -289,13 +273,13 @@ const Checklist = () => {
     setUploadError(null);
 
     if (!isFirebaseClientConfigured || !firebaseStorage) {
-      setUploadError("Firebase Storage nao esta configurado no frontend.");
+      setUploadError("Firebase Storage não está configurado no frontend.");
       return;
     }
 
     if (!firebaseAuth?.currentUser) {
       setUploadError(
-        "Para anexar fotos, entre com um usuario real do Firebase Auth. O modo de desenvolvimento por perfil nao autentica no Storage.",
+        "Para anexar fotos, entre com um usuário real do Firebase Auth. O modo de desenvolvimento por perfil não autentica no Storage.",
       );
       return;
     }
@@ -308,7 +292,7 @@ const Checklist = () => {
 
     if (!hasStorageRole) {
       setUploadError(
-        "Seu usuario Firebase nao tem a claim role necessaria para enviar fotos. Defina role como admin, atendente ou tecnico e faca login novamente.",
+        "Seu usuário Firebase não tem a claim role necessária para enviar fotos. Defina role como admin, atendente ou técnico e faça login novamente.",
       );
       return;
     }
@@ -354,7 +338,7 @@ const Checklist = () => {
       setUploadError(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel enviar as fotos para o Firebase Storage.",
+          : "Não foi possível enviar as fotos para o Firebase Storage.",
       );
     } finally {
       setIsUploading(false);
@@ -382,11 +366,11 @@ const Checklist = () => {
     <form className="checklist-page space-y-5" onSubmit={handleSubmit}>
       <PageHeader
         eyebrow={selectedOrdem ? `OS-${selectedOrdem.numero}` : "Checklist"}
-        title={checklistTipo === "saida" ? "Checklist de saida" : "Checklist de entrada"}
+        title={checklistTipo === "saida" ? "Checklist de saída" : "Checklist de entrada"}
         description={
           checklistTipo === "saida"
             ? "Confirme os testes finais antes da entrega ao cliente."
-            : "Registre o estado fisico e funcional do aparelho antes do diagnostico."
+            : "Registre o estado físico e funcional do aparelho antes do diagnóstico."
         }
         actions={
           <div className="flex gap-2">
@@ -420,12 +404,12 @@ const Checklist = () => {
           <header className="print-header">
             <div>
               <p className="print-kicker">RR Infocell</p>
-              <h1>{checklistTipo === "saida" ? "Checklist de saida" : "Checklist de entrada"}</h1>
-                <p>Ordem de servico OS-{selectedOrdem.numero}</p>
+              <h1>{checklistTipo === "saida" ? "Checklist de saída" : "Checklist de entrada"}</h1>
+                <p>Ordem de serviço OS-{selectedOrdem.numero}</p>
             </div>
             <div className="print-meta">
               <span>Data: {new Date().toLocaleDateString("pt-BR")}</span>
-              <span>Responsavel: {criadoPor || "-"}</span>
+              <span>Responsável: {criadoPor || "-"}</span>
             </div>
           </header>
 
@@ -447,31 +431,31 @@ const Checklist = () => {
             <div>
               <span>Status da OS</span>
               <strong>{selectedOrdem.status}</strong>
-              <p>Checklist tecnico</p>
+              <p>Checklist técnico</p>
             </div>
           </div>
 
-          <h2>Inspecao do aparelho</h2>
+          <h2>Inspeção do aparelho</h2>
           <table className="print-table">
             <thead>
               <tr>
                 <th>Item</th>
                 <th>Status</th>
-                <th>Observacao</th>
+                <th>Observação</th>
               </tr>
             </thead>
             <tbody>
               {itens.map((item) => (
                 <tr key={item.nome}>
                   <td>{item.nome}</td>
-                  <td>{statusLabels[item.status]}</td>
+                  <td>{CHECKLIST_STATUS_LABELS[item.status]}</td>
                   <td>{item.observacao || "-"}</td>
                 </tr>
               ))}
             </tbody>
           </table>
 
-          <h2>Observacoes gerais</h2>
+          <h2>Observações gerais</h2>
           <p className="print-notes">{observacoesGerais || "-"}</p>
 
           <h2>Fotos anexadas</h2>
@@ -507,19 +491,19 @@ const Checklist = () => {
         <Card className="surface-panel">
           <EmptyState
             icon={CheckCircle2}
-            title="Nao foi possivel carregar o checklist"
-            description="Verifique se o backend esta rodando em http://localhost:3333."
+            title="Não foi possível carregar o checklist"
+            description="Verifique se o backend está rodando em http://localhost:3333."
           />
         </Card>
       ) : !selectedOrdem ? (
         <Card className="surface-panel">
           <EmptyState
             icon={CheckCircle2}
-            title="Nenhuma OS disponivel"
-            description="Crie uma ordem de servico antes de registrar o checklist."
+            title="Nenhuma OS disponível"
+            description="Crie uma ordem de serviço antes de registrar o checklist."
             actions={
               <Button asChild>
-                <Link to="/app/ordens/nova">Nova OS</Link>
+                <Link to={ROUTES.novaOS}>Nova OS</Link>
               </Button>
             }
           />
@@ -528,7 +512,7 @@ const Checklist = () => {
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           <Card className="surface-panel p-6 lg:col-span-2">
             <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-              <FormField id="checklist-ordem" label="Ordem de servico">
+              <FormField id="checklist-ordem" label="Ordem de serviço">
                 <Select
                   value={selectedOrdemId}
                   onValueChange={handleOrdemChange}
@@ -572,7 +556,7 @@ const Checklist = () => {
             </div>
 
             <h3 className="mb-4 font-display text-base font-semibold">
-              {checklistTipo === "saida" ? "Teste final do aparelho" : "Inspecao do aparelho"}
+              {checklistTipo === "saida" ? "Teste final do aparelho" : "Inspeção do aparelho"}
             </h3>
             <div className="space-y-3">
               {itens.map((item, index) => (
@@ -595,7 +579,7 @@ const Checklist = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(statusLabels).map(([value, label]) => (
+                      {Object.entries(CHECKLIST_STATUS_LABELS).map(([value, label]) => (
                         <SelectItem key={value} value={value}>
                           {label}
                         </SelectItem>
@@ -607,7 +591,7 @@ const Checklist = () => {
                     onChange={(event) =>
                       updateItem(index, { observacao: event.target.value })
                     }
-                    placeholder="Observacao do item"
+                    placeholder="Observação do item"
                   />
                 </div>
               ))}
@@ -616,19 +600,19 @@ const Checklist = () => {
             <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField
                 id="checklist-observacoes"
-                label="Observacoes do estado"
+                label="Observações do estado"
               >
                 <Textarea
                   id="checklist-observacoes"
                   rows={3}
                   value={observacoesGerais}
                   onChange={(event) => setObservacoesGerais(event.target.value)}
-                  placeholder="Riscos, marcas de uso, condicoes especiais..."
+                  placeholder="Riscos, marcas de uso, condições especiais..."
                 />
               </FormField>
               <FormField
                 id="checklist-criado-por"
-                label="Atendente responsavel"
+                label="Atendente responsável"
               >
                 <Input
                   id="checklist-criado-por"
@@ -716,7 +700,7 @@ const Checklist = () => {
               )}
               {!isFirebaseClientConfigured && (
                 <p className="mt-3 text-xs text-muted-foreground">
-                  Configure as variaveis VITE_FIREBASE_* para habilitar upload
+                  Configure as variáveis VITE_FIREBASE_* para habilitar upload
                   real.
                 </p>
               )}

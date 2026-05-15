@@ -3,7 +3,10 @@ import { getFirestore } from "firebase-admin/firestore";
 
 async function main() {
   const app = initializeFirebaseAdmin();
-  if (!app) { console.error("Firebase nao inicializado."); process.exit(1); }
+  if (!app) {
+    console.error("Firebase nao inicializado.");
+    process.exit(1);
+  }
 
   const db = getFirestore(app);
 
@@ -23,8 +26,7 @@ async function main() {
     await doc.ref.delete();
 
     // atualizar campo telefone nas mensagens associadas
-    const msgsSnap = await db.collection("whatsapp_mensagens")
-      .where("telefone", "==", tel).get();
+    const msgsSnap = await db.collection("whatsapp_mensagens").where("telefone", "==", tel).get();
 
     for (const msg of msgsSnap.docs) {
       await msg.ref.update({ telefone: novoTel });
@@ -36,4 +38,7 @@ async function main() {
   console.log(`\nConcluido: ${migradas} conversa(s) migrada(s).`);
 }
 
-main().catch((err) => { console.error(err); process.exit(1); });
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

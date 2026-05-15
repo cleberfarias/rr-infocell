@@ -13,7 +13,10 @@ const LIMITE_MIDIA_BYTES = 16 * 1024 * 1024;
 
 function tipoMidiaPorMime(
   mimeType: string,
-): Exclude<TipoMensagem, "texto" | "orcamento" | "status" | "pagamento" | "contato" | "localizacao"> {
+): Exclude<
+  TipoMensagem,
+  "texto" | "orcamento" | "status" | "pagamento" | "contato" | "localizacao"
+> {
   if (mimeType.startsWith("image/webp")) return "sticker";
   if (mimeType.startsWith("image/")) return "imagem";
   if (mimeType.startsWith("audio/")) return "audio";
@@ -28,7 +31,9 @@ whatsappRoutes.get("/status", (_req, res) => {
 whatsappRoutes.get("/qrcode", (_req, res) => {
   const qr = conexaoService.getQR();
   if (!qr) {
-    res.status(404).json({ error: "QR code nao disponivel. WhatsApp ja conectado ou ainda iniciando." });
+    res
+      .status(404)
+      .json({ error: "QR code nao disponivel. WhatsApp ja conectado ou ainda iniciando." });
     return;
   }
   res.json({ qr });
@@ -114,7 +119,13 @@ whatsappRoutes.post("/enviar-midia", async (req, res, next) => {
     });
 
     const vinculo = await vincularCliente(tel);
-    const midiaUrl = await mensagemService.armazenarMidiaSaida(tel, buffer, tipo, mimeType, nomeArquivo);
+    const midiaUrl = await mensagemService.armazenarMidiaSaida(
+      tel,
+      buffer,
+      tipo,
+      mimeType,
+      nomeArquivo,
+    );
     await mensagemService.salvarMensagemSaida(
       tel,
       legenda || nomeArquivo || `[${tipo}]`,

@@ -5,15 +5,10 @@ import type { Orcamento, OrcamentoStatus } from "./orcamentos.types.js";
 
 const orcamentosCollection = "orcamentos";
 const withoutUndefined = <T extends Record<string, unknown>>(data: T) =>
-  Object.fromEntries(
-    Object.entries(data).filter(([, value]) => value !== undefined),
-  ) as T;
+  Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as T;
 
 export interface OrcamentosRepository {
-  list(filters?: {
-    ordemServicoId?: string;
-    status?: OrcamentoStatus | "";
-  }): Promise<Orcamento[]>;
+  list(filters?: { ordemServicoId?: string; status?: OrcamentoStatus | "" }): Promise<Orcamento[]>;
   findById(id: string): Promise<Orcamento | null>;
   findLatestByOrdem(ordemServicoId: string): Promise<Orcamento | null>;
   create(input: Omit<Orcamento, "id">): Promise<Orcamento>;
@@ -101,8 +96,7 @@ export class FirestoreOrcamentosRepository implements OrcamentosRepository {
       status?: OrcamentoStatus | "";
     } = {},
   ) {
-    let query: FirebaseFirestore.Query =
-      this.firestore.collection(orcamentosCollection);
+    let query: FirebaseFirestore.Query = this.firestore.collection(orcamentosCollection);
 
     if (filters.ordemServicoId) {
       query = query.where("ordemServicoId", "==", filters.ordemServicoId);
@@ -162,10 +156,7 @@ export class FirestoreOrcamentosRepository implements OrcamentosRepository {
       createdAt: current.createdAt,
     };
 
-    await this.firestore
-      .collection(orcamentosCollection)
-      .doc(id)
-      .set(withoutUndefined(orcamento));
+    await this.firestore.collection(orcamentosCollection).doc(id).set(withoutUndefined(orcamento));
 
     return orcamento;
   }
@@ -186,7 +177,9 @@ export class FirestoreOrcamentosRepository implements OrcamentosRepository {
       enviadoEm: data.enviadoEm ? String(data.enviadoEm) : undefined,
       decididoEm: data.decididoEm ? String(data.decididoEm) : undefined,
       aprovadoPor: data.aprovadoPor ? String(data.aprovadoPor) : undefined,
-      canalAprovacao: data.canalAprovacao ? String(data.canalAprovacao) as Orcamento["canalAprovacao"] : undefined,
+      canalAprovacao: data.canalAprovacao
+        ? (String(data.canalAprovacao) as Orcamento["canalAprovacao"])
+        : undefined,
       mensagemAprovacao: data.mensagemAprovacao ? String(data.mensagemAprovacao) : undefined,
       observacoes: data.observacoes ? String(data.observacoes) : undefined,
       createdAt: String(data.createdAt ?? ""),
@@ -195,9 +188,7 @@ export class FirestoreOrcamentosRepository implements OrcamentosRepository {
   }
 }
 
-export const createOrcamentosRepository = (
-  firestore: Firestore | null,
-): OrcamentosRepository => {
+export const createOrcamentosRepository = (firestore: Firestore | null): OrcamentosRepository => {
   if (firestore) {
     return new FirestoreOrcamentosRepository(firestore);
   }

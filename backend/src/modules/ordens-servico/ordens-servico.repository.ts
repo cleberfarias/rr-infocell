@@ -29,21 +29,23 @@ const buildOrdem = (
         produtoId: peca.produtoId,
         sku:
           peca.sku ??
-          current?.pecasUsadas.find((currentPeca) => currentPeca.produtoId === peca.produtoId)?.sku ??
+          current?.pecasUsadas.find((currentPeca) => currentPeca.produtoId === peca.produtoId)
+            ?.sku ??
           "",
         nome:
           peca.nome ??
-          current?.pecasUsadas.find((currentPeca) => currentPeca.produtoId === peca.produtoId)?.nome ??
+          current?.pecasUsadas.find((currentPeca) => currentPeca.produtoId === peca.produtoId)
+            ?.nome ??
           "",
         quantidade: peca.quantidade,
         valorUnitario: peca.valorUnitario ?? 0,
         valorTotal: peca.quantidade * (peca.valorUnitario ?? 0),
       }))
-    : current?.pecasUsadas ?? [];
+    : (current?.pecasUsadas ?? []);
   const valorPecas =
     input.pecasUsadas !== undefined
       ? pecasUsadas.reduce((total, peca) => total + peca.valorTotal, 0)
-      : input.valorPecas ?? current?.valorPecas ?? 0;
+      : (input.valorPecas ?? current?.valorPecas ?? 0);
   const valorMaoObra = input.valorMaoObra ?? current?.valorMaoObra ?? 0;
   const valorTotal = valorPecas + valorMaoObra;
   const valorRecebido = input.valorRecebido ?? current?.valorRecebido;
@@ -55,7 +57,9 @@ const buildOrdem = (
   const garantiaBase = deliveredNow ? timestamp : current?.entregueEm;
   const garantiaAte =
     garantiaDias && garantiaBase
-      ? new Date(new Date(garantiaBase).getTime() + garantiaDias * 24 * 60 * 60 * 1000).toISOString()
+      ? new Date(
+          new Date(garantiaBase).getTime() + garantiaDias * 24 * 60 * 60 * 1000,
+        ).toISOString()
       : current?.garantiaAte;
 
   return {
@@ -75,7 +79,8 @@ const buildOrdem = (
     valorTotal,
     entradaEm: input.entradaEm ?? current?.entradaEm ?? timestamp,
     previsaoEntregaEm: input.previsaoEntregaEm,
-    prazoPrometidoEm: input.prazoPrometidoEm ?? input.previsaoEntregaEm ?? current?.prazoPrometidoEm,
+    prazoPrometidoEm:
+      input.prazoPrometidoEm ?? input.previsaoEntregaEm ?? current?.prazoPrometidoEm,
     garantiaDias,
     garantiaAte,
     garantiaObservacoes: input.garantiaObservacoes ?? current?.garantiaObservacoes,
@@ -93,7 +98,7 @@ const buildOrdem = (
     troco,
     pagoEm:
       status === "entregue" && (input.formaPagamento || current?.formaPagamento)
-        ? current?.pagoEm ?? timestamp
+        ? (current?.pagoEm ?? timestamp)
         : current?.pagoEm,
     automacoes: current?.automacoes,
     createdAt: current?.createdAt ?? timestamp,
@@ -346,20 +351,22 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
       garantiaObservacoes: data.garantiaObservacoes ? String(data.garantiaObservacoes) : undefined,
       aprovadoPor: data.aprovadoPor ? String(data.aprovadoPor) : undefined,
       aprovadoEm: data.aprovadoEm ? String(data.aprovadoEm) : undefined,
-      canalAprovacao: data.canalAprovacao ? String(data.canalAprovacao) as OrdemServico["canalAprovacao"] : undefined,
+      canalAprovacao: data.canalAprovacao
+        ? (String(data.canalAprovacao) as OrdemServico["canalAprovacao"])
+        : undefined,
       mensagemAprovacao: data.mensagemAprovacao ? String(data.mensagemAprovacao) : undefined,
       concluidaEm: data.concluidaEm ? String(data.concluidaEm) : undefined,
       entregueEm: data.entregueEm ? String(data.entregueEm) : undefined,
       formaPagamento: data.formaPagamento
-        ? String(data.formaPagamento) as OrdemServico["formaPagamento"]
+        ? (String(data.formaPagamento) as OrdemServico["formaPagamento"])
         : undefined,
-      valorRecebido:
-        data.valorRecebido !== undefined ? Number(data.valorRecebido) : undefined,
+      valorRecebido: data.valorRecebido !== undefined ? Number(data.valorRecebido) : undefined,
       troco: data.troco !== undefined ? Number(data.troco) : undefined,
       pagoEm: data.pagoEm ? String(data.pagoEm) : undefined,
-      automacoes: data.automacoes && typeof data.automacoes === "object"
-        ? data.automacoes as OrdemServico["automacoes"]
-        : undefined,
+      automacoes:
+        data.automacoes && typeof data.automacoes === "object"
+          ? (data.automacoes as OrdemServico["automacoes"])
+          : undefined,
       createdAt: String(data.createdAt ?? ""),
       updatedAt: String(data.updatedAt ?? ""),
     };
