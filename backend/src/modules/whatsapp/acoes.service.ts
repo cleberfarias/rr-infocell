@@ -22,7 +22,9 @@ const statusLabel: Record<string, string> = {
   cancelado: "Cancelado ❌",
 };
 
-async function getClienteContato(clienteId: string): Promise<{ telefone: string; nome: string } | null> {
+async function getClienteContato(
+  clienteId: string,
+): Promise<{ telefone: string; nome: string } | null> {
   const cliente = await clientesRepo.findById(clienteId);
   if (!cliente?.telefone) return null;
   return { telefone: normalizarTelefone(cliente.telefone), nome: cliente.nome };
@@ -53,12 +55,23 @@ class AcoesService {
 
     if (db) {
       await db.collection(colConversas).doc(contato.telefone).set(
-        { clienteId: os.clienteId, nome: contato.nome, aguardandoAprovacao: true, osIdPendente: osId },
+        {
+          clienteId: os.clienteId,
+          nome: contato.nome,
+          aguardandoAprovacao: true,
+          osIdPendente: osId,
+        },
         { merge: true },
       );
     }
 
-    await mensagemService.salvarMensagemSaida(contato.telefone, texto, "orcamento", os.clienteId, contato.nome);
+    await mensagemService.salvarMensagemSaida(
+      contato.telefone,
+      texto,
+      "orcamento",
+      os.clienteId,
+      contato.nome,
+    );
   }
 
   async informarPronto(osId: string) {
@@ -78,10 +91,18 @@ class AcoesService {
       env.ATENDIMENTO_PIX_CHAVE ? `Chave PIX: ${env.ATENDIMENTO_PIX_CHAVE}` : null,
       `Se preferir pagar na retirada, responda: PIX, CARTAO ou DINHEIRO.`,
       `Horario: seg-sex 9h-18h, sab 9h-13h.`,
-    ].filter((linha) => linha !== null).join("\n");
+    ]
+      .filter((linha) => linha !== null)
+      .join("\n");
 
     await conexaoService.enviarTexto(contato.telefone, texto);
-    await mensagemService.salvarMensagemSaida(contato.telefone, texto, "status", os.clienteId, contato.nome);
+    await mensagemService.salvarMensagemSaida(
+      contato.telefone,
+      texto,
+      "status",
+      os.clienteId,
+      contato.nome,
+    );
   }
 
   async confirmarPagamento(
@@ -102,7 +123,8 @@ class AcoesService {
       valorRecebido,
     });
 
-    const formaLabel = formaPagamento === "pix" ? "PIX" : formaPagamento === "cartao" ? "Cartao" : "Dinheiro";
+    const formaLabel =
+      formaPagamento === "pix" ? "PIX" : formaPagamento === "cartao" ? "Cartao" : "Dinheiro";
     const texto = [
       `*RR Infocell — Pagamento confirmado* ✅`,
       `OS #${os.numero}`,
@@ -111,7 +133,13 @@ class AcoesService {
     ].join("\n");
 
     await conexaoService.enviarTexto(contato.telefone, texto);
-    await mensagemService.salvarMensagemSaida(contato.telefone, texto, "pagamento", os.clienteId, contato.nome);
+    await mensagemService.salvarMensagemSaida(
+      contato.telefone,
+      texto,
+      "pagamento",
+      os.clienteId,
+      contato.nome,
+    );
   }
 
   async enviarStatus(osId: string) {
@@ -131,7 +159,13 @@ class AcoesService {
 
     const texto = linhas.join("\n");
     await conexaoService.enviarTexto(contato.telefone, texto);
-    await mensagemService.salvarMensagemSaida(contato.telefone, texto, "status", os.clienteId, contato.nome);
+    await mensagemService.salvarMensagemSaida(
+      contato.telefone,
+      texto,
+      "status",
+      os.clienteId,
+      contato.nome,
+    );
   }
 }
 

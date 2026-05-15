@@ -21,22 +21,31 @@ categoriasRoutes.get("/", async (_req, res, next) => {
     try {
       const db = getFirestore();
       const snap = await db.collection(COLLECTION).orderBy("nome").get();
-      const customizadas = snap.docs.map(doc => ({ id: doc.id, ...doc.data(), padrao: false }));
+      const customizadas = snap.docs.map((doc) => ({ id: doc.id, ...doc.data(), padrao: false }));
       return res.json({ data: [...CATEGORIAS_PADRAO, ...customizadas] });
     } catch {
       return res.json({ data: CATEGORIAS_PADRAO });
     }
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 });
 
 categoriasRoutes.post("/", async (req, res, next) => {
   try {
     const { nome } = req.body as { nome?: string };
-    if (!nome?.trim()) { res.status(400).json({ error: { message: "Informe o nome da categoria." } }); return; }
+    if (!nome?.trim()) {
+      res.status(400).json({ error: { message: "Informe o nome da categoria." } });
+      return;
+    }
     const db = getFirestore();
-    const ref = await db.collection(COLLECTION).add({ nome: nome.trim(), criadoEm: new Date().toISOString() });
+    const ref = await db
+      .collection(COLLECTION)
+      .add({ nome: nome.trim(), criadoEm: new Date().toISOString() });
     res.status(201).json({ data: { id: ref.id, nome: nome.trim(), padrao: false } });
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 });
 
 categoriasRoutes.delete("/:id", async (req, res, next) => {
@@ -44,5 +53,7 @@ categoriasRoutes.delete("/:id", async (req, res, next) => {
     const db = getFirestore();
     await db.collection(COLLECTION).doc(req.params.id).delete();
     res.status(204).send();
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 });

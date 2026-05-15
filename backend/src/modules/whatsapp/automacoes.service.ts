@@ -14,24 +14,29 @@ const colConversas = "whatsapp_conversas";
 const colOrdens = "ordensServico";
 
 const now = () => new Date().toISOString();
-const addHours = (date: string, hours: number) => new Date(new Date(date).getTime() + hours * 60 * 60 * 1000);
-const addDays = (date: string, days: number) => new Date(new Date(date).getTime() + days * 24 * 60 * 60 * 1000);
+const addHours = (date: string, hours: number) =>
+  new Date(new Date(date).getTime() + hours * 60 * 60 * 1000);
+const addDays = (date: string, days: number) =>
+  new Date(new Date(date).getTime() + days * 24 * 60 * 60 * 1000);
 
 const statusMensagens: Partial<Record<OrdemServicoStatus, (os: OrdemServico) => string>> = {
-  em_analise: (os) => [
-    `*RR Infocell - OS #${os.numero}*`,
-    "Seu aparelho entrou em analise tecnica.",
-    "Assim que tivermos o diagnostico, avisaremos por aqui.",
-  ].join("\n"),
-  aguardando_peca: (os) => [
-    `*RR Infocell - OS #${os.numero}*`,
-    "Seu atendimento esta aguardando peca.",
-    "Vamos avisar assim que a manutencao puder continuar.",
-  ].join("\n"),
-  em_manutencao: (os) => [
-    `*RR Infocell - OS #${os.numero}*`,
-    "O servico foi iniciado e seu aparelho esta em manutencao.",
-  ].join("\n"),
+  em_analise: (os) =>
+    [
+      `*RR Infocell - OS #${os.numero}*`,
+      "Seu aparelho entrou em analise tecnica.",
+      "Assim que tivermos o diagnostico, avisaremos por aqui.",
+    ].join("\n"),
+  aguardando_peca: (os) =>
+    [
+      `*RR Infocell - OS #${os.numero}*`,
+      "Seu atendimento esta aguardando peca.",
+      "Vamos avisar assim que a manutencao puder continuar.",
+    ].join("\n"),
+  em_manutencao: (os) =>
+    [
+      `*RR Infocell - OS #${os.numero}*`,
+      "O servico foi iniciado e seu aparelho esta em manutencao.",
+    ].join("\n"),
   pronto_para_retirada: (os) => mensagemProntoRetirada(os),
 };
 
@@ -83,7 +88,9 @@ function mensagemRetiradaPendente(os: OrdemServico) {
     `*RR Infocell - Retirada pendente*`,
     `Sua OS #${os.numero} esta pronta para retirada.`,
     `Valor total: ${formatBRL(os.valorTotal)}`,
-    env.ATENDIMENTO_PIX_CHAVE ? `Chave PIX: ${env.ATENDIMENTO_PIX_CHAVE}` : "Voce pode confirmar a forma de pagamento por aqui.",
+    env.ATENDIMENTO_PIX_CHAVE
+      ? `Chave PIX: ${env.ATENDIMENTO_PIX_CHAVE}`
+      : "Voce pode confirmar a forma de pagamento por aqui.",
   ].join("\n");
 }
 
@@ -114,11 +121,14 @@ class AutomacoesAtendimentoService {
   iniciarRotina() {
     if (this.timer || env.NODE_ENV === "test") return;
 
-    this.timer = setInterval(() => {
-      this.processarPendencias().catch((err) => {
-        console.error("[WhatsApp] Falha nas automacoes:", err);
-      });
-    }, 30 * 60 * 1000);
+    this.timer = setInterval(
+      () => {
+        this.processarPendencias().catch((err) => {
+          console.error("[WhatsApp] Falha nas automacoes:", err);
+        });
+      },
+      30 * 60 * 1000,
+    );
     this.timer.unref();
   }
 
@@ -182,7 +192,11 @@ class AutomacoesAtendimentoService {
       const base = os.updatedAt || os.createdAt;
       if (addHours(base, env.ATENDIMENTO_LEMBRETE_ORCAMENTO_HORAS) > limite) continue;
 
-      const enviada = await this.enviarAutomacaoOrdem(os, mensagemOrcamentoPendente(os), "orcamento");
+      const enviada = await this.enviarAutomacaoOrdem(
+        os,
+        mensagemOrcamentoPendente(os),
+        "orcamento",
+      );
       if (enviada) {
         await this.marcarAutomacaoOrdem(os.id, { "automacoes.lembreteOrcamentoEnviadoEm": now() });
       }
@@ -213,17 +227,26 @@ class AutomacoesAtendimentoService {
       .get();
     const limite = new Date();
 
-    await Promise.all(snap.docs.map(async (doc) => {
-      const data = doc.data();
-      if (data.arquivada === true) return;
-      const ultimaInteracao = String(data.ultimaInteracao ?? "");
-      if (!ultimaInteracao || addDays(ultimaInteracao, env.ATENDIMENTO_AUTOARQUIVAR_DIAS) > limite) return;
+    await Promise.all(
+      snap.docs.map(async (doc) => {
+        const data = doc.data();
+        if (data.arquivada === true) return;
+        const ultimaInteracao = String(data.ultimaInteracao ?? "");
+        if (
+          !ultimaInteracao ||
+          addDays(ultimaInteracao, env.ATENDIMENTO_AUTOARQUIVAR_DIAS) > limite
+        )
+          return;
 
-      await doc.ref.set({
-        arquivada: true,
-        arquivadoAutomaticamenteEm: now(),
-      }, { merge: true });
-    }));
+        await doc.ref.set(
+          {
+            arquivada: true,
+            arquivadoAutomaticamenteEm: now(),
+          },
+          { merge: true },
+        );
+      }),
+    );
   }
 
   private async enviarAutomacaoOrdem(
@@ -258,9 +281,12 @@ class AutomacoesAtendimentoService {
     const cliente = await clientesRepo.findById(os.clienteId);
     if (!cliente?.telefone) return;
 
-    await db.collection(colConversas).doc(normalizarTelefone(cliente.telefone)).set({
-      statusAtendimento: "finalizado",
-    }, { merge: true });
+    await db.collection(colConversas).doc(normalizarTelefone(cliente.telefone)).set(
+      {
+        statusAtendimento: "finalizado",
+      },
+      { merge: true },
+    );
   }
 
   private async marcarAutomacaoOrdem(osId: string, patch: Record<string, string>) {

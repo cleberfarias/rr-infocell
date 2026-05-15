@@ -6,11 +6,7 @@ const ordensRepo = createOrdensServicoRepository(db);
 const colConversas = "whatsapp_conversas";
 
 function normalizarResposta(texto: string): string {
-  return texto
-    .trim()
-    .toUpperCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
+  return texto.trim().toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
 class BotService {
@@ -33,10 +29,10 @@ class BotService {
         telefone,
         "Otimo! Servico autorizado ✅\nEntraremos em contato quando o aparelho ficar pronto.",
       );
-      await db.collection(colConversas).doc(telefone).set(
-        { aguardandoAprovacao: false, osIdPendente: null },
-        { merge: true },
-      );
+      await db
+        .collection(colConversas)
+        .doc(telefone)
+        .set({ aguardandoAprovacao: false, osIdPendente: null }, { merge: true });
       return;
     }
 
@@ -49,10 +45,10 @@ class BotService {
         telefone,
         "Entendido. Servico cancelado.\nSeu aparelho esta disponivel para retirada sem custo.",
       );
-      await db.collection(colConversas).doc(telefone).set(
-        { aguardandoAprovacao: false, osIdPendente: null },
-        { merge: true },
-      );
+      await db
+        .collection(colConversas)
+        .doc(telefone)
+        .set({ aguardandoAprovacao: false, osIdPendente: null }, { merge: true });
     }
   }
 }

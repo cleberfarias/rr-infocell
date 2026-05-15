@@ -16,7 +16,12 @@ import { mensagemService } from "./mensagem.service.js";
 const noop = () => {};
 const silentLogger = {
   level: "silent",
-  trace: noop, debug: noop, info: noop, warn: noop, error: noop, fatal: noop,
+  trace: noop,
+  debug: noop,
+  info: noop,
+  warn: noop,
+  error: noop,
+  fatal: noop,
   child: () => silentLogger,
 };
 
@@ -191,7 +196,8 @@ class ConexaoService {
           }
         } catch (err) {
           this.diagnostico.ultimaMensagemIgnoradaEm = new Date().toISOString();
-          this.diagnostico.ultimaMensagemIgnoradaMotivo = err instanceof Error ? err.message : "erro ao processar";
+          this.diagnostico.ultimaMensagemIgnoradaMotivo =
+            err instanceof Error ? err.message : "erro ao processar";
           console.error("[WhatsApp] Erro ao processar mensagem:", err);
         }
       }
@@ -220,11 +226,13 @@ class ConexaoService {
         this.diagnostico.ultimoReciboId = update.key.id ?? null;
         this.diagnostico.ultimoReciboDe = update.key.remoteJid ?? null;
 
-        const receipt = update.receipt as {
-          readTimestamp?: number;
-          receiptTimestamp?: number;
-          playedTimestamp?: number;
-        } | undefined;
+        const receipt = update.receipt as
+          | {
+              readTimestamp?: number;
+              receiptTimestamp?: number;
+              playedTimestamp?: number;
+            }
+          | undefined;
 
         if (!receipt || !update.key.id) continue;
 

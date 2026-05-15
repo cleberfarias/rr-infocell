@@ -13,34 +13,36 @@ API REST do sistema de gestão RR Infocell.
 
 ## Módulos
 
-| Módulo | Descrição |
-|---|---|
-| `health` | Status da API e Firebase Admin SDK |
-| `clientes` | CRUD de clientes com busca |
-| `aparelhos` | CRUD de aparelhos vinculados a clientes |
-| `ordens-servico` | CRUD de OS com número sequencial e status |
-| `checklists` | Checklist técnico de entrada/saída vinculado à OS |
-| `ordem-eventos` | Linha do tempo e comentários por OS |
-| `orcamentos` | Snapshot de orçamento com envio, aprovação e reprovação |
-| `vendas` | Fechamento de caixa por OS e venda direta |
-| `produtos` | CRUD de estoque com categorias, marcas, custos |
-| `movimentacoes-estoque` | Entrada, saída, ajuste e histórico |
-| `categorias` | Categorias customizáveis de produto (Firestore) |
-| `marcas` | Marcas customizáveis de produto (Firestore) |
-| `contas` | Contas bancárias com saldo (Firestore) |
-| `despesas` | CRUD de despesas operacionais |
-| `usuarios` | Gestão de usuários internos (Firebase Auth) |
-| `whatsapp` | Conexão Baileys, mensagens, mídias, automações |
-| `ajuda` | Assistente IA via OpenAI GPT-4o-mini |
+| Módulo                  | Descrição                                               |
+| ----------------------- | ------------------------------------------------------- |
+| `health`                | Status da API e Firebase Admin SDK                      |
+| `clientes`              | CRUD de clientes com busca                              |
+| `aparelhos`             | CRUD de aparelhos vinculados a clientes                 |
+| `ordens-servico`        | CRUD de OS com número sequencial e status               |
+| `checklists`            | Checklist técnico de entrada/saída vinculado à OS       |
+| `ordem-eventos`         | Linha do tempo e comentários por OS                     |
+| `orcamentos`            | Snapshot de orçamento com envio, aprovação e reprovação |
+| `vendas`                | Fechamento de caixa por OS e venda direta               |
+| `produtos`              | CRUD de estoque com categorias, marcas, custos          |
+| `movimentacoes-estoque` | Entrada, saída, ajuste e histórico                      |
+| `categorias`            | Categorias customizáveis de produto (Firestore)         |
+| `marcas`                | Marcas customizáveis de produto (Firestore)             |
+| `contas`                | Contas bancárias com saldo (Firestore)                  |
+| `despesas`              | CRUD de despesas operacionais                           |
+| `usuarios`              | Gestão de usuários internos (Firebase Auth)             |
+| `whatsapp`              | Conexão Baileys, mensagens, mídias, automações          |
+| `ajuda`                 | Assistente IA via OpenAI GPT-4o-mini                    |
 
 ## Como rodar
 
 Da raiz do repositório:
+
 ```bash
 make dev-backend
 ```
 
 Ou diretamente:
+
 ```bash
 cd backend
 npm install
@@ -86,6 +88,7 @@ ATENDIMENTO_AUTOARQUIVAR_DIAS=7
 - Custom claim `role`: `admin`, `atendente` ou `tecnico`
 
 Para definir role de um usuário:
+
 ```bash
 npm run auth:set-role -- --email usuario@exemplo.com --role admin
 ```

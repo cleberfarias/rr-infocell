@@ -117,7 +117,11 @@ ajudaRoutes.post("/perguntar", aiLimiter, async (req, res, next) => {
     }
 
     if (!process.env.OPENAI_API_KEY) {
-      res.status(503).json({ error: { message: "Assistente de IA não configurado. Adicione OPENAI_API_KEY no .env do backend." } });
+      res.status(503).json({
+        error: {
+          message: "Assistente de IA não configurado. Adicione OPENAI_API_KEY no .env do backend.",
+        },
+      });
       return;
     }
 
@@ -133,13 +137,16 @@ ajudaRoutes.post("/perguntar", aiLimiter, async (req, res, next) => {
         ],
       });
 
-      const resposta = completion.choices[0]?.message?.content ?? "Não consegui processar a pergunta.";
+      const resposta =
+        completion.choices[0]?.message?.content ?? "Não consegui processar a pergunta.";
       res.json({ resposta });
     } catch (error) {
       console.error("[Ajuda AI] Erro ao chamar OpenAI:", error);
 
       if (error instanceof OpenAI.APIError) {
-        const isCredits = error.message.toLowerCase().includes("quota") || error.message.toLowerCase().includes("billing");
+        const isCredits =
+          error.message.toLowerCase().includes("quota") ||
+          error.message.toLowerCase().includes("billing");
         res.status(503).json({
           error: {
             message: isCredits
