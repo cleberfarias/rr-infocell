@@ -1,245 +1,186 @@
 # RR Infocell
 
-Sistema web para gestao de assistencia tecnica e loja de celulares.
+Sistema web de gestão para assistência técnica e loja de celulares.
 
-O objetivo do projeto e centralizar o fluxo operacional da RR Infocell: clientes, aparelhos, ordens de servico, checklist tecnico, estoque, comprovantes e relatorios iniciais.
+## Visão geral
 
-## Status do projeto
+Sistema completo para centralizar o fluxo operacional da RR Infocell: clientes, aparelhos, ordens de serviço, checklist técnico, estoque, movimentações, PDV, financeiro, WhatsApp e treinamento.
 
-- Prototipo inicial aprovado pelo cliente.
-- MVP definido com foco em assistencia tecnica.
-- Firebase definido como base tecnica do MVP.
-- Design system inicial criado e documentado.
-- Frontend reorganizado em `frontend/`.
-- Backend base criado em `backend/`.
-- Modulo de clientes implementado com API REST, tela integrada, Firestore/fallback local e testes.
-- Modulo de aparelhos implementado no backend com API REST, validacao, Firestore/fallback local e testes.
-- Tela de aparelhos integrada no frontend com listagem, busca, filtro por cliente e CRUD.
-- Modulo de ordens de servico implementado no backend com API REST, numero sequencial, validacao de vinculos, Firestore/fallback local e testes.
-- Telas de ordens de servico integradas com API real para abertura e listagem de OS.
-- Controle de OS expandido com prioridade, prazo prometido, filtro de atraso, garantia e dados de aprovacao.
-- Detalhe da OS implementado com consulta real de cliente/aparelho, comprovante simples e impressao.
-- Tela de manutencao integrada com OS reais para diagnostico, status tecnico, mao de obra e pecas usadas.
-- Tela de orcamentos integrada com OS reais para envio, aprovacao e reprovacao por status.
-- PDV/Caixa integrado com OS reais prontas para retirada, registro de pagamento e entrega.
-- PDV/Caixa e Financeiro exibem historico de pagamentos com vinculo para a OS.
-- PDV/Caixa tambem registra venda direta de celular, acessorio e servico avulso sem OS, com carrinho, forma de pagamento, comprovante e garantia por item.
-- Dashboard inicial integrado com dados reais de OS, relatorio por status e resumo financeiro previsto.
-- Modulo de checklist tecnico implementado no backend com API REST, vinculo com OS/aparelho, Firestore/fallback local e testes.
-- Tela de checklist tecnico integrada com OS real e API de checklists.
-- Checklist de saida implementado para teste final antes da entrega.
-- Modulo de produtos/estoque implementado com API REST, Firestore/fallback local, testes e tela integrada.
-- Estoque de aparelhos para venda implementado com categorias `celular_novo`, `celular_seminovo` e `celular_restaurado`, IMEI obrigatorio, origem, laudo, garantia, custo de entrada/restauracao e controle individual por unidade.
-- Movimentacoes manuais de estoque implementadas com entrada, saida, ajuste, historico por produto e bloqueio de estoque negativo.
-- Baixa automatica de pecas usadas na OS integrada ao estoque.
-- Upload de fotos no checklist funcionando com Firebase Storage, regras por custom claim e metadados salvos no checklist.
-- Impressao do checklist tecnico implementada com versao limpa para papel contendo OS, cliente, aparelho, itens, fotos e assinaturas.
-- Checklist tecnico registra o usuario logado como atendente e avisa o cliente pelo WhatsApp quando criado.
-- Firestore real ativo no projeto `rr-infocell` e modulo de clientes validado gravando no banco real.
-- Base de Firebase Auth preparada no frontend com `AuthProvider`, login/logout e protecao de rotas por perfil.
-- Tela administrativa de usuarios implementada para criar usuarios internos e definir nivel de acesso.
-- Modulo de Atendimento WhatsApp implementado com conversas, midias, acoes de OS, automacoes de abertura/status/lembretes e PIX opcional.
+## Status atual — Branch TECH-V2
 
-## Stack definida
+MVP publicado e validado com o cliente. Em evolução contínua com feedbacks reais de uso.
+
+## Stack
 
 ### Frontend
-
-- React
-- TypeScript
-- Vite
-- Tailwind CSS
-- shadcn/ui
-- lucide-react
-- Recharts
+- React + TypeScript + Vite
+- Tailwind CSS + shadcn/ui
+- react-icons + lucide-react
+- Recharts + react-day-picker + date-fns (ptBR)
+- @tanstack/react-query
 
 ### Backend
-
-- Node.js
-- Express
-- TypeScript
-- Firebase Admin SDK
-- Firebase Auth
-- Firestore
+- Node.js + Express + TypeScript
+- Firebase Admin SDK + Firestore + Firebase Auth
+- OpenAI SDK (GPT-4o-mini para assistente IA)
 
 ### Infra
+- Firebase Hosting (frontend)
+- Cloud Run (backend Node/Express)
+- Firestore (banco principal)
+- Firebase Storage (fotos do checklist)
 
-- Firebase Hosting para o frontend.
-- Firestore como banco principal.
-- Firebase Storage para fotos e comprovantes.
-- Cloud Run para API Node/Express.
+## Estrutura do repositório
 
-## Estrutura do repositorio
-
-```text
+```
 rr-infocell/
-|-- frontend/
-|   |-- src/
-|   |-- public/
-|   |-- package.json
-|   `-- vite.config.ts
-|-- backend/
-|   |-- src/
-|   |-- package.json
-|   `-- README.md
-|-- infra/
-|   |-- firebase/
-|   |   |-- architecture.md
-|   |   |-- setup.md
-|   |   |-- firestore.rules
-|   |   `-- storage.rules
-|   `-- README.md
-|-- firebase.json
-|-- .firebaserc.example
-|-- Makefile
-|-- docs/
-|   |-- design-system.md
-|   |-- mvp-scope.md
-|   |-- notion-update-rule.md
-|   `-- project-structure.md
-`-- README.md
+├── frontend/
+│   ├── src/
+│   │   ├── components/       # UI components (shadcn + custom)
+│   │   ├── constants/        # Status labels, routes, query config, business rules
+│   │   ├── lib/              # Formatters (date-fns), utils
+│   │   ├── pages/            # Todas as telas do sistema
+│   │   └── services/         # Clientes de API
+│   └── public/
+│       └── screenshots/      # Screenshots usados no Centro de Treinamento
+├── backend/
+│   └── src/modules/          # aparelhos, ajuda, categorias, checklists,
+│                             # clientes, contas, despesas, marcas,
+│                             # movimentacoes-estoque, orcamentos,
+│                             # ordem-eventos, ordens-servico,
+│                             # produtos, usuarios, vendas, whatsapp
+├── infra/
+├── docs/
+└── Makefile
 ```
 
-## Como rodar tudo junto
+## Como rodar
 
 ```bash
 make dev
 ```
 
-Para rodar com Firebase Emulator local:
+Serviços locais:
+- Frontend: `http://127.0.0.1:5173`
+- Backend: `http://localhost:3333`
 
-```bash
-make dev-db
-```
-
-Se as portas ja estiverem ocupadas por uma execucao anterior:
-
+Se as portas estiverem ocupadas:
 ```bash
 make dev-fresh
 ```
 
-Servicos locais:
+## Módulos implementados
 
-```text
-Frontend: http://127.0.0.1:5173
-Backend:  http://localhost:3333
-Firebase UI: http://127.0.0.1:4000
+### Fluxo principal de atendimento
+```
+Nova OS → Checklist → Manutenção → Orçamento → PDV/Caixa → Termo de Garantia
+```
+Cada etapa navega automaticamente para a próxima ao salvar.
+
+### Telas disponíveis
+| Rota | Descrição |
+|---|---|
+| `/app` | Dashboard com métricas, OS recentes e alertas |
+| `/app/ordens/nova` | Nova OS com cadastro rápido de cliente + aparelho |
+| `/app/ordens` | Lista de OS com filtros, busca, countdown de prazo |
+| `/app/checklist` | Checklist técnico de entrada e saída com fotos |
+| `/app/manutencao` | Diagnóstico, peças, linha do tempo, status |
+| `/app/orcamento` | Envio e aprovação de orçamento via WhatsApp |
+| `/app/estoque` | Dashboard de consulta de produtos e nível de estoque |
+| `/app/movimentacoes` | Entrada/saída/transferência com NF-e |
+| `/app/pdv` | Fechamento de OS e venda direta |
+| `/app/financeiro` | DRE, gráfico semanal, contas bancárias, exportar PDF |
+| `/app/despesas` | Registro de despesas operacionais |
+| `/app/clientes` | Cadastro e histórico |
+| `/app/aparelhos` | Histórico de dispositivos por cliente |
+| `/app/atendimento` | WhatsApp integrado com Baileys |
+| `/app/usuarios` | Gestão de acessos (admin, atendente, técnico) |
+| `/app/treinamento` | Centro de treinamento com guias passo a passo |
+
+### Backend — endpoints principais
+```
+GET/POST/PUT/DELETE /api/clientes
+GET/POST/PUT/DELETE /api/aparelhos
+GET/POST/PUT/PATCH  /api/ordens-servico
+GET/POST/PUT        /api/checklists
+GET/POST            /api/movimentacoes-estoque
+GET/POST/PUT/DELETE /api/produtos
+GET/POST/DELETE     /api/categorias
+GET/POST/DELETE     /api/marcas
+GET/POST/PUT/DELETE /api/contas
+GET/POST            /api/orcamentos
+GET/POST            /api/vendas
+GET/POST/PUT/DELETE /api/despesas
+GET                 /api/usuarios/tecnicos
+POST                /api/ajuda/perguntar   ← Assistente IA (GPT-4o-mini)
 ```
 
-Por padrao, o backend local usa Firestore real quando `backend/.env` aponta para uma service account via `GOOGLE_APPLICATION_CREDENTIALS`. Use `make dev-db` apenas quando quiser trabalhar com banco emulado.
+## Autenticação
 
-## Autenticacao no frontend
+Firebase Auth com custom claim `role` (`admin`, `atendente`, `tecnico`).
 
-O frontend ja tem base para Firebase Auth. Em desenvolvimento, `VITE_AUTH_DEV_MODE=true` permite entrar escolhendo o perfil na tela de login sem precisar criar usuarios reais ainda.
+Em desenvolvimento, `VITE_AUTH_DEV_MODE=true` permite entrar sem usuário real.
 
-Para testar com usuarios reais do Firebase Auth:
-
-1. Configure `frontend/.env` com as variaveis `VITE_FIREBASE_*`.
-2. Altere `VITE_AUTH_DEV_MODE=false`.
-3. Crie o primeiro admin pelo script `npm run auth:set-role`.
-4. Entre com o admin real e use `/app/usuarios` para cadastrar os demais usuarios.
-
-As permissoes finas por usuario usam custom claim `role` com os valores `admin`, `atendente` ou `tecnico`.
-
-Para definir a claim de perfil via backend:
-
+Para criar admin:
 ```bash
 cd backend
-npm run auth:set-role -- --email atendente@rrinfocell.com --role atendente
+npm run auth:set-role -- --email admin@exemplo.com --role admin
 ```
 
-## Como rodar o frontend
+## Variáveis de ambiente
+
+### Backend (`backend/.env`)
+```
+NODE_ENV=development
+PORT=3333
+CORS_ORIGIN=http://127.0.0.1:5173
+FIREBASE_PROJECT_ID=rr-infocell
+GOOGLE_APPLICATION_CREDENTIALS=./firebase-service-account.local.json
+OPENAI_API_KEY=sk-...
+```
+
+### Frontend (`frontend/.env`)
+```
+VITE_API_BASE_URL=http://localhost:3333/api
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=rr-infocell.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=rr-infocell
+VITE_FIREBASE_STORAGE_BUCKET=rr-infocell.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=...
+VITE_FIREBASE_APP_ID=...
+```
+
+## Validação
 
 ```bash
-cd frontend
-npm install
-npm run dev -- --host 127.0.0.1 --port 5173
+# Frontend
+cd frontend && npm run build && npx tsc --noEmit
+
+# Backend
+cd backend && npm run build && npm run lint
 ```
 
-Servidor local padrao:
+## Funcionalidades principais
 
-```text
-http://127.0.0.1:5173
-```
+- ✅ Fluxo completo de OS com navegação automática entre etapas
+- ✅ Cadastro rápido de cliente + aparelho dentro da Nova OS
+- ✅ Checklist técnico de entrada e saída com upload de fotos
+- ✅ Orçamento enviado via WhatsApp com aprovação registrada
+- ✅ Termo de Garantia impresso no Detalhe da OS
+- ✅ Estoque com categorias/marcas customizáveis, gauge de nível, NF-e
+- ✅ PDV com fechamento de OS e venda direta
+- ✅ DRE simplificado com exportação em PDF
+- ✅ Contas bancárias com saldo editável
+- ✅ WhatsApp integrado (Baileys) com ações automáticas de OS
+- ✅ Assistente IA (GPT-4o-mini) com guias rápidos do sistema
+- ✅ Centro de treinamento com screenshots reais e progresso por módulo
+- ✅ Dark/light mode com persistência
+- ✅ Command Palette (Ctrl+K), mobile navigation, DatePicker ptBR
+- ✅ Refatoração: constants/, formatters.ts, react-icons, react-day-picker
 
-## Como rodar o backend
+## Documentação
 
-```bash
-cd backend
-npm install
-npm run dev
-```
-
-Servidor local padrao:
-
-```text
-http://localhost:3333
-```
-
-Health check:
-
-```text
-GET /api/health
-```
-
-## Validacao
-
-```bash
-cd frontend
-npm run build
-npm test
-```
-
-```bash
-cd backend
-npm run build
-npm run lint
-npm run format:check
-npm test
-```
-
-## Documentacao
-
-- [Design system](docs/design-system.md)
-- [Escopo do MVP](docs/mvp-scope.md)
-- [Arquitetura Firebase](infra/firebase/architecture.md)
-- [Setup Firebase](infra/firebase/setup.md)
-- [Cloud Run](infra/cloud-run/README.md)
-- [Estrutura do projeto](docs/project-structure.md)
-- [Regra de atualizacao do Notion](docs/notion-update-rule.md)
-- [Checklist de deploy de producao](docs/production-deploy.md)
 - [Backend](backend/README.md)
-- [Modulo clientes](backend/src/modules/clientes/README.md)
-- [Modulo aparelhos](backend/src/modules/aparelhos/README.md)
-- [Modulo ordens de servico](backend/src/modules/ordens-servico/README.md)
-- [Modulo checklists](backend/src/modules/checklists/README.md)
-- [Modulo usuarios](backend/src/modules/usuarios/README.md)
-- [Modulo produtos e estoque](backend/src/modules/produtos/README.md)
-- [Modulo movimentacoes de estoque](backend/src/modules/movimentacoes-estoque/README.md)
-
-## Funcionalidades do MVP
-
-- Login com base preparada para Firebase Auth.
-- Cadastro de usuarios internos por perfil.
-- Dashboard inicial.
-- Cadastro de clientes.
-- Cadastro de aparelhos.
-- Ordem de servico.
-- Checklist tecnico.
-- Controle de status da OS.
-- Upload de fotos no checklist.
-- Impressao do checklist tecnico.
-- Relatorio basico de OS por status no dashboard.
-- Visualizacao e impressao simples de comprovante da OS.
-- Estoque integrado com API real, CRUD de produtos, movimentacoes manuais e baixa por OS.
-- Venda direta no PDV para celulares por IMEI, acessorios e servicos avulsos, com historico financeiro.
-- Atendimento WhatsApp com envio/recebimento de mensagens, midias, acoes de OS e automacoes operacionais.
-- Sincronizacao entre detalhe da OS e manutencao para valores de pecas, mao de obra e total.
-
-## Fora do MVP inicial
-
-- PDV fiscal completo.
-- DRE completo.
-- Integracao com MarketUP.
-- Assinatura digital.
-- WhatsApp automatico avancado, campanhas e templates oficiais.
-- App mobile.
+- [Infra](infra/README.md)
+- [WhatsApp](whatsapp/README.md)
+- [Notion (documentação do projeto)](https://www.notion.so/34c9de4c6a6380b39ea4f86242ff322a)
