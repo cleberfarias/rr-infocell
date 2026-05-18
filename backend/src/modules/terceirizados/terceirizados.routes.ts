@@ -5,7 +5,7 @@ export const terceirizadosRoutes = Router();
 
 const COLLECTION = "terceirizados";
 
-terceirizadosRoutes.get("/", async (_req, res, next) => {
+terceirizadosRoutes.get("/", async (_req, res, _next) => {
   try {
     const db = getFirestore();
     const snap = await db.collection(COLLECTION).orderBy("criadoEm", "desc").get();
