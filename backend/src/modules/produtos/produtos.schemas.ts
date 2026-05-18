@@ -31,6 +31,8 @@ export const produtoInputSchema = z
     precoVenda: money,
     ativo: z.boolean().optional(),
     marca: optionalText,
+    fornecedor: optionalText,
+    codigoFornecedor: optionalText,
     modelo: optionalText,
     imei: optionalText,
     cor: optionalText,

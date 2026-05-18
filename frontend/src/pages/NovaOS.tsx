@@ -25,6 +25,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { capitalizeFirst, formatPhone, formatDocument } from "@/lib/formatters";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/sonner";
 import { createAparelho, listAparelhos } from "@/services/aparelhos";
@@ -122,6 +124,7 @@ const NovaOS = () => {
   const [quickAparelho, setQuickAparelho] = useState<QuickAparelhoForm>(emptyQuickAparelho);
   const [formError, setFormError] = useState<string | null>(null);
   const [cadastroRapidoError, setCadastroRapidoError] = useState<string | null>(null);
+  const [quickErrors, setQuickErrors] = useState<Record<string, string>>({});
   const [clienteOpen, setClienteOpen] = useState(false);
   const [aparelhoOpen, setAparelhoOpen] = useState(false);
 
@@ -253,19 +256,19 @@ const NovaOS = () => {
 
   const handleCreateCadastroRapido = () => {
     setCadastroRapidoError(null);
-
-    if (!quickCliente.nome.trim() || !quickCliente.telefone.trim()) {
-      setCadastroRapidoError("Informe nome e telefone do cliente.");
-      return;
-    }
-
-    if (!quickAparelho.marca.trim() || !quickAparelho.modelo.trim()) {
-      setCadastroRapidoError("Informe marca e modelo do aparelho.");
-      return;
-    }
-
+    const errs: Record<string, string> = {};
+    if (!quickCliente.nome.trim()) errs.clienteNome = "Nome é obrigatório.";
+    if (!quickCliente.telefone.trim()) errs.clienteTelefone = "Telefone é obrigatório.";
+    else if (quickCliente.telefone.replace(/\D/g, "").length < 10) errs.clienteTelefone = "Telefone inválido.";
+    if (!quickAparelho.marca.trim()) errs.aparelhoMarca = "Marca é obrigatória.";
+    if (!quickAparelho.modelo.trim()) errs.aparelhoModelo = "Modelo é obrigatório.";
+    if (Object.keys(errs).length > 0) { setQuickErrors(errs); return; }
+    setQuickErrors({});
     createCadastroRapidoMutation.mutate();
   };
+
+  const updQuick = (field: string, value: string) =>
+    setQuickErrors((e) => { const n = { ...e }; delete n[field]; return n; });
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -456,31 +459,43 @@ const NovaOS = () => {
                 Cliente
               </p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Input
-                  value={quickCliente.nome}
-                  onChange={(event) => updateQuickCliente("nome", event.target.value)}
-                  placeholder="Nome do cliente"
-                />
-                <Input
-                  value={quickCliente.telefone}
-                  onChange={(event) => updateQuickCliente("telefone", event.target.value)}
-                  placeholder="Telefone/WhatsApp"
-                />
+                <div className="space-y-1.5">
+                  <Input
+                    value={quickCliente.nome}
+                    onChange={(event) => { updateQuickCliente("nome", capitalizeFirst(event.target.value)); updQuick("clienteNome", ""); }}
+                    placeholder="Nome do cliente *"
+                    className={quickErrors.clienteNome ? "border-destructive" : ""}
+                  />
+                  {quickErrors.clienteNome && <p className="text-xs text-destructive">{quickErrors.clienteNome}</p>}
+                </div>
+                <div className="space-y-1.5">
+                  <Input
+                    value={quickCliente.telefone}
+                    onChange={(event) => { updateQuickCliente("telefone", formatPhone(event.target.value)); updQuick("clienteTelefone", ""); }}
+                    placeholder="Telefone/WhatsApp *"
+                    inputMode="numeric"
+                    className={quickErrors.clienteTelefone ? "border-destructive" : ""}
+                  />
+                  {quickErrors.clienteTelefone && <p className="text-xs text-destructive">{quickErrors.clienteTelefone}</p>}
+                </div>
                 <Input
                   value={quickCliente.documento}
-                  onChange={(event) => updateQuickCliente("documento", event.target.value)}
+                  onChange={(event) => updateQuickCliente("documento", formatDocument(event.target.value))}
                   placeholder="CPF/CNPJ opcional"
+                  inputMode="numeric"
                 />
                 <Input
                   value={quickCliente.email}
                   onChange={(event) => updateQuickCliente("email", event.target.value)}
                   placeholder="E-mail opcional"
+                  type="email"
+                  inputMode="email"
                 />
                 <Textarea
                   className="sm:col-span-2"
                   rows={2}
                   value={quickCliente.observacoes}
-                  onChange={(event) => updateQuickCliente("observacoes", event.target.value)}
+                  onChange={(event) => updateQuickCliente("observacoes", capitalizeFirst(event.target.value))}
                   placeholder="Observações do cliente"
                 />
               </div>
@@ -488,19 +503,27 @@ const NovaOS = () => {
                 Aparelho
               </p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Input
-                  value={quickAparelho.marca}
-                  onChange={(event) => updateQuickAparelho("marca", event.target.value)}
-                  placeholder="Marca"
-                />
-                <Input
-                  value={quickAparelho.modelo}
-                  onChange={(event) => updateQuickAparelho("modelo", event.target.value)}
-                  placeholder="Modelo"
-                />
+                <div className="space-y-1.5">
+                  <Input
+                    value={quickAparelho.marca}
+                    onChange={(event) => { updateQuickAparelho("marca", capitalizeFirst(event.target.value)); updQuick("aparelhoMarca", ""); }}
+                    placeholder="Marca *"
+                    className={quickErrors.aparelhoMarca ? "border-destructive" : ""}
+                  />
+                  {quickErrors.aparelhoMarca && <p className="text-xs text-destructive">{quickErrors.aparelhoMarca}</p>}
+                </div>
+                <div className="space-y-1.5">
+                  <Input
+                    value={quickAparelho.modelo}
+                    onChange={(event) => { updateQuickAparelho("modelo", capitalizeFirst(event.target.value)); updQuick("aparelhoModelo", ""); }}
+                    placeholder="Modelo *"
+                    className={quickErrors.aparelhoModelo ? "border-destructive" : ""}
+                  />
+                  {quickErrors.aparelhoModelo && <p className="text-xs text-destructive">{quickErrors.aparelhoModelo}</p>}
+                </div>
                 <Input
                   value={quickAparelho.cor}
-                  onChange={(event) => updateQuickAparelho("cor", event.target.value)}
+                  onChange={(event) => updateQuickAparelho("cor", capitalizeFirst(event.target.value))}
                   placeholder="Cor opcional"
                 />
                 <Input
@@ -510,19 +533,19 @@ const NovaOS = () => {
                 />
                 <Input
                   value={quickAparelho.estadoFisico}
-                  onChange={(event) => updateQuickAparelho("estadoFisico", event.target.value)}
+                  onChange={(event) => updateQuickAparelho("estadoFisico", capitalizeFirst(event.target.value))}
                   placeholder="Estado físico"
                 />
                 <Input
                   value={quickAparelho.acessorios}
-                  onChange={(event) => updateQuickAparelho("acessorios", event.target.value)}
+                  onChange={(event) => updateQuickAparelho("acessorios", capitalizeFirst(event.target.value))}
                   placeholder="Acessórios entregues"
                 />
                 <Textarea
                   className="sm:col-span-2"
                   rows={2}
                   value={quickAparelho.observacoes}
-                  onChange={(event) => updateQuickAparelho("observacoes", event.target.value)}
+                  onChange={(event) => updateQuickAparelho("observacoes", capitalizeFirst(event.target.value))}
                   placeholder="Observações do aparelho"
                 />
               </div>
@@ -573,7 +596,7 @@ const NovaOS = () => {
                   rows={3}
                   value={form.defeitoRelatado}
                   onChange={(event) =>
-                    updateForm("defeitoRelatado", event.target.value)
+                    updateForm("defeitoRelatado", capitalizeFirst(event.target.value))
                   }
                   placeholder="Descreva o problema conforme relato do cliente..."
                   required
@@ -585,7 +608,7 @@ const NovaOS = () => {
                   rows={2}
                   value={form.diagnostico}
                   onChange={(event) =>
-                    updateForm("diagnostico", event.target.value)
+                    updateForm("diagnostico", capitalizeFirst(event.target.value))
                   }
                   placeholder="Opcional: teste rápido, primeira avaliação ou notas internas..."
                 />
@@ -696,27 +719,17 @@ const NovaOS = () => {
             </p>
             <div className="space-y-4">
               <FormField id="nova-os-pecas" label="Valor de peças">
-                <Input
+                <MoneyInput
                   id="nova-os-pecas"
-                  type="number"
-                  min="0"
-                  step="0.01"
                   value={form.valorPecas}
-                  onChange={(event) =>
-                    updateForm("valorPecas", event.target.value)
-                  }
+                  onChange={(v) => updateForm("valorPecas", v)}
                 />
               </FormField>
               <FormField id="nova-os-mao-obra" label="Valor de mão de obra">
-                <Input
+                <MoneyInput
                   id="nova-os-mao-obra"
-                  type="number"
-                  min="0"
-                  step="0.01"
                   value={form.valorMaoObra}
-                  onChange={(event) =>
-                    updateForm("valorMaoObra", event.target.value)
-                  }
+                  onChange={(v) => updateForm("valorMaoObra", v)}
                 />
               </FormField>
               <div className="rounded-md border border-border bg-secondary/30 p-3">

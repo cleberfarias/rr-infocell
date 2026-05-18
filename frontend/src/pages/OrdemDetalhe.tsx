@@ -602,13 +602,15 @@ const OrdemDetalhe = () => {
             <span>Aparelho</span>
             <strong>{deviceLabel}</strong>
             <p>{aparelho?.imeiSerial ? `IMEI ${aparelho.imeiSerial}` : "—"}</p>
-            <p>{aparelho?.cor ?? "—"}</p>
+            {aparelho?.cor && <p>Cor: {aparelho.cor}</p>}
+            {aparelho?.acessorios && <p>Acessórios: {aparelho.acessorios}</p>}
           </div>
           <div>
             <span>Total pago</span>
             <strong>{formatBRL(ordem.valorTotal)}</strong>
             <p>Peças: {formatBRL(ordem.valorPecas)}</p>
             <p>Mão de obra: {formatBRL(ordem.valorMaoObra)}</p>
+            {ordem.formaPagamento && <p>Pagamento: {ordem.formaPagamento.toUpperCase()}</p>}
           </div>
         </div>
 
@@ -616,9 +618,23 @@ const OrdemDetalhe = () => {
         <table className="print-table">
           <tbody>
             <tr>
-              <th>Diagnóstico</th>
+              <th>Defeito relatado</th>
+              <td>{ordem.defeitoRelatado}</td>
+            </tr>
+            <tr>
+              <th>Diagnóstico / serviço executado</th>
               <td>{ordem.diagnostico ?? "—"}</td>
             </tr>
+            <tr>
+              <th>Técnico responsável</th>
+              <td>{ordem.tecnicoResponsavel ?? "—"}</td>
+            </tr>
+            {aparelho?.estadoFisico && (
+              <tr>
+                <th>Estado físico na entrega</th>
+                <td>{aparelho.estadoFisico}</td>
+              </tr>
+            )}
           </tbody>
         </table>
 

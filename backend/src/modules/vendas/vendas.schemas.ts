@@ -15,7 +15,7 @@ export const vendaInputSchema = z
         }),
       )
       .optional(),
-    formaPagamento: z.enum(["pix", "cartao", "dinheiro"]),
+    formaPagamento: z.enum(["pix", "cartao", "dinheiro", "terceirizado"]),
     valorRecebido: z.coerce.number().min(0, "Valor recebido nao pode ser negativo."),
   })
   .superRefine((input, ctx) => {

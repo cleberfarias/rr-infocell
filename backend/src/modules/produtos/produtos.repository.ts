@@ -71,6 +71,8 @@ const filterProdutos = (
         produto.categoria,
         produto.imei,
         produto.marca,
+        produto.fornecedor,
+        produto.codigoFornecedor,
         produto.modelo,
         produto.observacoes,
       ]
@@ -231,6 +233,8 @@ export class FirestoreProdutosRepository implements ProdutosRepository {
       precoVenda: Number(data.precoVenda ?? 0),
       ativo: data.ativo !== false,
       marca: data.marca ? String(data.marca) : undefined,
+      fornecedor: data.fornecedor ? String(data.fornecedor) : undefined,
+      codigoFornecedor: data.codigoFornecedor ? String(data.codigoFornecedor) : undefined,
       modelo: data.modelo ? String(data.modelo) : undefined,
       imei: data.imei ? String(data.imei) : undefined,
       cor: data.cor ? String(data.cor) : undefined,

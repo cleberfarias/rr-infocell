@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Banknote,
@@ -8,6 +8,8 @@ import {
   Printer,
   QrCode,
   Receipt,
+  Search,
+  Users,
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 
@@ -16,6 +18,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -23,7 +26,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { formatBRL } from "@/lib/formatters";
+import { MoneyInput } from "@/components/ui/money-input";
 import { listAparelhos } from "@/services/aparelhos";
 import { listClientes } from "@/services/clientes";
 import {
@@ -33,7 +38,39 @@ import {
 } from "@/services/ordens-servico";
 import { listProdutos, type Produto } from "@/services/produtos";
 import { createVenda, listVendas, type Venda } from "@/services/vendas";
+import { createTerceirizado, type TerceirizadoInput } from "@/services/terceirizados";
 
+// ── Tipos para terceirizado ───────────────────────────────────────────────────
+type TerceirizadoInfo = {
+  responsavel: string;
+  descricao: string;
+  valorRepasse: string;
+  statusRepasse: "pendente" | "pago";
+  observacoes: string;
+};
+
+type TerceirizadoFinalizado = {
+  id: string;
+  clienteNome?: string;
+  responsavel?: string;
+  descricao?: string;
+  valorCobrado: number;
+  valorRepasse: number;
+  lucro: number;
+  statusRepasse: "pendente" | "pago";
+  observacoes?: string;
+  createdAt: string;
+};
+
+const emptyTerceirizado: TerceirizadoInfo = {
+  responsavel: "",
+  descricao: "",
+  valorRepasse: "",
+  statusRepasse: "pendente",
+  observacoes: "",
+};
+
+// ── Opções de pagamento ───────────────────────────────────────────────────────
 const paymentOptions: Array<{
   key: OrdemServicoFormaPagamento;
   label: string;
@@ -42,11 +79,14 @@ const paymentOptions: Array<{
   { key: "pix", label: "PIX", icon: QrCode },
   { key: "cartao", label: "Cartão", icon: CreditCard },
   { key: "dinheiro", label: "Dinheiro", icon: Banknote },
+  { key: "terceirizado", label: "Terceirizado", icon: Users },
 ];
 
 const PDV = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   const [selectedOrdemId, setSelectedOrdemId] = useState(
     searchParams.get("ordemId") ?? "",
   );
@@ -56,10 +96,18 @@ const PDV = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [modoVenda, setModoVenda] = useState<"os" | "direta">("os");
   const [clienteVendaDireta, setClienteVendaDireta] = useState("");
-  const [produtoSelecionadoId, setProdutoSelecionadoId] = useState("");
   const [carrinho, setCarrinho] = useState<Array<Produto & { quantidadeVenda: number }>>([]);
   const [ordemFinalizada, setOrdemFinalizada] = useState<OrdemServico | null>(null);
   const [vendaFinalizada, setVendaFinalizada] = useState<Venda | null>(null);
+
+  // ── Busca de produto ──────────────────────────────────────────────────────
+  const [buscaProduto, setBuscaProduto] = useState("");
+  const [buscaAberta, setBuscaAberta] = useState(false);
+
+  // ── Terceirizado ──────────────────────────────────────────────────────────
+  const [terceirizadoInfo, setTerceirizadoInfo] = useState<TerceirizadoInfo>(emptyTerceirizado);
+  const [terceirizadoFinalizado, setTerceirizadoFinalizado] = useState<TerceirizadoFinalizado | null>(null);
+  const [tercErrors, setTercErrors] = useState<Record<string, string>>({});
 
   const ordensQuery = useQuery({
     queryKey: ["ordens-servico", "pdv"],
@@ -95,38 +143,50 @@ const PDV = () => {
   );
 
   const clienteById = useMemo(
-    () =>
-      new Map(
-        (clientesQuery.data ?? []).map((cliente) => [cliente.id, cliente]),
-      ),
+    () => new Map((clientesQuery.data ?? []).map((c) => [c.id, c])),
     [clientesQuery.data],
   );
 
   const aparelhoById = useMemo(
-    () =>
-      new Map(
-        (aparelhosQuery.data ?? []).map((aparelho) => [aparelho.id, aparelho]),
-      ),
+    () => new Map((aparelhosQuery.data ?? []).map((a) => [a.id, a])),
     [aparelhosQuery.data],
   );
+
   const produtosVenda = useMemo(
-    () => (produtosQuery.data ?? []).filter((produto) => produto.estoqueAtual > 0 || produto.categoria === "servico"),
+    () => (produtosQuery.data ?? []).filter((p) => p.estoqueAtual > 0 || p.categoria === "servico"),
     [produtosQuery.data],
   );
-  const produtoSelecionado = produtosVenda.find((produto) => produto.id === produtoSelecionadoId);
+
+  // ── Busca filtrada de produtos ────────────────────────────────────────────
+  const produtosBusca = useMemo(() => {
+    const q = buscaProduto.trim().toLowerCase();
+    if (!q) return [];
+    return produtosVenda.filter((p) =>
+      [p.nome, p.sku, p.marca ?? "", p.modelo ?? "", p.categoria, p.fornecedor ?? "", p.codigoFornecedor ?? ""]
+        .some((v) => v.toLowerCase().includes(q))
+    ).slice(0, 8);
+  }, [buscaProduto, produtosVenda]);
+
   const totalDireto = carrinho.reduce(
     (total, item) => total + item.precoVenda * item.quantidadeVenda,
     0,
   );
 
   const selectedOrdemPronta = useMemo(() => {
-    if (!selectedOrdemId) {
-      return null;
-    }
-
-    return ordens.find((ordem) => ordem.id === selectedOrdemId) ?? null;
+    if (!selectedOrdemId) return null;
+    return ordens.find((o) => o.id === selectedOrdemId) ?? null;
   }, [ordens, selectedOrdemId]);
+
   const selectedOrdem = selectedOrdemPronta ?? ordemFinalizada;
+
+  // ── Cálculo lucro terceirizado ────────────────────────────────────────────
+  const lucroTerceirizado = useMemo(() => {
+    if (formaPagamento !== "terceirizado") return null;
+    const cobrado = Number(valorRecebido.replace(",", ".")) || 0;
+    const repasse = Number(terceirizadoInfo.valorRepasse.replace(",", ".")) || 0;
+    if (!cobrado && !repasse) return null;
+    return cobrado - repasse;
+  }, [formaPagamento, valorRecebido, terceirizadoInfo.valorRepasse]);
 
   useEffect(() => {
     if (!selectedOrdemId && ordens[0]) {
@@ -141,56 +201,62 @@ const PDV = () => {
   }, [selectedOrdemPronta]);
 
   useEffect(() => {
-    if (modoVenda === "direta") {
+    if (modoVenda === "direta" && formaPagamento !== "terceirizado") {
       setValorRecebido(String(totalDireto));
     }
-  }, [modoVenda, totalDireto]);
+  }, [modoVenda, totalDireto, formaPagamento]);
+
+  const adicionarProdutoById = (produtoId: string) => {
+    const produto = produtosVenda.find((p) => p.id === produtoId);
+    if (!produto) return;
+    setCarrinho((current) => {
+      if (produto.categoria.startsWith("celular_") && current.some((item) => item.id === produto.id)) {
+        return current;
+      }
+      const existing = current.find((item) => item.id === produto.id);
+      if (existing && !produto.categoria.startsWith("celular_")) {
+        const limite = produto.categoria === "servico"
+          ? existing.quantidadeVenda + 1
+          : produto.estoqueAtual;
+        return current.map((item) =>
+          item.id === produto.id
+            ? { ...item, quantidadeVenda: Math.min(item.quantidadeVenda + 1, limite) }
+            : item,
+        );
+      }
+      return [...current, { ...produto, quantidadeVenda: 1 }];
+    });
+  };
 
   const finalizarMutation = useMutation({
     mutationFn: async () => {
       if (!selectedOrdemPronta) {
         throw new Error("Selecione uma OS.");
       }
-
       const recebido = Number(valorRecebido.replace(",", ".")) || 0;
-
       if (recebido < selectedOrdemPronta.valorTotal) {
         throw new Error("Valor recebido menor que o total da OS.");
       }
-
       const venda = await createVenda({
         ordemServicoId: selectedOrdemPronta.id,
         formaPagamento,
         valorRecebido: recebido,
       });
-
       return { ordem: selectedOrdemPronta, venda };
     },
     onSuccess: async ({ ordem, venda }) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["ordens-servico"] }),
-        queryClient.invalidateQueries({
-          queryKey: ["ordem-servico", venda.ordemServicoId],
-        }),
+        queryClient.invalidateQueries({ queryKey: ["ordem-servico", venda.ordemServicoId] }),
         queryClient.invalidateQueries({ queryKey: ["vendas"] }),
         queryClient.invalidateQueries({ queryKey: ["ordem-eventos"] }),
       ]);
-      setOrdemFinalizada({
-        ...ordem,
-        status: "entregue",
-        formaPagamento: venda.formaPagamento,
-        valorRecebido: venda.valorRecebido,
-        troco: venda.troco,
-      });
+      setOrdemFinalizada({ ...ordem, status: "entregue", formaPagamento: venda.formaPagamento, valorRecebido: venda.valorRecebido, troco: venda.troco });
       setVendaFinalizada(venda);
       setFormError(null);
     },
     onError: (error) => {
-      setFormError(
-        error instanceof Error
-          ? error.message
-          : "Não foi possível finalizar a venda.",
-      );
+      setFormError(error instanceof Error ? error.message : "Não foi possível finalizar a venda.");
     },
   });
 
@@ -199,7 +265,6 @@ const PDV = () => {
       if (carrinho.length === 0) throw new Error("Adicione ao menos um item.");
       const recebido = Number(valorRecebido.replace(",", ".")) || 0;
       if (recebido < totalDireto) throw new Error("Valor recebido menor que o total da venda.");
-
       return createVenda({
         clienteNome: clienteVendaDireta || undefined,
         formaPagamento,
@@ -220,12 +285,51 @@ const PDV = () => {
       ]);
       setVendaFinalizada(venda);
       setCarrinho([]);
-      setProdutoSelecionadoId("");
+      setBuscaProduto("");
       setClienteVendaDireta("");
       setFormError(null);
     },
     onError: (error) => {
       setFormError(error instanceof Error ? error.message : "Não foi possível finalizar a venda.");
+    },
+  });
+
+  const finalizarTerceirizadoMutation = useMutation({
+    mutationFn: async () => {
+      const cobrado = Number(valorRecebido.replace(",", ".")) || 0;
+      const repasse = Number(terceirizadoInfo.valorRepasse.replace(",", ".")) || 0;
+      const input: TerceirizadoInput = {
+        clienteNome: clienteVendaDireta || undefined,
+        responsavel: terceirizadoInfo.responsavel || undefined,
+        descricao: terceirizadoInfo.descricao || undefined,
+        valorCobrado: cobrado,
+        valorRepasse: repasse,
+        statusRepasse: terceirizadoInfo.statusRepasse,
+        observacoes: terceirizadoInfo.observacoes || undefined,
+      };
+      const terceirizado = await createTerceirizado(input);
+      return {
+        id: terceirizado.id,
+        clienteNome: terceirizado.clienteNome ?? undefined,
+        responsavel: terceirizado.responsavel ?? undefined,
+        descricao: terceirizado.descricao ?? undefined,
+        valorCobrado: terceirizado.valorCobrado,
+        valorRepasse: terceirizado.valorRepasse,
+        lucro: terceirizado.lucro,
+        statusRepasse: terceirizado.statusRepasse,
+        observacoes: terceirizado.observacoes ?? undefined,
+        createdAt: terceirizado.criadoEm,
+      } satisfies TerceirizadoFinalizado;
+    },
+    onSuccess: (entry) => {
+      setTerceirizadoFinalizado(entry);
+      setCarrinho([]);
+      setBuscaProduto("");
+      setClienteVendaDireta("");
+      setFormError(null);
+    },
+    onError: (error) => {
+      setFormError(error instanceof Error ? error.message : "Não foi possível registrar lançamento.");
     },
   });
 
@@ -240,80 +344,56 @@ const PDV = () => {
   const handleNovaVenda = () => {
     if (modoVenda === "direta") {
       setVendaFinalizada(null);
+      setTerceirizadoFinalizado(null);
       setCarrinho([]);
-      setProdutoSelecionadoId("");
+      setBuscaProduto("");
       setClienteVendaDireta("");
       setValorRecebido("");
+      setTerceirizadoInfo(emptyTerceirizado);
+      setFormaPagamento("pix");
       setFormError(null);
       return;
     }
-
-    const proximaOrdem = ordens.find((ordem) => ordem.id !== ordemFinalizada?.id);
+    const proximaOrdem = ordens.find((o) => o.id !== ordemFinalizada?.id);
     setOrdemFinalizada(null);
     setVendaFinalizada(null);
     setFormError(null);
-
     if (proximaOrdem) {
       setSelectedOrdemId(proximaOrdem.id);
       setSearchParams({ ordemId: proximaOrdem.id });
       return;
     }
-
     setSelectedOrdemId("");
     setSearchParams({});
   };
 
-  const adicionarProduto = () => {
-    if (!produtoSelecionado) return;
-    setCarrinho((current) => {
-      if (produtoSelecionado.categoria.startsWith("celular_") && current.some((item) => item.id === produtoSelecionado.id)) {
-        return current;
-      }
-
-      const existing = current.find((item) => item.id === produtoSelecionado.id);
-      if (existing && !produtoSelecionado.categoria.startsWith("celular_")) {
-        const limite =
-          produtoSelecionado.categoria === "servico"
-            ? existing.quantidadeVenda + 1
-            : produtoSelecionado.estoqueAtual;
-
-        return current.map((item) =>
-          item.id === produtoSelecionado.id
-            ? { ...item, quantidadeVenda: Math.min(item.quantidadeVenda + 1, limite) }
-            : item,
-        );
-      }
-
-      return [...current, { ...produtoSelecionado, quantidadeVenda: 1 }];
-    });
+  const handleImprimirRecibo = () => {
+    document.body.classList.add("print-recibo");
+    window.print();
+    const onAfterPrint = () => {
+      document.body.classList.remove("print-recibo");
+      window.removeEventListener("afterprint", onAfterPrint);
+    };
+    window.addEventListener("afterprint", onAfterPrint);
   };
 
   const recebido = Number(valorRecebido.replace(",", ".")) || 0;
   const troco = selectedOrdem ? Math.max(0, recebido - selectedOrdem.valorTotal) : 0;
-  const cliente = selectedOrdem
-    ? clienteById.get(selectedOrdem.clienteId)
-    : undefined;
-  const aparelho = selectedOrdem
-    ? aparelhoById.get(selectedOrdem.aparelhoId)
-    : undefined;
-  const isLoading =
-    ordensQuery.isLoading ||
-    clientesQuery.isLoading ||
-    aparelhosQuery.isLoading ||
-    vendasQuery.isLoading;
+  const cliente = selectedOrdem ? clienteById.get(selectedOrdem.clienteId) : undefined;
+  const aparelho = selectedOrdem ? aparelhoById.get(selectedOrdem.aparelhoId) : undefined;
+
+  const isLoading = ordensQuery.isLoading || clientesQuery.isLoading || aparelhosQuery.isLoading || vendasQuery.isLoading;
   const isDirectLoading = produtosQuery.isLoading;
-  const isError =
-    ordensQuery.isError ||
-    clientesQuery.isError ||
-    aparelhosQuery.isError ||
-    vendasQuery.isError;
+  const isError = ordensQuery.isError || clientesQuery.isError || aparelhosQuery.isError || vendasQuery.isError;
+
   const historicoVendas = useMemo(
-    () =>
-      [...(vendasQuery.data ?? [])]
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-        .slice(0, 10),
+    () => [...(vendasQuery.data ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 10),
     [vendasQuery.data],
   );
+
+  // Dados do recibo para impressão
+  const reciboVenda = vendaFinalizada;
+  const reciboTerceirizado = terceirizadoFinalizado;
 
   if (isLoading) {
     return (
@@ -330,11 +410,7 @@ const PDV = () => {
           icon={Receipt}
           title="Não foi possível carregar o caixa"
           description="Verifique se o backend esta rodando e tente novamente."
-          actions={
-            <Button variant="outline" onClick={() => ordensQuery.refetch()}>
-              Tentar novamente
-            </Button>
-          }
+          actions={<Button variant="outline" onClick={() => ordensQuery.refetch()}>Tentar novamente</Button>}
         />
       </Card>
     );
@@ -342,459 +418,725 @@ const PDV = () => {
 
   return (
     <div className="space-y-5">
+      {/* ── Área de impressão de recibo (oculta na tela, visível ao imprimir) ── */}
+      <section className="recibo-print-area">
+        <header className="print-header">
+          <div>
+            <p className="print-kicker">RR Infocell</p>
+            <h1>{reciboTerceirizado ? "Comprovante de Lançamento" : "Recibo de Venda"}</h1>
+            <p>Emitido em {new Date().toLocaleString("pt-BR")}</p>
+          </div>
+          <div className="print-meta">
+            <strong>
+              {reciboTerceirizado
+                ? "Terceirizado"
+                : reciboVenda?.numeroOs
+                  ? `OS-${reciboVenda.numeroOs}`
+                  : "Venda direta"}
+            </strong>
+            <span>
+              Pagamento:{" "}
+              {(reciboTerceirizado
+                ? "Terceirizado"
+                : reciboVenda?.formaPagamento ?? "—"
+              ).toUpperCase()}
+            </span>
+          </div>
+        </header>
+
+        {/* ── Recibo de venda regular ── */}
+        {reciboVenda && (
+          <>
+            <div className="print-grid print-summary">
+              <div>
+                <span>Cliente</span>
+                <strong>
+                  {reciboVenda.clienteNome
+                    ?? (reciboVenda.clienteId ? clienteById.get(reciboVenda.clienteId)?.nome : undefined)
+                    ?? "Balcão"}
+                </strong>
+              </div>
+              {reciboVenda.numeroOs ? (
+                <div>
+                  <span>Ordem de Serviço</span>
+                  <strong>OS-{reciboVenda.numeroOs}</strong>
+                </div>
+              ) : (
+                <div>
+                  <span>Tipo</span>
+                  <strong>Venda direta</strong>
+                </div>
+              )}
+              <div>
+                <span>Pagamento</span>
+                <strong style={{ textTransform: "uppercase" }}>{reciboVenda.formaPagamento}</strong>
+                <p>Recebido: {formatBRL(reciboVenda.valorRecebido)}</p>
+                {reciboVenda.troco > 0 && <p>Troco: {formatBRL(reciboVenda.troco)}</p>}
+              </div>
+            </div>
+
+            {reciboVenda.itens.length > 0 ? (
+              <>
+                <h2>Itens vendidos</h2>
+                <table className="print-table">
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: "left" }}>Item</th>
+                      <th style={{ textAlign: "center" }}>Qtd.</th>
+                      <th style={{ textAlign: "right" }}>Unitário</th>
+                      <th style={{ textAlign: "right" }}>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reciboVenda.itens.map((item) => (
+                      <tr key={`${item.produtoId}-${item.imei ?? item.nome}`}>
+                        <td>
+                          {item.nome}
+                          {item.imei ? ` — IMEI ${item.imei}` : ""}
+                          {item.garantiaDias
+                            ? ` (Garantia: ${item.garantiaDias} dias)`
+                            : ""}
+                        </td>
+                        <td style={{ textAlign: "center" }}>{item.quantidade}</td>
+                        <td style={{ textAlign: "right" }}>{formatBRL(item.valorUnitario)}</td>
+                        <td style={{ textAlign: "right" }}>{formatBRL(item.valorTotal)}</td>
+                      </tr>
+                    ))}
+                    <tr style={{ borderTop: "2px solid #111827", fontWeight: 700 }}>
+                      <td colSpan={3} style={{ textAlign: "right", paddingTop: 6 }}>Total</td>
+                      <td style={{ textAlign: "right", paddingTop: 6 }}>{formatBRL(reciboVenda.valorTotal)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </>
+            ) : (
+              <>
+                <h2>Resumo financeiro</h2>
+                <table className="print-table">
+                  <tbody>
+                    {reciboVenda.valorTotal > 0 && (
+                      <tr>
+                        <th>Total</th>
+                        <td style={{ textAlign: "right" }}>{formatBRL(reciboVenda.valorTotal)}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </>
+            )}
+          </>
+        )}
+
+        {/* ── Comprovante de lançamento terceirizado ── */}
+        {reciboTerceirizado && (
+          <>
+            <div className="print-grid print-summary">
+              <div>
+                <span>Cliente</span>
+                <strong>{reciboTerceirizado.clienteNome ?? "Balcão"}</strong>
+              </div>
+              <div>
+                <span>Responsável / Terceiro</span>
+                <strong>{reciboTerceirizado.responsavel ?? "—"}</strong>
+                {reciboTerceirizado.descricao && <p>{reciboTerceirizado.descricao}</p>}
+              </div>
+              <div>
+                <span>Status do repasse</span>
+                <strong>{reciboTerceirizado.statusRepasse === "pago" ? "PAGO" : "PENDENTE"}</strong>
+              </div>
+            </div>
+
+            <h2>Valores</h2>
+            <table className="print-table">
+              <tbody>
+                <tr>
+                  <th>Valor cobrado do cliente</th>
+                  <td style={{ textAlign: "right" }}>{formatBRL(reciboTerceirizado.valorCobrado)}</td>
+                </tr>
+                <tr>
+                  <th>Repasse / custo</th>
+                  <td style={{ textAlign: "right" }}>{formatBRL(reciboTerceirizado.valorRepasse)}</td>
+                </tr>
+                <tr style={{ fontWeight: 700 }}>
+                  <th>Lucro líquido</th>
+                  <td style={{ textAlign: "right" }}>{formatBRL(reciboTerceirizado.lucro)}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            {reciboTerceirizado.observacoes && (
+              <p style={{ marginTop: 8, fontSize: 10, color: "#374151" }}>
+                <strong>Observações:</strong> {reciboTerceirizado.observacoes}
+              </p>
+            )}
+          </>
+        )}
+
+        <div className="print-signatures">
+          <div><span>Cliente</span></div>
+          <div><span>RR Infocell</span></div>
+        </div>
+      </section>
+
+      {/* ── Conteúdo principal ────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         <div className="space-y-5 lg:col-span-2">
-        <PageHeader
-          eyebrow="PDV / Caixa"
-          title={modoVenda === "os" ? "Fechamento de OS" : "Venda direta"}
-          description="Registre pagamento de OS, celular, acessórios ou serviços avulsos."
-        />
+          <PageHeader
+            eyebrow="PDV / Caixa"
+            title={modoVenda === "os" ? "Fechamento de OS" : "Venda direta"}
+            description="Registre pagamento de OS, celular, acessórios ou serviços avulsos."
+          />
 
-        <Card className="surface-panel flex gap-2 p-3">
-          <Button
-            type="button"
-            variant={modoVenda === "os" ? "default" : "outline"}
-            onClick={() => {
-              setModoVenda("os");
-              setVendaFinalizada(null);
-            }}
-          >
-            Fechar OS
-          </Button>
-          <Button
-            type="button"
-            variant={modoVenda === "direta" ? "default" : "outline"}
-            onClick={() => {
-              setModoVenda("direta");
-              setVendaFinalizada(null);
-              setOrdemFinalizada(null);
-              setSelectedOrdemId("");
-              setSearchParams({});
-            }}
-          >
-            Venda direta
-          </Button>
-        </Card>
+          <Card className="surface-panel flex gap-2 p-3">
+            <Button
+              type="button"
+              variant={modoVenda === "os" ? "default" : "outline"}
+              onClick={() => { setModoVenda("os"); setVendaFinalizada(null); setTerceirizadoFinalizado(null); }}
+            >
+              Fechar OS
+            </Button>
+            <Button
+              type="button"
+              variant={modoVenda === "direta" ? "default" : "outline"}
+              onClick={() => {
+                setModoVenda("direta");
+                setVendaFinalizada(null);
+                setOrdemFinalizada(null);
+                setTerceirizadoFinalizado(null);
+                setSelectedOrdemId("");
+                setSearchParams({});
+              }}
+            >
+              Venda direta
+            </Button>
+          </Card>
 
-        {modoVenda === "direta" ? (
-          <Card className="surface-panel p-6">
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_240px_auto]">
+          {modoVenda === "direta" ? (
+            <Card className="surface-panel p-6 space-y-4">
               <FormField id="pdv-cliente-direto" label="Cliente">
                 <Input
                   id="pdv-cliente-direto"
                   value={clienteVendaDireta}
-                  onChange={(event) => setClienteVendaDireta(event.target.value)}
+                  onChange={(e) => setClienteVendaDireta(e.target.value)}
                   placeholder="Nome do cliente ou venda balcão"
                 />
               </FormField>
-              <FormField id="pdv-produto-direto" label="Item">
-                <Select
-                  value={produtoSelecionadoId}
-                  onValueChange={setProdutoSelecionadoId}
-                  disabled={isDirectLoading}
-                >
-                  <SelectTrigger id="pdv-produto-direto">
-                    <SelectValue placeholder="Selecionar" />
-                  </SelectTrigger>
+
+              {/* ── Busca de produto ── */}
+              <FormField id="pdv-busca-produto" label="Buscar produto">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    ref={searchInputRef}
+                    id="pdv-busca-produto"
+                    className="pl-9"
+                    value={buscaProduto}
+                    onChange={(e) => { setBuscaProduto(e.target.value); setBuscaAberta(true); }}
+                    onFocus={() => setBuscaAberta(true)}
+                    onBlur={() => setTimeout(() => setBuscaAberta(false), 180)}
+                    placeholder={isDirectLoading ? "Carregando produtos..." : "Nome, SKU, marca ou fornecedor..."}
+                    disabled={isDirectLoading}
+                    autoComplete="off"
+                  />
+                  {buscaAberta && produtosBusca.length > 0 && (
+                    <div className="absolute z-20 w-full top-full mt-1 rounded-md border border-border bg-card shadow-lg overflow-hidden">
+                      {produtosBusca.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          className="w-full text-left px-4 py-2.5 hover:bg-secondary/60 text-sm border-b border-border/40 last:border-0 flex items-center justify-between gap-3"
+                          onMouseDown={() => {
+                            adicionarProdutoById(p.id);
+                            setBuscaProduto("");
+                            setBuscaAberta(false);
+                            searchInputRef.current?.focus();
+                          }}
+                        >
+                          <div>
+                            <span className="font-medium">{p.nome}</span>
+                            <span className="ml-2 font-mono text-xs text-muted-foreground">{p.sku}</span>
+                            {p.marca && <span className="ml-1.5 text-xs text-muted-foreground">· {p.marca}</span>}
+                            <span className="ml-1.5 text-xs text-muted-foreground">· Estoque: {p.estoqueAtual}</span>
+                          </div>
+                          <span className="font-mono text-xs font-semibold text-primary shrink-0">{formatBRL(p.precoVenda)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {buscaAberta && buscaProduto.trim().length > 0 && produtosBusca.length === 0 && (
+                    <div className="absolute z-20 w-full top-full mt-1 rounded-md border border-border bg-card shadow-lg px-4 py-3 text-sm text-muted-foreground">
+                      Nenhum produto encontrado.
+                    </div>
+                  )}
+                </div>
+              </FormField>
+
+              {/* ── Carrinho ── */}
+              <div className="overflow-x-auto rounded-md border border-border">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-secondary/30 text-xs uppercase tracking-wider text-muted-foreground">
+                      <th className="px-4 py-3 text-left font-medium">Item</th>
+                      <th className="px-4 py-3 text-center font-medium">Qtd.</th>
+                      <th className="px-4 py-3 text-right font-medium">Unitário</th>
+                      <th className="px-4 py-3 text-right font-medium">Total</th>
+                      <th className="px-4 py-3 text-right font-medium">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {carrinho.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                          Busque um produto acima para adicioná-lo ao carrinho.
+                        </td>
+                      </tr>
+                    ) : (
+                      carrinho.map((item) => (
+                        <tr key={item.id} className="border-b border-border/40">
+                          <td className="px-4 py-3">
+                            <div className="font-medium">{item.nome}</div>
+                            <div className="font-mono text-xs text-muted-foreground">
+                              {item.sku}
+                              {item.imei ? ` - IMEI ${item.imei}` : ""}
+                              {item.garantiaDias ? ` - garantia ${item.garantiaDias} dias` : ""}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-center font-mono">{item.quantidadeVenda}</td>
+                          <td className="px-4 py-3 text-right font-mono">{formatBRL(item.precoVenda)}</td>
+                          <td className="px-4 py-3 text-right font-mono font-semibold">
+                            {formatBRL(item.precoVenda * item.quantidadeVenda)}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              type="button"
+                              onClick={() => setCarrinho((c) => c.filter((row) => row.id !== item.id))}
+                            >
+                              Remover
+                            </Button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex items-center justify-between border-t border-border pt-4">
+                <span className="font-display text-sm uppercase tracking-wide text-muted-foreground">Total da venda</span>
+                <strong className="font-display text-4xl text-primary">{formatBRL(totalDireto)}</strong>
+              </div>
+            </Card>
+          ) : ordens.length === 0 && !ordemFinalizada ? (
+            <Card className="surface-panel">
+              <EmptyState
+                icon={Receipt}
+                title="Nenhuma OS pronta para caixa"
+                description="Finalize a manutenção de uma OS para liberar o fechamento no PDV."
+                actions={<Button asChild><Link to="/app/manutencao">Ir para manutenção</Link></Button>}
+              />
+            </Card>
+          ) : (
+            <Card className="surface-panel flex flex-wrap items-end gap-3 p-4">
+              <FormField id="pdv-os" label="Ordem de serviço" className="flex-1">
+                <Select value={selectedOrdemId} onValueChange={handleSelectOrdem}>
+                  <SelectTrigger id="pdv-os"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {produtosVenda.map((produto) => (
-                      <SelectItem key={produto.id} value={produto.id}>
-                        {produto.nome}
-                        {produto.imei ? ` - IMEI ${produto.imei}` : ""}
-                      </SelectItem>
-                    ))}
+                    {ordemFinalizada && !ordens.some((o) => o.id === ordemFinalizada.id) && (
+                      <SelectItem value={ordemFinalizada.id}>OS-{ordemFinalizada.numero} - venda finalizada</SelectItem>
+                    )}
+                    {ordens.map((ordem) => {
+                      const rowCliente = clienteById.get(ordem.clienteId);
+                      const rowAparelho = aparelhoById.get(ordem.aparelhoId);
+                      return (
+                        <SelectItem key={ordem.id} value={ordem.id}>
+                          OS-{ordem.numero} - {rowCliente?.nome ?? ordem.clienteId} -{" "}
+                          {rowAparelho ? `${rowAparelho.marca} ${rowAparelho.modelo}` : ordem.aparelhoId}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </FormField>
-              <Button
-                className="self-end"
-                type="button"
-                onClick={adicionarProduto}
-                disabled={!produtoSelecionado}
-              >
-                Adicionar
-              </Button>
-            </div>
-            <div className="mt-5 overflow-x-auto rounded-md border border-border">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-secondary/30 text-xs uppercase tracking-wider text-muted-foreground">
-                    <th className="px-4 py-3 text-left font-medium">Item</th>
-                    <th className="px-4 py-3 text-center font-medium">Qtd.</th>
-                    <th className="px-4 py-3 text-right font-medium">Unitário</th>
-                    <th className="px-4 py-3 text-right font-medium">Total</th>
-                    <th className="px-4 py-3 text-right font-medium">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {carrinho.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                        Nenhum item no carrinho.
-                      </td>
-                    </tr>
-                  ) : (
-                    carrinho.map((item) => (
-                      <tr key={item.id} className="border-b border-border/40">
-                        <td className="px-4 py-3">
-                          <div className="font-medium">{item.nome}</div>
-                          <div className="font-mono text-xs text-muted-foreground">
-                            {item.sku}
-                            {item.imei ? ` - IMEI ${item.imei}` : ""}
-                            {item.garantiaDias ? ` - garantia ${item.garantiaDias} dias` : ""}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-center font-mono">{item.quantidadeVenda}</td>
-                        <td className="px-4 py-3 text-right font-mono">{formatBRL(item.precoVenda)}</td>
-                        <td className="px-4 py-3 text-right font-mono font-semibold">
-                          {formatBRL(item.precoVenda * item.quantidadeVenda)}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            type="button"
-                            onClick={() => setCarrinho((current) => current.filter((row) => row.id !== item.id))}
-                          >
-                            Remover
-                          </Button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <div className="mt-5 flex items-center justify-between border-t border-border pt-5">
-              <span className="font-display text-sm uppercase tracking-wide text-muted-foreground">
-                Total da venda
-              </span>
-              <strong className="font-display text-4xl text-primary">{formatBRL(totalDireto)}</strong>
-            </div>
-          </Card>
-        ) : ordens.length === 0 && !ordemFinalizada ? (
-          <Card className="surface-panel">
-            <EmptyState
-              icon={Receipt}
-              title="Nenhuma OS pronta para caixa"
-              description="Finalize a manutenção de uma OS para liberar o fechamento no PDV."
-              actions={
-                <Button asChild>
-                  <Link to="/app/manutencao">Ir para manutenção</Link>
-                </Button>
-              }
-            />
-          </Card>
-        ) : (
-          <Card className="surface-panel flex flex-wrap items-end gap-3 p-4">
-            <FormField id="pdv-os" label="Ordem de serviço" className="flex-1">
-              <Select value={selectedOrdemId} onValueChange={handleSelectOrdem}>
-                <SelectTrigger id="pdv-os">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ordemFinalizada &&
-                    !ordens.some((ordem) => ordem.id === ordemFinalizada.id) && (
-                      <SelectItem value={ordemFinalizada.id}>
-                        OS-{ordemFinalizada.numero} - venda finalizada
-                      </SelectItem>
-                    )}
-                  {ordens.map((ordem) => {
-                    const rowCliente = clienteById.get(ordem.clienteId);
-                    const rowAparelho = aparelhoById.get(ordem.aparelhoId);
+              {selectedOrdem && <StatusBadge status={selectedOrdem.status} />}
+            </Card>
+          )}
 
-                    return (
-                      <SelectItem key={ordem.id} value={ordem.id}>
-                        OS-{ordem.numero} - {rowCliente?.nome ?? ordem.clienteId} -{" "}
-                        {rowAparelho
-                          ? `${rowAparelho.marca} ${rowAparelho.modelo}`
-                          : ordem.aparelhoId}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </FormField>
-            {selectedOrdem && <StatusBadge status={selectedOrdem.status} />}
-          </Card>
-        )}
-
-        {modoVenda === "os" && selectedOrdem && (
-          <Card className="surface-panel p-6">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="font-mono text-xs uppercase tracking-widest text-primary">
-                  // Fechamento OS-{selectedOrdem.numero}
-                </p>
-                <h2 className="font-display text-2xl font-bold">
-                  {cliente?.nome ?? selectedOrdem.clienteId}
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  {cliente?.telefone ?? "-"} -{" "}
-                  {aparelho
-                    ? `${aparelho.marca} ${aparelho.modelo}`
-                    : selectedOrdem.aparelhoId}
-                </p>
-              </div>
-              <div className="inline-flex items-center gap-1.5 rounded-md border border-success/40 bg-success/10 px-3 py-1.5 text-xs font-medium text-success">
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                {vendaFinalizada ? "Venda finalizada" : "OS pronta para entrega"}
-              </div>
-            </div>
-
-            <div className="mt-5 space-y-2">
-              {(selectedOrdem.pecasUsadas ?? []).map((peca) => (
-                <div
-                  key={peca.produtoId}
-                  className="flex items-center justify-between rounded-md border border-border bg-card/50 px-4 py-3"
-                >
-                  <div>
-                    <p className="font-medium">{peca.nome}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Peça - {peca.quantidade}x
-                    </p>
-                  </div>
-                  <p className="font-mono font-semibold">
-                    {formatBRL(peca.valorTotal)}
+          {modoVenda === "os" && selectedOrdem && (
+            <Card className="surface-panel p-6">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="font-mono text-xs uppercase tracking-widest text-primary">// Fechamento OS-{selectedOrdem.numero}</p>
+                  <h2 className="font-display text-2xl font-bold">{cliente?.nome ?? selectedOrdem.clienteId}</h2>
+                  <p className="text-sm text-muted-foreground">
+                    {cliente?.telefone ?? "-"} -{" "}
+                    {aparelho ? `${aparelho.marca} ${aparelho.modelo}` : selectedOrdem.aparelhoId}
                   </p>
                 </div>
-              ))}
-              <div className="flex items-center justify-between rounded-md border border-border bg-card/50 px-4 py-3">
-                <div>
-                  <p className="font-medium">Mão de obra</p>
-                  <p className="text-xs text-muted-foreground">Serviço técnico</p>
+                <div className="inline-flex items-center gap-1.5 rounded-md border border-success/40 bg-success/10 px-3 py-1.5 text-xs font-medium text-success">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  {vendaFinalizada ? "Venda finalizada" : "OS pronta para entrega"}
                 </div>
-                <p className="font-mono font-semibold">
-                  {formatBRL(selectedOrdem.valorMaoObra)}
-                </p>
               </div>
-            </div>
 
-            <div className="mt-6 flex items-center justify-between border-t border-border pt-5">
-              <p className="font-display text-sm uppercase tracking-wide text-muted-foreground">
-                Total a pagar
-              </p>
-              <p className="font-display text-4xl font-bold text-primary glow-text">
-                {formatBRL(selectedOrdem.valorTotal)}
-              </p>
-            </div>
-          </Card>
-        )}
-        </div>
-
-        {vendaFinalizada ? (
-        <Card className="surface-panel p-6">
-          <div className="mb-4 flex items-center gap-2 text-success">
-            <CheckCircle2 className="h-5 w-5" />
-            <h3 className="font-display text-base font-semibold">
-              Pagamento finalizado
-            </h3>
-          </div>
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Origem</span>
-              <strong>{vendaFinalizada.numeroOs ? `OS-${vendaFinalizada.numeroOs}` : "Venda direta"}</strong>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Forma</span>
-              <strong className="uppercase">{vendaFinalizada.formaPagamento}</strong>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Total</span>
-              <strong>{formatBRL(vendaFinalizada.valorTotal)}</strong>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Recebido</span>
-              <strong>{formatBRL(vendaFinalizada.valorRecebido)}</strong>
-            </div>
-            <div className="flex justify-between gap-4 border-t border-border pt-3">
-              <span className="text-muted-foreground">Troco</span>
-              <strong className="text-success">{formatBRL(vendaFinalizada.troco)}</strong>
-            </div>
-          </div>
-          {vendaFinalizada.itens.length > 0 && (
-            <div className="mt-4 rounded-md border border-border bg-secondary/30 p-3 text-xs">
-              <p className="mb-2 font-medium">Itens e garantia</p>
-              <div className="space-y-2">
-                {vendaFinalizada.itens.map((item) => (
-                  <div key={`${item.produtoId}-${item.imei ?? item.nome}`} className="flex justify-between gap-3">
-                    <span>
-                      {item.nome}
-                      {item.imei ? ` - IMEI ${item.imei}` : ""}
-                    </span>
-                    <strong>
-                      {item.garantiaDias
-                        ? `Garantia ate ${new Date(item.garantiaAte ?? "").toLocaleDateString("pt-BR")}`
-                        : "Sem garantia registrada"}
-                    </strong>
+              <div className="mt-5 space-y-2">
+                {(selectedOrdem.pecasUsadas ?? []).map((peca) => (
+                  <div key={peca.produtoId} className="flex items-center justify-between rounded-md border border-border bg-card/50 px-4 py-3">
+                    <div>
+                      <p className="font-medium">{peca.nome}</p>
+                      <p className="text-xs text-muted-foreground">Peça - {peca.quantidade}x</p>
+                    </div>
+                    <p className="font-mono font-semibold">{formatBRL(peca.valorTotal)}</p>
                   </div>
                 ))}
+                <div className="flex items-center justify-between rounded-md border border-border bg-card/50 px-4 py-3">
+                  <div>
+                    <p className="font-medium">Mão de obra</p>
+                    <p className="text-xs text-muted-foreground">Serviço técnico</p>
+                  </div>
+                  <p className="font-mono font-semibold">{formatBRL(selectedOrdem.valorMaoObra)}</p>
+                </div>
+              </div>
+
+              <div className="mt-6 flex items-center justify-between border-t border-border pt-5">
+                <p className="font-display text-sm uppercase tracking-wide text-muted-foreground">Total a pagar</p>
+                <p className="font-display text-4xl font-bold text-primary glow-text">{formatBRL(selectedOrdem.valorTotal)}</p>
+              </div>
+            </Card>
+          )}
+        </div>
+
+        {/* ── Painel de pagamento / sucesso ─────────────────────────────────── */}
+        {vendaFinalizada ? (
+          <Card className="surface-panel p-6">
+            <div className="mb-4 flex items-center gap-2 text-success">
+              <CheckCircle2 className="h-5 w-5" />
+              <h3 className="font-display text-base font-semibold">Pagamento finalizado</h3>
+            </div>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Origem</span>
+                <strong>{vendaFinalizada.numeroOs ? `OS-${vendaFinalizada.numeroOs}` : "Venda direta"}</strong>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Forma</span>
+                <strong className="uppercase">{vendaFinalizada.formaPagamento}</strong>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Total</span>
+                <strong>{formatBRL(vendaFinalizada.valorTotal)}</strong>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Recebido</span>
+                <strong>{formatBRL(vendaFinalizada.valorRecebido)}</strong>
+              </div>
+              <div className="flex justify-between gap-4 border-t border-border pt-3">
+                <span className="text-muted-foreground">Troco</span>
+                <strong className="text-success">{formatBRL(vendaFinalizada.troco)}</strong>
               </div>
             </div>
-          )}
-          <div className="mt-5 space-y-2">
-            <Button className="w-full" type="button" onClick={() => window.print()}>
-              <Printer className="h-4 w-4" /> Imprimir comprovante
-            </Button>
-            <Button
-              className="w-full"
-              variant="outline"
-              type="button"
-              onClick={handleNovaVenda}
-            >
-              {modoVenda === "direta" ? "Nova venda direta" : "Fechar outra OS"}
-            </Button>
-          </div>
-        </Card>
-      ) : modoVenda === "direta" ? (
-        <Card className="surface-panel p-6">
-          <h3 className="mb-1 font-display text-base font-semibold">Pagamento</h3>
-          <p className="mb-4 text-xs text-muted-foreground">
-            Finalize a venda direta do carrinho.
-          </p>
-          <div className="grid grid-cols-3 gap-2">
-            {paymentOptions.map(({ key, label, icon: Icon }) => (
-              <button
-                key={key}
-                className={
-                  "flex flex-col items-center gap-1.5 rounded-md border px-2 py-3 text-xs font-medium transition-all " +
-                  (formaPagamento === key
-                    ? "border-primary bg-primary/10 text-primary shadow-glow"
-                    : "border-border bg-secondary/40 text-muted-foreground hover:text-foreground")
-                }
-                type="button"
-                onClick={() => setFormaPagamento(key)}
-              >
-                <Icon className="h-5 w-5" />
-                {label}
-              </button>
-            ))}
-          </div>
-          <div className="mt-5 space-y-3">
-            <FormField id="pdv-direto-recebido" label="Valor recebido">
-              <Input
-                id="pdv-direto-recebido"
-                className="font-mono text-lg"
-                min={totalDireto}
-                step="0.01"
-                type="number"
-                value={valorRecebido}
-                onChange={(event) => setValorRecebido(event.target.value)}
-              />
-            </FormField>
-            <div className="flex items-center justify-between rounded-md border border-border bg-secondary/30 px-3 py-2">
-              <span className="text-xs uppercase tracking-wide text-muted-foreground">Troco</span>
-              <span className="font-mono text-lg font-semibold text-success">
-                {formatBRL(Math.max(0, (Number(valorRecebido.replace(",", ".")) || 0) - totalDireto))}
-              </span>
+            {vendaFinalizada.itens.length > 0 && (
+              <div className="mt-4 rounded-md border border-border bg-secondary/30 p-3 text-xs">
+                <p className="mb-2 font-medium">Itens e garantia</p>
+                <div className="space-y-2">
+                  {vendaFinalizada.itens.map((item) => (
+                    <div key={`${item.produtoId}-${item.imei ?? item.nome}`} className="flex justify-between gap-3">
+                      <span>{item.nome}{item.imei ? ` - IMEI ${item.imei}` : ""}</span>
+                      <strong>
+                        {item.garantiaDias
+                          ? `Garantia até ${new Date(item.garantiaAte ?? "").toLocaleDateString("pt-BR")}`
+                          : "Sem garantia"}
+                      </strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="mt-5 space-y-2">
+              <Button className="w-full" type="button" onClick={handleImprimirRecibo}>
+                <Printer className="h-4 w-4" /> Imprimir comprovante
+              </Button>
+              <Button className="w-full" variant="outline" type="button" onClick={handleNovaVenda}>
+                {modoVenda === "direta" ? "Nova venda direta" : "Fechar outra OS"}
+              </Button>
             </div>
-            {formError && <p className="text-sm text-destructive">{formError}</p>}
+          </Card>
+        ) : terceirizadoFinalizado ? (
+          <Card className="surface-panel p-6">
+            <div className="mb-4 flex items-center gap-2 text-success">
+              <CheckCircle2 className="h-5 w-5" />
+              <h3 className="font-display text-base font-semibold">Lançamento registrado</h3>
+            </div>
+            <div className="space-y-3 text-sm">
+              {terceirizadoFinalizado.responsavel && (
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">Responsável</span>
+                  <strong>{terceirizadoFinalizado.responsavel}</strong>
+                </div>
+              )}
+              {terceirizadoFinalizado.descricao && (
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">Serviço/Peça</span>
+                  <strong>{terceirizadoFinalizado.descricao}</strong>
+                </div>
+              )}
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Cobrado</span>
+                <strong>{formatBRL(terceirizadoFinalizado.valorCobrado)}</strong>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Repasse</span>
+                <strong>{formatBRL(terceirizadoFinalizado.valorRepasse)}</strong>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Status repasse</span>
+                <strong className={terceirizadoFinalizado.statusRepasse === "pago" ? "text-success" : "text-amber-500"}>
+                  {terceirizadoFinalizado.statusRepasse === "pago" ? "✓ Pago" : "⏳ Pendente"}
+                </strong>
+              </div>
+              <div className={cn("flex justify-between gap-4 border-t border-border pt-3")}>
+                <span className="text-muted-foreground">Lucro líquido</span>
+                <strong className={terceirizadoFinalizado.lucro >= 0 ? "text-success" : "text-destructive"}>
+                  {formatBRL(terceirizadoFinalizado.lucro)}
+                </strong>
+              </div>
+            </div>
+            <div className="mt-5 space-y-2">
+              <Button className="w-full" type="button" onClick={handleImprimirRecibo}>
+                <Printer className="h-4 w-4" /> Imprimir comprovante
+              </Button>
+              <Button className="w-full" variant="outline" type="button" onClick={handleNovaVenda}>
+                Novo lançamento
+              </Button>
+            </div>
+          </Card>
+        ) : modoVenda === "direta" ? (
+          <Card className="surface-panel p-6">
+            <h3 className="mb-1 font-display text-base font-semibold">Pagamento</h3>
+            <p className="mb-4 text-xs text-muted-foreground">Finalize a venda direta do carrinho.</p>
+
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:col-span-4">
+              {paymentOptions.map(({ key, label, icon: Icon }) => (
+                <button
+                  key={key}
+                  className={
+                    "flex flex-col items-center gap-1.5 rounded-md border px-2 py-3 text-xs font-medium transition-all " +
+                    (formaPagamento === key
+                      ? "border-primary bg-primary/10 text-primary shadow-glow"
+                      : "border-border bg-secondary/40 text-muted-foreground hover:text-foreground")
+                  }
+                  type="button"
+                  onClick={() => setFormaPagamento(key)}
+                >
+                  <Icon className="h-5 w-5" />
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* ── Campos extras para Terceirizado ── */}
+            {formaPagamento === "terceirizado" && (
+              <div className="mt-4 rounded-md border border-border bg-secondary/20 p-3 space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Dados do terceirizado</p>
+                <FormField id="pdv-terc-responsavel" label="Nome / responsável">
+                  <Input
+                    value={terceirizadoInfo.responsavel}
+                    onChange={(e) => setTerceirizadoInfo((p) => ({ ...p, responsavel: e.target.value }))}
+                    placeholder="Ex.: João Silva"
+                  />
+                </FormField>
+                <FormField id="pdv-terc-descricao" label="Serviço ou peça">
+                  <Input
+                    value={terceirizadoInfo.descricao}
+                    onChange={(e) => setTerceirizadoInfo((p) => ({ ...p, descricao: e.target.value }))}
+                    placeholder="Ex.: Troca de tela Samsung A32"
+                  />
+                </FormField>
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField id="pdv-terc-cobrado" label="Valor cobrado (R$)" error={tercErrors.valorCobrado}>
+                    <MoneyInput
+                      id="pdv-terc-cobrado"
+                      value={valorRecebido}
+                      onChange={(v) => { setValorRecebido(v); setTercErrors((e) => { const n = { ...e }; delete n.valorCobrado; return n; }); }}
+                      className={tercErrors.valorCobrado ? "border-destructive" : ""}
+                    />
+                  </FormField>
+                  <FormField id="pdv-terc-repasse" label="Repasse / custo (R$)">
+                    <MoneyInput
+                      id="pdv-terc-repasse"
+                      value={terceirizadoInfo.valorRepasse}
+                      onChange={(v) => setTerceirizadoInfo((p) => ({ ...p, valorRepasse: v }))}
+                    />
+                  </FormField>
+                </div>
+                {lucroTerceirizado !== null && (
+                  <div className={cn(
+                    "flex items-center justify-between rounded-md border px-3 py-2",
+                    lucroTerceirizado >= 0
+                      ? "border-success/30 bg-success/10"
+                      : "border-destructive/30 bg-destructive/10"
+                  )}>
+                    <span className={cn("text-xs uppercase tracking-wide font-medium", lucroTerceirizado >= 0 ? "text-success" : "text-destructive")}>
+                      Lucro líquido
+                    </span>
+                    <span className={cn("font-mono text-lg font-semibold", lucroTerceirizado >= 0 ? "text-success" : "text-destructive")}>
+                      {formatBRL(lucroTerceirizado)}
+                    </span>
+                  </div>
+                )}
+                <FormField id="pdv-terc-status" label="Status do repasse">
+                  <div className="flex gap-2">
+                    {(["pendente", "pago"] as const).map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        className={cn(
+                          "flex-1 rounded-md border px-3 py-2 text-xs font-medium transition-all",
+                          terceirizadoInfo.statusRepasse === s
+                            ? s === "pendente"
+                              ? "border-amber-500/60 bg-amber-500/10 text-amber-500"
+                              : "border-success/60 bg-success/10 text-success"
+                            : "border-border bg-secondary/40 text-muted-foreground hover:text-foreground"
+                        )}
+                        onClick={() => setTerceirizadoInfo((p) => ({ ...p, statusRepasse: s }))}
+                      >
+                        {s === "pendente" ? "⏳ Pendente" : "✓ Pago"}
+                      </button>
+                    ))}
+                  </div>
+                </FormField>
+                <FormField id="pdv-terc-obs" label="Observações">
+                  <Textarea
+                    value={terceirizadoInfo.observacoes}
+                    onChange={(e) => setTerceirizadoInfo((p) => ({ ...p, observacoes: e.target.value }))}
+                    rows={2}
+                    placeholder="Notas opcionais..."
+                  />
+                </FormField>
+              </div>
+            )}
+
+            {formaPagamento !== "terceirizado" && (
+              <div className="mt-5 space-y-3">
+                <FormField id="pdv-direto-recebido" label="Valor recebido">
+                  <MoneyInput
+                    id="pdv-direto-recebido"
+                    value={valorRecebido}
+                    onChange={setValorRecebido}
+                    className="text-lg"
+                  />
+                </FormField>
+                <div className="flex items-center justify-between rounded-md border border-border bg-secondary/30 px-3 py-2">
+                  <span className="text-xs uppercase tracking-wide text-muted-foreground">Troco</span>
+                  <span className="font-mono text-lg font-semibold text-success">
+                    {formatBRL(Math.max(0, (Number(valorRecebido.replace(",", ".")) || 0) - totalDireto))}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {formError && <p className="mt-3 text-sm text-destructive">{formError}</p>}
+
             <Button
-              className="w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
-              disabled={vendaDiretaMutation.isPending || carrinho.length === 0}
-              onClick={() => vendaDiretaMutation.mutate()}
+              className="mt-4 w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
+              disabled={
+                formaPagamento === "terceirizado"
+                  ? finalizarTerceirizadoMutation.isPending
+                  : vendaDiretaMutation.isPending || carrinho.length === 0
+              }
+              onClick={() => {
+                if (formaPagamento === "terceirizado") {
+                  const errs: Record<string, string> = {};
+                  const cobrado = parseFloat(valorRecebido.replace(",", ".")) || 0;
+                  if (cobrado <= 0) errs.valorCobrado = "Informe o valor cobrado do cliente.";
+                  if (Object.keys(errs).length > 0) { setTercErrors(errs); return; }
+                  setTercErrors({});
+                  finalizarTerceirizadoMutation.mutate();
+                } else {
+                  vendaDiretaMutation.mutate();
+                }
+              }}
             >
-              {vendaDiretaMutation.isPending ? (
+              {(vendaDiretaMutation.isPending || finalizarTerceirizadoMutation.isPending) ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Receipt className="h-4 w-4" />
               )}
-              Finalizar venda direta
+              {formaPagamento === "terceirizado" ? "Registrar lançamento" : "Finalizar venda direta"}
             </Button>
-          </div>
-        </Card>
-      ) : selectedOrdemPronta ? (
-        <Card className="surface-panel p-6">
-          <h3 className="mb-1 font-display text-base font-semibold">Pagamento</h3>
-          <p className="mb-4 text-xs text-muted-foreground">
-            Selecione a forma e finalize a entrega.
-          </p>
+          </Card>
+        ) : selectedOrdemPronta ? (
+          <Card className="surface-panel p-6">
+            <h3 className="mb-1 font-display text-base font-semibold">Pagamento</h3>
+            <p className="mb-4 text-xs text-muted-foreground">Selecione a forma e finalize a entrega.</p>
 
-          <div className="grid grid-cols-3 gap-2">
-            {paymentOptions.map(({ key, label, icon: Icon }) => (
-              <button
-                key={key}
-                className={
-                  "flex flex-col items-center gap-1.5 rounded-md border px-2 py-3 text-xs font-medium transition-all " +
-                  (formaPagamento === key
-                    ? "border-primary bg-primary/10 text-primary shadow-glow"
-                    : "border-border bg-secondary/40 text-muted-foreground hover:text-foreground")
-                }
-                type="button"
-                onClick={() => setFormaPagamento(key)}
+            <div className="grid grid-cols-3 gap-2">
+              {paymentOptions.filter((o) => o.key !== "terceirizado").map(({ key, label, icon: Icon }) => (
+                <button
+                  key={key}
+                  className={
+                    "flex flex-col items-center gap-1.5 rounded-md border px-2 py-3 text-xs font-medium transition-all " +
+                    (formaPagamento === key
+                      ? "border-primary bg-primary/10 text-primary shadow-glow"
+                      : "border-border bg-secondary/40 text-muted-foreground hover:text-foreground")
+                  }
+                  type="button"
+                  onClick={() => setFormaPagamento(key)}
+                >
+                  <Icon className="h-5 w-5" />
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-5 space-y-3">
+              <FormField id="pdv-recebido" label="Valor recebido">
+                <MoneyInput
+                  id="pdv-recebido"
+                  value={valorRecebido}
+                  onChange={setValorRecebido}
+                  className="text-lg"
+                />
+              </FormField>
+              <div className="flex items-center justify-between rounded-md border border-border bg-secondary/30 px-3 py-2">
+                <span className="text-xs uppercase tracking-wide text-muted-foreground">Troco</span>
+                <span className="font-mono text-lg font-semibold text-success">{formatBRL(troco)}</span>
+              </div>
+              <div className="flex items-center justify-between rounded-md border border-success/30 bg-success/10 px-3 py-2">
+                <span className="text-xs uppercase tracking-wide text-success">Status</span>
+                <span className="text-xs font-semibold uppercase text-success">Pronto para finalizar</span>
+              </div>
+              {formError && <p className="text-sm text-destructive">{formError}</p>}
+              <Button
+                className="w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
+                disabled={finalizarMutation.isPending}
+                onClick={() => finalizarMutation.mutate()}
               >
-                <Icon className="h-5 w-5" />
-                {label}
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-5 space-y-3">
-            <FormField id="pdv-recebido" label="Valor recebido">
-              <Input
-                id="pdv-recebido"
-                className="font-mono text-lg"
-                min={selectedOrdemPronta.valorTotal}
-                step="0.01"
-                type="number"
-                value={valorRecebido}
-                onChange={(event) => setValorRecebido(event.target.value)}
-              />
-            </FormField>
-            <div className="flex items-center justify-between rounded-md border border-border bg-secondary/30 px-3 py-2">
-              <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                Troco
-              </span>
-              <span className="font-mono text-lg font-semibold text-success">
-                {formatBRL(troco)}
-              </span>
+                {finalizarMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Receipt className="h-4 w-4" />
+                )}
+                Finalizar venda
+              </Button>
+              <Button variant="outline" className="w-full" type="button" onClick={handleImprimirRecibo}>
+                <Printer className="h-4 w-4" /> Imprimir comprovante
+              </Button>
             </div>
-            <div className="flex items-center justify-between rounded-md border border-success/30 bg-success/10 px-3 py-2">
-              <span className="text-xs uppercase tracking-wide text-success">
-                Status
-              </span>
-              <span className="text-xs font-semibold uppercase text-success">
-                Pronto para finalizar
-              </span>
-            </div>
-            {formError && <p className="text-sm text-destructive">{formError}</p>}
-            <Button
-              className="w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
-              disabled={finalizarMutation.isPending}
-              onClick={() => finalizarMutation.mutate()}
-            >
-              {finalizarMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Receipt className="h-4 w-4" />
-              )}
-              Finalizar venda
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full"
-              type="button"
-              onClick={() => window.print()}
-            >
-              <Printer className="h-4 w-4" /> Imprimir comprovante
-            </Button>
-          </div>
-        </Card>
+          </Card>
         ) : null}
       </div>
 
+      {/* ── Histórico ──────────────────────────────────────────────────────── */}
       <Card className="surface-panel p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h3 className="font-display text-base font-semibold">
-              Histórico de pagamentos
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Últimas OS fechadas no caixa.
-            </p>
+            <h3 className="font-display text-base font-semibold">Histórico de pagamentos</h3>
+            <p className="text-xs text-muted-foreground">Últimas OS fechadas no caixa.</p>
           </div>
           <Button asChild variant="outline" size="sm">
-            <Link to="/app/financeiro">Ver relatorio</Link>
+            <Link to="/app/financeiro">Ver relatório</Link>
           </Button>
         </div>
         <div className="overflow-x-auto rounded-md border border-border">
@@ -813,49 +1155,32 @@ const PDV = () => {
             <tbody>
               {historicoVendas.length === 0 ? (
                 <tr>
-                  <td
-                    className="px-4 py-8 text-center text-muted-foreground"
-                    colSpan={7}
-                  >
+                  <td className="px-4 py-8 text-center text-muted-foreground" colSpan={7}>
                     Nenhum pagamento finalizado ainda.
                   </td>
                 </tr>
               ) : (
                 historicoVendas.map((venda) => {
                   const rowCliente = venda.clienteId ? clienteById.get(venda.clienteId) : undefined;
-
                   return (
                     <tr key={venda.id} className="border-b border-border/40">
                       <td className="px-4 py-3 font-medium">
                         {venda.ordemServicoId ? (
-                          <Link
-                            className="text-primary hover:underline"
-                            to={`/app/ordens/${venda.ordemServicoId}`}
-                          >
+                          <Link className="text-primary hover:underline" to={`/app/ordens/${venda.ordemServicoId}`}>
                             OS-{venda.numeroOs}
                           </Link>
-                        ) : (
-                          "Venda direta"
-                        )}
+                        ) : "Venda direta"}
                       </td>
                       <td className="px-4 py-3">
-                        {rowCliente?.nome ?? venda.clienteNome ?? venda.clienteId ?? "Balcao"}
+                        {rowCliente?.nome ?? venda.clienteNome ?? venda.clienteId ?? "Balcão"}
                       </td>
                       <td className="px-4 py-3 font-mono text-xs">
                         {new Date(venda.createdAt).toLocaleString("pt-BR")}
                       </td>
-                      <td className="px-4 py-3 uppercase">
-                        {venda.formaPagamento}
-                      </td>
-                      <td className="px-4 py-3 text-right font-mono">
-                        {formatBRL(venda.valorTotal)}
-                      </td>
-                      <td className="px-4 py-3 text-right font-mono">
-                        {formatBRL(venda.valorRecebido)}
-                      </td>
-                      <td className="px-4 py-3 text-right font-mono">
-                        {formatBRL(venda.troco)}
-                      </td>
+                      <td className="px-4 py-3 uppercase">{venda.formaPagamento}</td>
+                      <td className="px-4 py-3 text-right font-mono">{formatBRL(venda.valorTotal)}</td>
+                      <td className="px-4 py-3 text-right font-mono">{formatBRL(venda.valorRecebido)}</td>
+                      <td className="px-4 py-3 text-right font-mono">{formatBRL(venda.troco)}</td>
                     </tr>
                   );
                 })

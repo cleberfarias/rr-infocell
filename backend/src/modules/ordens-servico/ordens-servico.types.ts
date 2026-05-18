@@ -11,7 +11,7 @@ export const ordemServicoStatus = [
 
 export type OrdemServicoStatus = (typeof ordemServicoStatus)[number];
 
-export type OrdemServicoFormaPagamento = "pix" | "cartao" | "dinheiro";
+export type OrdemServicoFormaPagamento = "pix" | "cartao" | "dinheiro" | "terceirizado";
 export type OrdemServicoPrioridade = "baixa" | "normal" | "urgente";
 export type OrdemServicoCanalAprovacao = "balcao" | "whatsapp" | "telefone";
 

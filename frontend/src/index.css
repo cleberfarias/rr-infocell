@@ -225,6 +225,10 @@ html.light .surface-panel {
   .dre-print-area {
     display: none;
   }
+
+  .recibo-print-area {
+    display: none;
+  }
 }
 
 @media print {
@@ -491,6 +495,36 @@ html.light .surface-panel {
 
   .garantia-terms li {
     margin-bottom: 3px;
+  }
+
+  /* ── Recibo PDV ─────────────────────────────────────────────────────── */
+  body.print-recibo .checklist-print-area,
+  body.print-recibo .checklist-print-area * {
+    visibility: hidden !important;
+  }
+
+  body.print-recibo .recibo-print-area,
+  body.print-recibo .recibo-print-area * {
+    visibility: visible !important;
+  }
+
+  body.print-recibo .recibo-print-area {
+    display: block !important;
+    position: static;
+    inset: auto;
+    width: 100%;
+    background: #fff;
+    color: #111827;
+    font-family: Inter, Arial, sans-serif;
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
+  .recibo-print-area h2 {
+    margin: 14px 0 6px;
+    color: #111827;
+    font-size: 13px;
+    letter-spacing: 0;
   }
 
   /* DRE PDF */

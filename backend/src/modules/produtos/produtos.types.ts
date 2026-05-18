@@ -20,6 +20,8 @@ export type Produto = {
   precoVenda: number;
   ativo: boolean;
   marca?: string;
+  fornecedor?: string;
+  codigoFornecedor?: string;
   modelo?: string;
   imei?: string;
   cor?: string;
@@ -45,6 +47,8 @@ export type ProdutoInput = {
   precoVenda: number;
   ativo?: boolean;
   marca?: string;
+  fornecedor?: string;
+  codigoFornecedor?: string;
   modelo?: string;
   imei?: string;
   cor?: string;

@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,20 +32,19 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { formatBRL } from "@/lib/formatters";
+import { MoneyInput } from "@/components/ui/money-input";
 import { listCategorias } from "@/services/categorias";
-import { listMarcas } from "@/services/marcas";
+import { listMarcas, createMarca } from "@/services/marcas";
+import { listFornecedores, createFornecedor } from "@/services/fornecedores";
 import { createMovimentacaoEstoque } from "@/services/movimentacoes-estoque";
 import { createProduto, listProdutos, type ProdutoCategoria } from "@/services/produtos";
-
-const parseNumber = (v: string) => Number(v.replace(",", ".")) || 0;
 
 const today = new Date().toISOString().slice(0, 10);
 
 const emptyNovoProduto = {
-  // produto
   sku: "", nome: "", categoria: "peca" as string,
-  marca: "", modelo: "", custo: "", precoVenda: "", estoqueMinimo: "1",
-  // movimentação
+  marca: "", fornecedor: "", codigoFornecedor: "", modelo: "",
+  custo: "", precoVenda: "", estoqueMinimo: "1",
   tipo: "entrada" as "entrada" | "saida",
   quantidade: "1",
   data: today,
@@ -59,10 +59,19 @@ const Estoque = () => {
   const [search, setSearch] = useState("");
   const [categoriaFilter, setCategoriaFilter] = useState<ProdutoCategoria | "todos">("todos");
   const [marcaFilter, setMarcaFilter] = useState("todos");
+  const [fornecedorFilter, setFornecedorFilter] = useState("todos");
   const [estoqueFiltro, setEstoqueFiltro] = useState<"todos" | "baixo">(filtroInicial);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [novoProduto, setNovoProduto] = useState(emptyNovoProduto);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  // ── Dialogs inline para criação de marca/fornecedor ───────────────────────
+  const [newMarcaOpen, setNewMarcaOpen] = useState(false);
+  const [newMarcaNome, setNewMarcaNome] = useState("");
+  const [newFornecedorOpen, setNewFornecedorOpen] = useState(false);
+  const [newFornecedorNome, setNewFornecedorNome] = useState("");
+
+  // ── Queries ───────────────────────────────────────────────────────────────
   const produtosQuery = useQuery({
     queryKey: ["produtos"],
     queryFn: () => listProdutos({ ativo: true }),
@@ -82,6 +91,37 @@ const Estoque = () => {
     staleTime: STALE_TIME.long,
   });
 
+  const fornecedoresQuery = useQuery({
+    queryKey: ["fornecedores"],
+    queryFn: listFornecedores,
+    staleTime: STALE_TIME.long,
+  });
+
+  // ── Mutations ─────────────────────────────────────────────────────────────
+  const criarMarcaMutation = useMutation({
+    mutationFn: (nome: string) => createMarca(nome),
+    onSuccess: async (marca) => {
+      await queryClient.invalidateQueries({ queryKey: ["marcas"] });
+      upd("marca", marca.nome);
+      setNewMarcaNome("");
+      setNewMarcaOpen(false);
+      toast.success(`Marca "${marca.nome}" criada.`);
+    },
+    onError: () => toast.error("Erro ao criar marca."),
+  });
+
+  const criarFornecedorMutation = useMutation({
+    mutationFn: (nome: string) => createFornecedor(nome),
+    onSuccess: async (forn) => {
+      await queryClient.invalidateQueries({ queryKey: ["fornecedores"] });
+      upd("fornecedor", forn.nome);
+      setNewFornecedorNome("");
+      setNewFornecedorOpen(false);
+      toast.success(`Fornecedor "${forn.nome}" cadastrado.`);
+    },
+    onError: () => toast.error("Erro ao cadastrar fornecedor."),
+  });
+
   const criarProdutoMutation = useMutation({
     mutationFn: async () => {
       const qtd = Math.max(0, parseInt(novoProduto.quantidade) || 0);
@@ -95,6 +135,8 @@ const Estoque = () => {
         nome: novoProduto.nome.trim(),
         categoria: novoProduto.categoria as ProdutoCategoria,
         marca: novoProduto.marca || undefined,
+        fornecedor: novoProduto.fornecedor || undefined,
+        codigoFornecedor: novoProduto.codigoFornecedor.trim() || undefined,
         modelo: novoProduto.modelo || undefined,
         custo: Number(novoProduto.custo) || 0,
         precoVenda: Number(novoProduto.precoVenda) || 0,
@@ -119,12 +161,14 @@ const Estoque = () => {
       await queryClient.invalidateQueries({ queryKey: ["movimentacoes-estoque"] });
       toast.success(`"${produto.nome}" cadastrado com sucesso.`);
       setNovoProduto(emptyNovoProduto);
+      setFormErrors({});
       setSheetOpen(false);
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "Erro ao cadastrar produto."),
   });
 
   const produtos = useMemo(() => produtosQuery.data ?? [], [produtosQuery.data]);
+  const fornecedores = useMemo(() => fornecedoresQuery.data ?? [], [fornecedoresQuery.data]);
 
   const stats = useMemo(() => ({
     totalSku: produtos.length,
@@ -142,9 +186,10 @@ const Estoque = () => {
     let lista = produtos.filter((p) => {
       if (categoriaFilter !== "todos" && p.categoria !== categoriaFilter) return false;
       if (marcaFilter !== "todos" && (p.marca ?? "") !== marcaFilter) return false;
+      if (fornecedorFilter !== "todos" && (p.fornecedor ?? "") !== fornecedorFilter) return false;
       if (estoqueFiltro === "baixo" && p.estoqueAtual > p.estoqueMinimo) return false;
       if (!q) return true;
-      return [p.nome, p.sku, p.marca, p.modelo, p.observacoes]
+      return [p.nome, p.sku, p.marca, p.modelo, p.observacoes, p.fornecedor, p.codigoFornecedor]
         .filter(Boolean)
         .some((v) => v!.toLowerCase().includes(q));
     });
@@ -156,7 +201,7 @@ const Estoque = () => {
       });
     }
     return lista;
-  }, [produtos, search, categoriaFilter, marcaFilter, estoqueFiltro]);
+  }, [produtos, search, categoriaFilter, marcaFilter, fornecedorFilter, estoqueFiltro]);
 
   const getCategoriaLabel = (id: string) => {
     const found = categoriasQuery.data?.find((c) => c.id === id);
@@ -169,8 +214,29 @@ const Estoque = () => {
   const circ = 2 * Math.PI * r;
   const offset = circ * (1 - stats.nivelEstoque / 100);
 
-  const upd = (field: string, value: string) =>
+  const upd = (field: string, value: string) => {
     setNovoProduto((p) => ({ ...p, [field]: value }));
+    if (formErrors[field]) setFormErrors((e) => { const n = { ...e }; delete n[field]; return n; });
+  };
+
+  const validate = (): Record<string, string> => {
+    const e: Record<string, string> = {};
+    if (!novoProduto.sku.trim()) e.sku = "SKU é obrigatório.";
+    else if (novoProduto.sku.trim().length < 2) e.sku = "Mínimo 2 caracteres.";
+    if (!novoProduto.nome.trim()) e.nome = "Nome é obrigatório.";
+    else if (novoProduto.nome.trim().length < 2) e.nome = "Mínimo 2 caracteres.";
+    const custo = parseFloat(novoProduto.custo.replace(",", "."));
+    if (novoProduto.custo && isNaN(custo)) e.custo = "Valor inválido.";
+    else if (!isNaN(custo) && custo < 0) e.custo = "Não pode ser negativo.";
+    const preco = parseFloat(novoProduto.precoVenda.replace(",", "."));
+    if (novoProduto.precoVenda && isNaN(preco)) e.precoVenda = "Valor inválido.";
+    else if (!isNaN(preco) && preco < 0) e.precoVenda = "Não pode ser negativo.";
+    const minimo = parseInt(novoProduto.estoqueMinimo);
+    if (isNaN(minimo) || minimo < 0) e.estoqueMinimo = "Deve ser 0 ou mais.";
+    const qtd = parseInt(novoProduto.quantidade);
+    if (isNaN(qtd) || qtd < 0) e.quantidade = "Deve ser 0 ou mais.";
+    return e;
+  };
 
   const margemCalc = () => {
     const c = Number(novoProduto.custo) || 0;
@@ -181,8 +247,60 @@ const Estoque = () => {
 
   return (
     <>
-    <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-      <SheetContent side="right" className="flex w-[420px] flex-col gap-0 p-0 sm:max-w-[420px]">
+    {/* Dialog: nova marca */}
+    <Dialog open={newMarcaOpen} onOpenChange={setNewMarcaOpen}>
+      <DialogContent className="sm:max-w-[340px]">
+        <DialogHeader>
+          <DialogTitle>Nova marca</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 pt-1">
+          <Input
+            value={newMarcaNome}
+            onChange={(e) => setNewMarcaNome(e.target.value)}
+            placeholder="Ex.: Samsung, Apple, Motorola..."
+            onKeyDown={(e) => e.key === "Enter" && !criarMarcaMutation.isPending && criarMarcaMutation.mutate(newMarcaNome.trim())}
+            autoFocus
+          />
+          <Button
+            className="w-full bg-gradient-primary text-primary-foreground"
+            disabled={!newMarcaNome.trim() || criarMarcaMutation.isPending}
+            onClick={() => criarMarcaMutation.mutate(newMarcaNome.trim())}
+          >
+            {criarMarcaMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            Criar marca
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* Dialog: novo fornecedor */}
+    <Dialog open={newFornecedorOpen} onOpenChange={setNewFornecedorOpen}>
+      <DialogContent className="sm:max-w-[340px]">
+        <DialogHeader>
+          <DialogTitle>Novo fornecedor</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 pt-1">
+          <Input
+            value={newFornecedorNome}
+            onChange={(e) => setNewFornecedorNome(e.target.value)}
+            placeholder="Ex.: Distribuidora Silva, Fornecedor João..."
+            onKeyDown={(e) => e.key === "Enter" && !criarFornecedorMutation.isPending && criarFornecedorMutation.mutate(newFornecedorNome.trim())}
+            autoFocus
+          />
+          <Button
+            className="w-full bg-gradient-primary text-primary-foreground"
+            disabled={!newFornecedorNome.trim() || criarFornecedorMutation.isPending}
+            onClick={() => criarFornecedorMutation.mutate(newFornecedorNome.trim())}
+          >
+            {criarFornecedorMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            Cadastrar fornecedor
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    <Sheet open={sheetOpen} onOpenChange={(open) => { setSheetOpen(open); if (!open) { setFormErrors({}); setNovoProduto(emptyNovoProduto); } }}>
+      <SheetContent side="right" className="flex w-[440px] flex-col gap-0 p-0 sm:max-w-[440px]">
         <SheetHeader className="border-b border-border px-5 py-4">
           <SheetTitle>Novo produto</SheetTitle>
           <p className="text-xs text-muted-foreground">Cadastre o produto e registre a movimentação de entrada em um só passo.</p>
@@ -193,8 +311,14 @@ const Estoque = () => {
           <div className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground border-b border-border pb-1.5">Produto</p>
             <div className="grid grid-cols-2 gap-3">
-              <FormField id="e-sku" label="SKU / Código *">
-                <Input id="e-sku" value={novoProduto.sku} onChange={(e) => upd("sku", e.target.value)} placeholder="Ex.: BAT-IP13" />
+              <FormField id="e-sku" label="SKU / Código *" error={formErrors.sku}>
+                <Input
+                  id="e-sku"
+                  value={novoProduto.sku}
+                  onChange={(e) => upd("sku", e.target.value)}
+                  placeholder="Ex.: BAT-IP13"
+                  className={formErrors.sku ? "border-destructive" : ""}
+                />
               </FormField>
               <FormField id="e-categoria" label="Categoria *">
                 <Select value={novoProduto.categoria} onValueChange={(v) => upd("categoria", v)}>
@@ -207,33 +331,87 @@ const Estoque = () => {
                 </Select>
               </FormField>
             </div>
-            <FormField id="e-nome" label="Nome do produto *">
-              <Input id="e-nome" value={novoProduto.nome} onChange={(e) => upd("nome", e.target.value)} placeholder="Ex.: Bateria iPhone 13 Pro" />
+            <FormField id="e-nome" label="Nome do produto *" error={formErrors.nome}>
+              <Input
+                id="e-nome"
+                value={novoProduto.nome}
+                onChange={(e) => upd("nome", e.target.value)}
+                placeholder="Ex.: Bateria iPhone 13 Pro"
+                className={formErrors.nome ? "border-destructive" : ""}
+              />
             </FormField>
+
+            {/* ── Marca e Fornecedor com botões "+" ── */}
             <div className="grid grid-cols-2 gap-3">
               <FormField id="e-marca" label="Marca">
-                <Select value={novoProduto.marca || "__none__"} onValueChange={(v) => upd("marca", v === "__none__" ? "" : v)}>
-                  <SelectTrigger id="e-marca"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">Sem marca</SelectItem>
-                    {(marcasQuery.data ?? []).map((m) => (
-                      <SelectItem key={m.id} value={m.nome}>{m.nome}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-1.5">
+                  <Select value={novoProduto.marca || "__none__"} onValueChange={(v) => upd("marca", v === "__none__" ? "" : v)}>
+                    <SelectTrigger id="e-marca" className="flex-1 min-w-0"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">Sem marca</SelectItem>
+                      {(marcasQuery.data ?? []).map((m) => (
+                        <SelectItem key={m.id} value={m.nome}>{m.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline" size="icon" type="button"
+                    className="shrink-0 h-9 w-9" title="Cadastrar nova marca"
+                    onClick={() => { setNewMarcaNome(""); setNewMarcaOpen(true); }}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
               </FormField>
+              <FormField id="e-fornecedor" label="Fornecedor">
+                <div className="flex gap-1.5">
+                  <Select value={novoProduto.fornecedor || "__none__"} onValueChange={(v) => upd("fornecedor", v === "__none__" ? "" : v)}>
+                    <SelectTrigger id="e-fornecedor" className="flex-1 min-w-0"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">Sem fornecedor</SelectItem>
+                      {fornecedores.map((f) => (
+                        <SelectItem key={f.id} value={f.nome}>{f.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline" size="icon" type="button"
+                    className="shrink-0 h-9 w-9" title="Cadastrar novo fornecedor"
+                    onClick={() => { setNewFornecedorNome(""); setNewFornecedorOpen(true); }}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </FormField>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <FormField id="e-modelo" label="Modelo">
                 <Input id="e-modelo" value={novoProduto.modelo} onChange={(e) => upd("modelo", e.target.value)} placeholder="Opcional" />
               </FormField>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <FormField id="e-custo" label="Custo (R$)">
-                <Input id="e-custo" type="number" min="0" step="0.01" value={novoProduto.custo}
-                  onChange={(e) => upd("custo", e.target.value)} placeholder="0,00" />
+              <FormField id="e-cod-fornecedor" label="Cód. fornecedor">
+                <Input id="e-cod-fornecedor" value={novoProduto.codigoFornecedor} onChange={(e) => upd("codigoFornecedor", e.target.value)} placeholder="Ref. do fornecedor" />
               </FormField>
-              <FormField id="e-venda" label="Preço de venda (R$)">
-                <Input id="e-venda" type="number" min="0" step="0.01" value={novoProduto.precoVenda}
-                  onChange={(e) => upd("precoVenda", e.target.value)} placeholder="0,00" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <FormField id="e-custo" label="Custo (R$)" error={formErrors.custo}>
+                <MoneyInput
+                  id="e-custo"
+                  value={novoProduto.custo}
+                  onChange={(v) => upd("custo", v)}
+                  placeholder="0,00"
+                  className={formErrors.custo ? "border-destructive" : ""}
+                />
+              </FormField>
+              <FormField id="e-venda" label="Preço de venda (R$)" error={formErrors.precoVenda}>
+                <MoneyInput
+                  id="e-venda"
+                  value={novoProduto.precoVenda}
+                  onChange={(v) => upd("precoVenda", v)}
+                  placeholder="0,00"
+                  className={formErrors.precoVenda ? "border-destructive" : ""}
+                />
               </FormField>
             </div>
             {margemCalc() !== null && (
@@ -241,9 +419,16 @@ const Estoque = () => {
                 Margem: <span className={`font-semibold ${margemCalc()! > 0 ? "text-emerald-500" : "text-destructive"}`}>{margemCalc()}%</span>
               </p>
             )}
-            <FormField id="e-minimo" label="Estoque mínimo">
-              <Input id="e-minimo" type="number" min="0" step="1" value={novoProduto.estoqueMinimo}
-                onChange={(e) => upd("estoqueMinimo", e.target.value)} />
+            <FormField id="e-minimo" label="Estoque mínimo" error={formErrors.estoqueMinimo}>
+              <Input
+                id="e-minimo"
+                type="number"
+                min="0"
+                step="1"
+                value={novoProduto.estoqueMinimo}
+                onChange={(e) => upd("estoqueMinimo", e.target.value)}
+                className={formErrors.estoqueMinimo ? "border-destructive" : ""}
+              />
             </FormField>
           </div>
 
@@ -260,9 +445,16 @@ const Estoque = () => {
               ))}
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <FormField id="e-qtd" label="Quantidade">
-                <Input id="e-qtd" type="number" min="0" step="1" value={novoProduto.quantidade}
-                  onChange={(e) => upd("quantidade", e.target.value)} />
+              <FormField id="e-qtd" label="Quantidade" error={formErrors.quantidade}>
+                <Input
+                  id="e-qtd"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={novoProduto.quantidade}
+                  onChange={(e) => upd("quantidade", e.target.value)}
+                  className={formErrors.quantidade ? "border-destructive" : ""}
+                />
               </FormField>
               <FormField id="e-data" label="Data">
                 <DatePicker value={novoProduto.data} onChange={(v) => upd("data", v)} />
@@ -281,11 +473,7 @@ const Estoque = () => {
                 <Input id="e-serie" value={novoProduto.nfeSerie} onChange={(e) => upd("nfeSerie", e.target.value)} placeholder="Ex.: 1" />
               </FormField>
               <FormField id="e-nfe-data" label="Data de emissão">
-                <DatePicker
-                  value={novoProduto.nfeDataEmissao}
-                  onChange={(v) => upd("nfeDataEmissao", v)}
-                  placeholder="dd/mm/aaaa"
-                />
+                <DatePicker value={novoProduto.nfeDataEmissao} onChange={(v) => upd("nfeDataEmissao", v)} placeholder="dd/mm/aaaa" />
               </FormField>
               <FormField id="e-nfe-valor" label="Valor adicional (R$)">
                 <Input id="e-nfe-valor" type="number" min="0" step="0.01" value={novoProduto.nfeValorAdicional}
@@ -301,8 +489,12 @@ const Estoque = () => {
         <div className="border-t border-border px-5 py-4">
           <Button
             className="w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
-            disabled={!novoProduto.sku.trim() || !novoProduto.nome.trim() || criarProdutoMutation.isPending}
-            onClick={() => criarProdutoMutation.mutate()}
+            disabled={criarProdutoMutation.isPending}
+            onClick={() => {
+              const errs = validate();
+              if (Object.keys(errs).length > 0) { setFormErrors(errs); return; }
+              criarProdutoMutation.mutate();
+            }}
           >
             {criarProdutoMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
             Cadastrar produto
@@ -310,6 +502,7 @@ const Estoque = () => {
         </div>
       </SheetContent>
     </Sheet>
+
     <div className="space-y-5">
       <PageHeader
         eyebrow="Estoque"
@@ -390,13 +583,13 @@ const Estoque = () => {
 
           {/* Filtros */}
           <Card className="surface-panel flex flex-wrap items-end gap-3 p-3">
-            <div className="relative min-w-[240px] flex-1">
+            <div className="relative min-w-[220px] flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 className="pl-9"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por SKU, nome ou marca..."
+                placeholder="Buscar por SKU, nome, marca, fornecedor ou cód..."
               />
             </div>
             <Select value={marcaFilter} onValueChange={setMarcaFilter}>
@@ -410,6 +603,19 @@ const Estoque = () => {
                 ))}
               </SelectContent>
             </Select>
+            {fornecedores.length > 0 && (
+              <Select value={fornecedorFilter} onValueChange={setFornecedorFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Fornecedor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos fornecedores</SelectItem>
+                  {fornecedores.map((f) => (
+                    <SelectItem key={f.id} value={f.nome}>{f.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <Select value={categoriaFilter} onValueChange={(v) => setCategoriaFilter(v as ProdutoCategoria | "todos")}>
               <SelectTrigger className="w-44">
                 <SelectValue placeholder="Categoria" />
@@ -456,7 +662,7 @@ const Estoque = () => {
             <Card className="surface-panel">
               <EmptyState icon={Package}
                 title={estoqueFiltro === "baixo" ? "Nenhum item com estoque baixo" : "Nenhum item encontrado"}
-                description={estoqueFiltro === "baixo" ? "Todos os produtos estão acima do mínimo." : "Ajuste os filtros ou cadastre produtos via Movimentações."}
+                description={estoqueFiltro === "baixo" ? "Todos os produtos estão acima do mínimo." : "Ajuste os filtros ou cadastre produtos."}
                 actions={
                   estoqueFiltro === "baixo"
                     ? <Button variant="outline" onClick={() => setEstoqueFiltro("todos")}>Ver todos</Button>
@@ -490,10 +696,21 @@ const Estoque = () => {
                       const margem = produto.precoVenda > 0 ? (lucro / produto.precoVenda) * 100 : 0;
                       return (
                         <tr key={produto.id} className="border-b border-border/40 transition-colors hover:bg-secondary/30">
-                          <td className="px-5 py-3 font-mono text-xs text-primary">{produto.sku}</td>
+                          <td className="px-5 py-3">
+                            <p className="font-mono text-xs text-primary">{produto.sku}</p>
+                            {produto.codigoFornecedor && (
+                              <p className="font-mono text-[10px] text-muted-foreground">{produto.codigoFornecedor}</p>
+                            )}
+                          </td>
                           <td className="px-5 py-3">
                             <p className="font-medium">{produto.nome}</p>
-                            {produto.modelo && <p className="text-xs text-muted-foreground">{produto.modelo}</p>}
+                            {(produto.modelo || produto.fornecedor) && (
+                              <p className="text-xs text-muted-foreground">
+                                {produto.modelo}
+                                {produto.modelo && produto.fornecedor ? " · " : ""}
+                                {produto.fornecedor ? `Forn: ${produto.fornecedor}` : ""}
+                              </p>
+                            )}
                           </td>
                           <td className="px-5 py-3 text-sm text-muted-foreground">{produto.marca ?? "—"}</td>
                           <td className="px-5 py-3 text-muted-foreground">{getCategoriaLabel(produto.categoria)}</td>
