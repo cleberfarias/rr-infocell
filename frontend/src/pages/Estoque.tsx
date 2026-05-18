@@ -5,6 +5,7 @@ import { STALE_TIME } from "@/constants/query";
 import {
   AlertTriangle,
   ArrowUpDown,
+  LayoutList,
   Loader2,
   Package,
   Plus,
@@ -64,6 +65,9 @@ const Estoque = () => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [novoProduto, setNovoProduto] = useState(emptyNovoProduto);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [density, setDensity] = useState<"default" | "compact">(() =>
+    (localStorage.getItem("rr-estoque-density") as "default" | "compact") ?? "default"
+  );
 
   // ── Dialogs inline para criação de marca/fornecedor ───────────────────────
   const [newMarcaOpen, setNewMarcaOpen] = useState(false);
@@ -510,6 +514,16 @@ const Estoque = () => {
         description="Consulta de itens, custo, preço de venda e nível de estoque."
         actions={
           <div className="flex items-center gap-2">
+            <div className="hidden md:flex items-center rounded-md border border-border bg-secondary/40 p-0.5">
+              <button type="button" onClick={() => { setDensity("default"); localStorage.setItem("rr-estoque-density", "default"); }}
+                className={cn("rounded px-2 py-1 text-xs transition-colors", density === "default" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
+                Padrão
+              </button>
+              <button type="button" onClick={() => { setDensity("compact"); localStorage.setItem("rr-estoque-density", "compact"); }}
+                className={cn("flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors", density === "compact" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
+                <LayoutList className="h-3 w-3" /> Compacto
+              </button>
+            </div>
             <Button variant="outline" asChild>
               <Link to="/app/movimentacoes">
                 <ArrowUpDown className="h-4 w-4" /> Movimentações
@@ -673,7 +687,7 @@ const Estoque = () => {
           ) : (
             <Card className="surface-panel overflow-hidden p-0">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className={cn("w-full text-sm", density === "compact" && "[&_td]:py-1.5 [&_th]:py-2")}>
                   <thead>
                     <tr className="border-b border-border bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
                       <th className="px-5 py-3 text-left font-medium">SKU</th>

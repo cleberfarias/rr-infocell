@@ -5,10 +5,13 @@ import {
   CheckCircle2,
   CreditCard,
   Loader2,
+  Minus,
+  Plus,
   Printer,
   QrCode,
   Receipt,
   Search,
+  Trash2,
   Users,
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -39,6 +42,7 @@ import {
 import { listProdutos, type Produto } from "@/services/produtos";
 import { createVenda, listVendas, type Venda } from "@/services/vendas";
 import { createTerceirizado, type TerceirizadoInput } from "@/services/terceirizados";
+import { toast } from "@/components/ui/sonner";
 
 // ── Tipos para terceirizado ───────────────────────────────────────────────────
 type TerceirizadoInfo = {
@@ -205,6 +209,25 @@ const PDV = () => {
       setValorRecebido(String(totalDireto));
     }
   }, [modoVenda, totalDireto, formaPagamento]);
+
+  const alterarQuantidade = (id: string, delta: number) => {
+    setCarrinho((current) =>
+      current.flatMap((item) => {
+        if (item.id !== id) return [item];
+        const novaQtd = item.quantidadeVenda + delta;
+        if (novaQtd <= 0) return [];
+        const limite = item.categoria === "servico" ? 999 : item.estoqueAtual;
+        return [{ ...item, quantidadeVenda: Math.min(novaQtd, limite) }];
+      }),
+    );
+  };
+
+  const removerItem = (item: Produto & { quantidadeVenda: number }) => {
+    setCarrinho((c) => c.filter((row) => row.id !== item.id));
+    toast(`"${item.nome}" removido do carrinho`, {
+      action: { label: "Desfazer", onClick: () => setCarrinho((c) => [...c, item]) },
+    });
+  };
 
   const adicionarProdutoById = (produtoId: string) => {
     const produto = produtosVenda.find((p) => p.id === produtoId);
@@ -677,10 +700,10 @@ const PDV = () => {
                   <thead>
                     <tr className="border-b border-border bg-secondary/30 text-xs uppercase tracking-wider text-muted-foreground">
                       <th className="px-4 py-3 text-left font-medium">Item</th>
-                      <th className="px-4 py-3 text-center font-medium">Qtd.</th>
+                      <th className="px-4 py-3 text-center font-medium">Quantidade</th>
                       <th className="px-4 py-3 text-right font-medium">Unitário</th>
                       <th className="px-4 py-3 text-right font-medium">Total</th>
-                      <th className="px-4 py-3 text-right font-medium">Ações</th>
+                      <th className="px-4 py-2 text-right font-medium"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -691,33 +714,62 @@ const PDV = () => {
                         </td>
                       </tr>
                     ) : (
-                      carrinho.map((item) => (
-                        <tr key={item.id} className="border-b border-border/40">
-                          <td className="px-4 py-3">
-                            <div className="font-medium">{item.nome}</div>
-                            <div className="font-mono text-xs text-muted-foreground">
-                              {item.sku}
-                              {item.imei ? ` - IMEI ${item.imei}` : ""}
-                              {item.garantiaDias ? ` - garantia ${item.garantiaDias} dias` : ""}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-center font-mono">{item.quantidadeVenda}</td>
-                          <td className="px-4 py-3 text-right font-mono">{formatBRL(item.precoVenda)}</td>
-                          <td className="px-4 py-3 text-right font-mono font-semibold">
-                            {formatBRL(item.precoVenda * item.quantidadeVenda)}
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              type="button"
-                              onClick={() => setCarrinho((c) => c.filter((row) => row.id !== item.id))}
-                            >
-                              Remover
-                            </Button>
-                          </td>
-                        </tr>
-                      ))
+                      carrinho.map((item) => {
+                        const limite = item.categoria === "servico" ? 999 : item.estoqueAtual;
+                        return (
+                          <tr key={item.id} className="border-b border-border/40 last:border-0">
+                            <td className="px-4 py-3">
+                              <div className="font-medium">{item.nome}</div>
+                              <div className="font-mono text-xs text-muted-foreground">
+                                {item.sku}
+                                {item.imei ? ` · IMEI ${item.imei}` : ""}
+                                {item.garantiaDias ? ` · garantia ${item.garantiaDias}d` : ""}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center justify-center gap-1">
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  type="button"
+                                  className="h-7 w-7 shrink-0"
+                                  onClick={() => alterarQuantidade(item.id, -1)}
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </Button>
+                                <span className="min-w-[2rem] text-center font-mono text-sm font-semibold">
+                                  {item.quantidadeVenda}
+                                </span>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  type="button"
+                                  className="h-7 w-7 shrink-0"
+                                  disabled={item.quantidadeVenda >= limite}
+                                  onClick={() => alterarQuantidade(item.id, 1)}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono text-muted-foreground">{formatBRL(item.precoVenda)}</td>
+                            <td className="px-4 py-3 text-right font-mono font-semibold">
+                              {formatBRL(item.precoVenda * item.quantidadeVenda)}
+                            </td>
+                            <td className="px-4 py-2 text-right">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                type="button"
+                                className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => removerItem(item)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>

@@ -15,6 +15,8 @@ import {
   Moon,
   Sun,
   BookOpen,
+  Keyboard,
+  X,
 } from "lucide-react";
 import { MdDashboard, MdHandyman, MdInventory2, MdPointOfSale, MdAccountBalance, MdChecklist, MdPhoneAndroid } from "react-icons/md";
 import { FaWhatsapp } from "react-icons/fa";
@@ -27,11 +29,13 @@ import { DeveloperCredit } from "@/components/DeveloperCredit";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { canAccess, roleLabels, roleHome } from "@/lib/roles";
 import { listOrdensServico } from "@/services/ordens-servico";
+import { listProdutos } from "@/services/produtos";
 
 const allNav = [
   { to: "/app", label: "Dashboard", icon: MdDashboard, key: "", hidden: false },
@@ -79,14 +83,23 @@ export const AppLayout = () => {
     role,
   } = useAuth();
 
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+
   const notifQuery = useQuery({
     queryKey: ["ordens-servico", "notif"],
     queryFn: () => listOrdensServico(),
     staleTime: 60_000,
   });
 
+  const produtosNotifQuery = useQuery({
+    queryKey: ["produtos", "notif-baixo"],
+    queryFn: () => listProdutos({ ativo: true }),
+    staleTime: 5 * 60_000,
+  });
+
   const notifs = useMemo(() => {
     const ordens = notifQuery.data ?? [];
+    const produtos = produtosNotifQuery.data ?? [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const prontas = ordens.filter((o) => o.status === "pronto_para_retirada");
@@ -101,6 +114,7 @@ export const AppLayout = () => {
     });
     const ativas = ordens.filter((o) => !["entregue", "cancelado"].includes(o.status));
     const emManutencao = ordens.filter((o) => ["em_manutencao", "aguardando_peca"].includes(o.status));
+    const baixoEstoque = produtos.filter((p) => p.estoqueAtual <= p.estoqueMinimo).length;
     return {
       prontas, aguardando, atrasadas,
       total: prontas.length + aguardando.length + atrasadas.length,
@@ -108,9 +122,10 @@ export const AppLayout = () => {
         ordens: ativas.length || undefined,
         orcamento: aguardando.length || undefined,
         manutencao: emManutencao.length || undefined,
+        estoque: baixoEstoque || undefined,
       } as Record<string, number | undefined>,
     };
-  }, [notifQuery.data]);
+  }, [notifQuery.data, produtosNotifQuery.data]);
 
   // Dark é o padrão (sem classe). Light = classe "light" no <html>.
   const [isDark, setIsDark] = useState(() => {
@@ -122,6 +137,16 @@ export const AppLayout = () => {
     document.documentElement.classList.toggle("light", !isDark);
     localStorage.setItem("theme", isDark ? "dark" : "light");
   }, [isDark]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "?" && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+        setShortcutsOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   const handleSearch = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter" && searchValue.trim()) {
@@ -163,7 +188,40 @@ export const AppLayout = () => {
     await logout();
   };
 
+  const shortcuts = [
+    { keys: ["Ctrl", "K"], desc: "Abrir busca rápida (Command Palette)" },
+    { keys: ["?"], desc: "Mostrar/ocultar este painel de atalhos" },
+    { keys: ["Enter"], desc: "Buscar OS no campo de busca do topo" },
+    { keys: ["Esc"], desc: "Fechar modais e painéis abertos" },
+    { keys: ["Alt", "N"], desc: "Nova OS (quando permitido pelo perfil)" },
+  ];
+
   return (
+    <>
+    <Dialog open={shortcutsOpen} onOpenChange={setShortcutsOpen}>
+      <DialogContent className="sm:max-w-[440px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Keyboard className="h-4 w-4" /> Atalhos de teclado
+          </DialogTitle>
+        </DialogHeader>
+        <div className="mt-2 space-y-2">
+          {shortcuts.map(({ keys, desc }) => (
+            <div key={desc} className="flex items-center justify-between gap-4 rounded-md px-3 py-2 hover:bg-secondary/40">
+              <span className="text-sm text-muted-foreground">{desc}</span>
+              <div className="flex shrink-0 items-center gap-1">
+                {keys.map((k) => (
+                  <kbd key={k} className="flex h-6 min-w-[1.5rem] items-center justify-center rounded border border-border bg-secondary px-1.5 font-mono text-[11px] font-medium">
+                    {k}
+                  </kbd>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">Pressione <kbd className="rounded border border-border bg-secondary px-1 font-mono text-[10px]">?</kbd> a qualquer momento para abrir este painel.</p>
+      </DialogContent>
+    </Dialog>
     <div className="flex min-h-screen w-full bg-background">
       {/* Sidebar */}
       <aside className="hidden md:flex w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
@@ -266,6 +324,15 @@ export const AppLayout = () => {
             >
               {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Atalhos de teclado (?)"
+              className="hidden md:inline-flex text-muted-foreground"
+              onClick={() => setShortcutsOpen(true)}
+            >
+              <Keyboard className="h-4 w-4" />
+            </Button>
 
             <Popover>
               <PopoverTrigger asChild>
@@ -365,6 +432,7 @@ export const AppLayout = () => {
       <AIAssistant />
       <CommandPalette />
     </div>
+    </>
   );
 };
 

@@ -17,6 +17,8 @@ import {
   PageHeader,
   SectionPanel,
 } from "@/components/design-system";
+import { PrintPreviewDialog } from "@/components/PrintPreviewDialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -45,6 +47,8 @@ const OrdemDetalhe = () => {
   const [pecaProdutoId, setPecaProdutoId] = useState("");
   const [pecaQuantidade, setPecaQuantidade] = useState("1");
   const [pecaError, setPecaError] = useState<string | null>(null);
+  const [previewOsOpen, setPreviewOsOpen] = useState(false);
+  const [previewGarantiaOpen, setPreviewGarantiaOpen] = useState(false);
 
   const ordemQuery = useQuery({
     queryKey: ["ordem-servico", ordemId],
@@ -212,7 +216,78 @@ const OrdemDetalhe = () => {
     );
   }
 
+  const OsPreviewContent = () => (
+    <>
+      <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "2px solid #111827", paddingBottom: 12, marginBottom: 14 }}>
+        <div>
+          <p style={{ color: "#0284c7", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>RR Infocell</p>
+          <h1 style={{ margin: 0, fontSize: 22, color: "#111827" }}>Comprovante de Ordem de Serviço</h1>
+          <p style={{ margin: 0, color: "#374151", fontSize: 11 }}>OS-{ordem.numero} · Entrada: {formatDate(ordem.entradaEm)} · Previsão: {formatDate(ordem.previsaoEntregaEm)}</p>
+        </div>
+        <div style={{ textAlign: "right", fontSize: 11 }}>
+          <strong>Status: {ordem.status.replaceAll("_", " ")}</strong>
+        </div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
+        {[{ label: "Cliente", val: cliente?.nome ?? ordem.clienteId, sub: cliente?.telefone },
+          { label: "Aparelho", val: `${aparelho?.marca ?? ""} ${aparelho?.modelo ?? ""}`.trim(), sub: aparelho?.imeiSerial ? `IMEI ${aparelho.imeiSerial}` : undefined },
+          { label: "Total previsto", val: formatBRL(ordem.valorTotal), sub: `Peças ${formatBRL(ordem.valorPecas)} + MO ${formatBRL(ordem.valorMaoObra)}` }
+        ].map(({ label, val, sub }) => (
+          <div key={label} style={{ border: "1px solid #d1d5db", borderRadius: 6, padding: 8 }}>
+            <span style={{ display: "block", color: "#6b7280", fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>{label}</span>
+            <strong style={{ display: "block", fontSize: 12, marginTop: 2 }}>{val}</strong>
+            {sub && <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>{sub}</p>}
+          </div>
+        ))}
+      </div>
+      <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 14 }}>
+        <tbody>
+          {[["Defeito relatado", ordem.defeitoRelatado], ["Diagnóstico", ordem.diagnostico ?? "—"], ["Técnico", ordem.tecnicoResponsavel ?? "—"]].map(([k, v]) => (
+            <tr key={k}><th style={{ border: "1px solid #d1d5db", padding: "6px 8px", background: "#f3f4f6", textAlign: "left", fontSize: 10, textTransform: "uppercase", width: 140 }}>{k}</th><td style={{ border: "1px solid #d1d5db", padding: "6px 8px" }}>{v}</td></tr>
+          ))}
+        </tbody>
+      </table>
+      {(ordem.pecasUsadas ?? []).length > 0 && (
+        <>
+          <h2 style={{ margin: "14px 0 6px", fontSize: 13 }}>Peças usadas</h2>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead><tr>{["Peça", "Qtd.", "Unitário", "Total"].map((h) => <th key={h} style={{ border: "1px solid #d1d5db", padding: "6px 8px", background: "#f3f4f6", fontSize: 10, textTransform: "uppercase", textAlign: "left" }}>{h}</th>)}</tr></thead>
+            <tbody>{ordem.pecasUsadas.map((p) => <tr key={p.produtoId}><td style={{ border: "1px solid #d1d5db", padding: "6px 8px" }}>{p.nome}</td><td style={{ border: "1px solid #d1d5db", padding: "6px 8px" }}>{p.quantidade}</td><td style={{ border: "1px solid #d1d5db", padding: "6px 8px" }}>{formatBRL(p.valorUnitario)}</td><td style={{ border: "1px solid #d1d5db", padding: "6px 8px" }}>{formatBRL(p.valorTotal)}</td></tr>)}</tbody>
+          </table>
+        </>
+      )}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, marginTop: 32 }}>
+        {["Cliente", "RR Infocell"].map((name) => (
+          <div key={name} style={{ borderTop: "1px solid #111827", paddingTop: 6, textAlign: "center", minHeight: 48 }}>
+            <span style={{ fontSize: 10, color: "#6b7280" }}>{name}</span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+
   return (
+    <>
+    <PrintPreviewDialog open={previewOsOpen} onOpenChange={setPreviewOsOpen} title={`Comprovante OS-${ordem.numero}`} onPrint={window.print}>
+      <OsPreviewContent />
+    </PrintPreviewDialog>
+    <PrintPreviewDialog open={previewGarantiaOpen} onOpenChange={setPreviewGarantiaOpen} title={`Termo de Garantia OS-${ordem.numero}`} onPrint={handlePrintGarantia}>
+      <div>
+        <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "2px solid #111827", paddingBottom: 12, marginBottom: 14 }}>
+          <div>
+            <p style={{ color: "#0284c7", fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>RR Infocell</p>
+            <h1 style={{ margin: 0, fontSize: 22, color: "#111827" }}>Termo de Garantia</h1>
+            <p style={{ margin: 0, fontSize: 11, color: "#374151" }}>OS-{ordem.numero} · Técnico: {ordem.tecnicoResponsavel ?? "—"}</p>
+          </div>
+        </div>
+        <div style={{ border: "2px solid #0284c7", borderRadius: 6, padding: "10px 14px", textAlign: "center", margin: "14px 0", background: "#f0f9ff" }}>
+          <span style={{ display: "block", color: "#6b7280", fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>Garantia do serviço</span>
+          <strong style={{ display: "block", fontSize: 18, color: "#0284c7", margin: "4px 0" }}>{ordem.garantiaDias ? `${ordem.garantiaDias} dias` : "—"}</strong>
+          <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>Válida até {formatDate(ordem.garantiaAte)}</p>
+        </div>
+        <p style={{ fontSize: 10, color: "#374151" }}>A RR Infocell garante os serviços realizados e as peças substituídas pelo prazo acima. A garantia não cobre danos físicos, líquidos, mau uso ou intervenção de terceiros.</p>
+      </div>
+    </PrintPreviewDialog>
     <div className="space-y-5">
       <PageHeader
         eyebrow="Ordem de serviço"
@@ -235,11 +310,11 @@ const OrdemDetalhe = () => {
                 <ClipboardCheck className="h-4 w-4" /> Saida
               </Link>
             </Button>
-            <Button variant="outline" onClick={handlePrintGarantia}>
+            <Button variant="outline" onClick={() => setPreviewGarantiaOpen(true)}>
               <ShieldCheck className="h-4 w-4" /> Termo de Garantia
             </Button>
-            <Button onClick={() => window.print()}>
-              <Printer className="h-4 w-4" /> Imprimir
+            <Button onClick={() => setPreviewOsOpen(true)}>
+              <Printer className="h-4 w-4" /> Imprimir OS
             </Button>
           </div>
         }
@@ -279,12 +354,43 @@ const OrdemDetalhe = () => {
             </div>
             <div>
               <dt className="text-xs text-muted-foreground">Telefone</dt>
-              <dd>{cliente?.telefone ?? "-"}</dd>
+              <dd className="flex items-center gap-2">
+                <span>{cliente?.telefone ?? "-"}</span>
+                {cliente?.telefone && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <a
+                          href={`https://wa.me/55${cliente.telefone.replace(/\D/g, "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors"
+                        >
+                          <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                        </a>
+                      </TooltipTrigger>
+                      <TooltipContent>Abrir WhatsApp</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </dd>
             </div>
             <div>
               <dt className="text-xs text-muted-foreground">Documento</dt>
               <dd>{cliente?.documento ?? "-"}</dd>
             </div>
+            {cliente?.email && (
+              <div>
+                <dt className="text-xs text-muted-foreground">E-mail</dt>
+                <dd className="truncate">{cliente.email}</dd>
+              </div>
+            )}
+            {cliente?.observacoes && (
+              <div>
+                <dt className="text-xs text-muted-foreground">Observações</dt>
+                <dd className="text-muted-foreground">{cliente.observacoes}</dd>
+              </div>
+            )}
           </dl>
         </SectionPanel>
 
@@ -701,6 +807,7 @@ const OrdemDetalhe = () => {
         </div>
       </section>
     </div>
+    </>
   );
 };
 
