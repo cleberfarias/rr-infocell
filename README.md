@@ -4,11 +4,7 @@ Sistema web de gestão para assistência técnica e loja de celulares.
 
 ## Visão geral
 
-Sistema completo para centralizar o fluxo operacional da RR Infocell: clientes, aparelhos, ordens de serviço, checklist técnico, estoque, movimentações, PDV, financeiro, WhatsApp e treinamento.
-
-## Status atual — Branch TECH-V2
-
-MVP publicado e validado com o cliente. Em evolução contínua com feedbacks reais de uso.
+Sistema completo para centralizar o fluxo operacional da RR Infocell: clientes, aparelhos, ordens de serviço, checklist técnico, estoque, movimentações, PDV/Caixa, financeiro, WhatsApp e treinamento.
 
 ## Stack
 
@@ -22,7 +18,7 @@ MVP publicado e validado com o cliente. Em evolução contínua com feedbacks re
 ### Backend
 - Node.js + Express + TypeScript
 - Firebase Admin SDK + Firestore + Firebase Auth
-- OpenAI SDK (GPT-4o-mini para assistente IA)
+- OpenAI SDK (GPT-4o-mini — Assistente IA)
 
 ### Infra
 - Firebase Hosting (frontend)
@@ -37,18 +33,18 @@ rr-infocell/
 ├── frontend/
 │   ├── src/
 │   │   ├── components/       # UI components (shadcn + custom)
-│   │   ├── constants/        # Status labels, routes, query config, business rules
-│   │   ├── lib/              # Formatters (date-fns), utils
+│   │   ├── constants/        # Status, routes, query config, business rules
+│   │   ├── lib/              # Formatters, utils, money-input
 │   │   ├── pages/            # Todas as telas do sistema
 │   │   └── services/         # Clientes de API
 │   └── public/
 │       └── screenshots/      # Screenshots usados no Centro de Treinamento
 ├── backend/
 │   └── src/modules/          # aparelhos, ajuda, categorias, checklists,
-│                             # clientes, contas, despesas, marcas,
-│                             # movimentacoes-estoque, orcamentos,
-│                             # ordem-eventos, ordens-servico,
-│                             # produtos, usuarios, vendas, whatsapp
+│                             # clientes, contas, despesas, fornecedores,
+│                             # marcas, movimentacoes-estoque, orcamentos,
+│                             # ordem-eventos, ordens-servico, produtos,
+│                             # terceirizados, usuarios, vendas, whatsapp
 ├── infra/
 ├── docs/
 └── Makefile
@@ -75,20 +71,20 @@ make dev-fresh
 ```
 Nova OS → Checklist → Manutenção → Orçamento → PDV/Caixa → Termo de Garantia
 ```
-Cada etapa navega automaticamente para a próxima ao salvar.
 
 ### Telas disponíveis
+
 | Rota | Descrição |
 |---|---|
 | `/app` | Dashboard com métricas, OS recentes e alertas |
 | `/app/ordens/nova` | Nova OS com cadastro rápido de cliente + aparelho |
-| `/app/ordens` | Lista de OS com filtros, busca, countdown de prazo |
-| `/app/checklist` | Checklist técnico de entrada e saída com fotos |
+| `/app/ordens` | Lista e Kanban de OS com filtros, busca e countdown de prazo |
+| `/app/checklist` | Checklist técnico de entrada e saída com fotos e drag-and-drop |
 | `/app/manutencao` | Diagnóstico, peças, linha do tempo, status |
 | `/app/orcamento` | Envio e aprovação de orçamento via WhatsApp |
-| `/app/estoque` | Dashboard de consulta de produtos e nível de estoque |
+| `/app/estoque` | Dashboard de produtos com modo compacto e filtro por fornecedor |
 | `/app/movimentacoes` | Entrada/saída/transferência com NF-e |
-| `/app/pdv` | Fechamento de OS e venda direta |
+| `/app/pdv` | Fechamento de OS e venda direta com carrinho +/− |
 | `/app/financeiro` | DRE, gráfico semanal, contas bancárias, exportar PDF |
 | `/app/despesas` | Registro de despesas operacionais |
 | `/app/clientes` | Cadastro e histórico |
@@ -98,6 +94,7 @@ Cada etapa navega automaticamente para a próxima ao salvar.
 | `/app/treinamento` | Centro de treinamento com guias passo a passo |
 
 ### Backend — endpoints principais
+
 ```
 GET/POST/PUT/DELETE /api/clientes
 GET/POST/PUT/DELETE /api/aparelhos
@@ -107,6 +104,8 @@ GET/POST            /api/movimentacoes-estoque
 GET/POST/PUT/DELETE /api/produtos
 GET/POST/DELETE     /api/categorias
 GET/POST/DELETE     /api/marcas
+GET/POST/PUT/DELETE /api/fornecedores
+GET/POST/PATCH/DELETE /api/terceirizados
 GET/POST/PUT/DELETE /api/contas
 GET/POST            /api/orcamentos
 GET/POST            /api/vendas
@@ -118,8 +117,6 @@ POST                /api/ajuda/perguntar   ← Assistente IA (GPT-4o-mini)
 ## Autenticação
 
 Firebase Auth com custom claim `role` (`admin`, `atendente`, `tecnico`).
-
-Em desenvolvimento, `VITE_AUTH_DEV_MODE=true` permite entrar sem usuário real.
 
 Para criar admin:
 ```bash
@@ -164,19 +161,23 @@ cd backend && npm run build && npm run lint
 
 - ✅ Fluxo completo de OS com navegação automática entre etapas
 - ✅ Cadastro rápido de cliente + aparelho dentro da Nova OS
-- ✅ Checklist técnico de entrada e saída com upload de fotos
+- ✅ Checklist técnico com upload de fotos e reordenação por drag-and-drop
 - ✅ Orçamento enviado via WhatsApp com aprovação registrada
-- ✅ Termo de Garantia impresso no Detalhe da OS
-- ✅ Estoque com categorias/marcas customizáveis, gauge de nível, NF-e
-- ✅ PDV com fechamento de OS e venda direta
+- ✅ Termo de Garantia e Comprovante de OS com pré-visualização antes de imprimir
+- ✅ Estoque com fornecedor, código do fornecedor, marcas e categorias customizáveis
+- ✅ PDV com carrinho +/− inline, busca por fornecedor/SKU e lançamento terceirizado
+- ✅ Terceirizados com status de repasse (Pendente/Pago) e cálculo de lucro
+- ✅ Kanban de OS com troca de status rápida e modo compacto
 - ✅ DRE simplificado com exportação em PDF
 - ✅ Contas bancárias com saldo editável
 - ✅ WhatsApp integrado (Baileys) com ações automáticas de OS
-- ✅ Assistente IA (GPT-4o-mini) com guias rápidos do sistema
+- ✅ Assistente IA (GPT-4o-mini) com contexto completo do sistema
 - ✅ Centro de treinamento com screenshots reais e progresso por módulo
+- ✅ Badge de estoque baixo e alertas de OS na sidebar
+- ✅ Painel de atalhos de teclado (tecla `?`)
 - ✅ Dark/light mode com persistência
 - ✅ Command Palette (Ctrl+K), mobile navigation, DatePicker ptBR
-- ✅ Refatoração: constants/, formatters.ts, react-icons, react-day-picker
+- ✅ Validações inline com máscara BRL, telefone e CPF/CNPJ nos formulários
 
 ## Documentação
 

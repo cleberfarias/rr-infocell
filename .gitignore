@@ -33,3 +33,9 @@ backend/whatsapp-auth/
 *.njsproj
 *.sln
 *.sw?
+
+# Ferramentas de desenvolvimento local
+.claude/
+.playwright-mcp/
+.tmp/screens/
+backend/src/scripts/limpar-tudo.ts
