@@ -69,7 +69,7 @@ export const roleHome: Record<Role, string> = {
 export const getRole = (): Role => {
   const r = (typeof window !== "undefined" &&
     localStorage.getItem(ROLE_KEY)) as Role | null;
-  return r && ["admin", "atendente", "tecnico"].includes(r) ? r : "admin";
+  return r && ["admin", "atendente", "tecnico"].includes(r) ? r : "atendente";
 };
 
 export const setRole = (role: Role) => {

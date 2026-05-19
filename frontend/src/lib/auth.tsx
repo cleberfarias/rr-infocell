@@ -45,11 +45,16 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 const validRoles: Role[] = ["admin", "atendente", "tecnico"];
 
 const resolveClaimRole = (value: unknown): Role | null => {
-  return typeof value === "string" && validRoles.includes(value as Role) ? (value as Role) : null;
+  return typeof value === "string" && validRoles.includes(value as Role)
+    ? (value as Role)
+    : null;
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const isDevelopmentMode = import.meta.env.VITE_AUTH_DEV_MODE === "true" || !isFirebaseClientConfigured || !firebaseAuth;
+  const isDevelopmentMode =
+    import.meta.env.VITE_AUTH_DEV_MODE === "true" ||
+    !isFirebaseClientConfigured ||
+    !firebaseAuth;
   const [user, setUser] = useState<User | null>(null);
   const [role, setRoleState] = useState<Role>(() => getRole());
   const [displayName, setDisplayName] = useState(() => roleNames[getRole()]);
@@ -72,11 +77,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      const token = await currentUser.getIdTokenResult();
+      const token = await currentUser.getIdTokenResult(true);
       const nextRole = resolveClaimRole(token.claims.role) ?? getRole();
       persistRole(nextRole);
       setRoleState(nextRole);
-      setDisplayName(currentUser.displayName || currentUser.email || roleNames[nextRole]);
+      setDisplayName(
+        currentUser.displayName || currentUser.email || roleNames[nextRole],
+      );
       setIsLoading(false);
     });
   }, [isDevelopmentMode]);
@@ -91,14 +98,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return roleHome[selectedRole];
       }
 
-      const credential = await signInWithEmailAndPassword(firebaseAuth, email, password);
-      const token = await credential.user.getIdTokenResult();
-      const nextRole = resolveClaimRole(token.claims.role) ?? selectedRole;
+      const credential = await signInWithEmailAndPassword(
+        firebaseAuth,
+        email,
+        password,
+      );
+      const token = await credential.user.getIdTokenResult(true); // força refresh do token
+      const claimRole = resolveClaimRole(token.claims.role);
+
+      if (!claimRole) {
+        await signOut(firebaseAuth);
+        throw new Error(
+          "Usuário sem perfil de acesso. Solicite ao administrador que defina seu nível de acesso.",
+        );
+      }
+
+      const nextRole = claimRole;
 
       persistRole(nextRole);
       setUser(credential.user);
       setRoleState(nextRole);
-      setDisplayName(credential.user.displayName || credential.user.email || roleNames[nextRole]);
+      setDisplayName(
+        credential.user.displayName ||
+          credential.user.email ||
+          roleNames[nextRole],
+      );
 
       return roleHome[nextRole];
     },
