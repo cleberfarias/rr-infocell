@@ -35,8 +35,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatBRL, formatDateTimeShort } from "@/lib/formatters";
+import { formatBRL, formatDate, formatDateTimeShort } from "@/lib/formatters";
 import { OS_STATUS_LABELS } from "@/constants/status";
+import { EMPRESA } from "@/constants/company";
+import { PrintPreviewDialog } from "@/components/PrintPreviewDialog";
 import { STALE_TIME } from "@/constants/query";
 import { ROUTES } from "@/constants/routes";
 import { listAparelhos } from "@/services/aparelhos";
@@ -77,6 +79,7 @@ const Orcamento = () => {
     searchParams.get("ordemId") ?? "",
   );
   const [actionError, setActionError] = useState<string | null>(null);
+  const [orcamentoPrintOpen, setOrcamentoPrintOpen] = useState(false);
   const [aprovadoPor, setAprovadoPor] = useState("");
   const [canalAprovacao, setCanalAprovacao] = useState<"balcao" | "whatsapp" | "telefone">("whatsapp");
   const [mensagemAprovacao, setMensagemAprovacao] = useState("");
@@ -315,7 +318,142 @@ const Orcamento = () => {
     );
   }
 
+  const NotaOrcamentoContent = () => {
+    if (!selectedOrdem) return null;
+    const logoUrl = localStorage.getItem("rr-logo-url") || null;
+    return (
+      <>
+        {/* Cabeçalho */}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 16, borderBottom: "2px solid #111827", paddingBottom: 14, marginBottom: 14 }}>
+          <div style={{ flexShrink: 0 }}>
+            {logoUrl ? (
+              <img src={logoUrl} alt="Logo" style={{ maxHeight: 70, maxWidth: 160, objectFit: "contain" }} />
+            ) : (
+              <div style={{ background: "#0284c7", color: "#fff", padding: "10px 16px", borderRadius: 6, fontWeight: 700, fontSize: 16 }}>
+                {EMPRESA.nome}
+              </div>
+            )}
+          </div>
+          <div style={{ flex: 1 }}>
+            <p style={{ margin: 0, fontWeight: 700, fontSize: 14 }}>{EMPRESA.nome}</p>
+            <p style={{ margin: "2px 0 0", fontSize: 10, color: "#374151" }}>CNPJ: {EMPRESA.cnpj}</p>
+            <p style={{ margin: "2px 0 0", fontSize: 10, color: "#374151" }}>{EMPRESA.enderecoCompleto}</p>
+            <p style={{ margin: "2px 0 0", fontSize: 10, color: "#374151" }}>Tel/WhatsApp: {EMPRESA.telefone}</p>
+          </div>
+          <div style={{ textAlign: "right", flexShrink: 0 }}>
+            <p style={{ margin: 0, color: "#0284c7", fontWeight: 700, fontSize: 13, textTransform: "uppercase" }}>Nota de Orçamento</p>
+            <p style={{ margin: "2px 0 0", fontSize: 18, fontWeight: 700 }}>OS-{selectedOrdem.numero}</p>
+            <p style={{ margin: "2px 0 0", fontSize: 10, color: "#374151" }}>
+              Emitido em: {formatDate(new Date().toISOString())}
+            </p>
+          </div>
+        </div>
+
+        {/* Cliente e Aparelho */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+          <div style={{ border: "1px solid #d1d5db", borderRadius: 6, padding: 8 }}>
+            <p style={{ margin: "0 0 4px", color: "#6b7280", fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>Cliente</p>
+            <strong style={{ fontSize: 12 }}>{cliente?.nome ?? "—"}</strong>
+            {cliente?.telefone && <p style={{ margin: "2px 0 0", fontSize: 10 }}>Tel: {cliente.telefone}</p>}
+            {cliente?.documento && <p style={{ margin: "2px 0 0", fontSize: 10 }}>CPF/CNPJ: {cliente.documento}</p>}
+          </div>
+          <div style={{ border: "1px solid #d1d5db", borderRadius: 6, padding: 8 }}>
+            <p style={{ margin: "0 0 4px", color: "#6b7280", fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>Aparelho</p>
+            <strong style={{ fontSize: 12 }}>{aparelho ? `${aparelho.marca} ${aparelho.modelo}` : "—"}</strong>
+            {aparelho?.imeiSerial && <p style={{ margin: "2px 0 0", fontSize: 10 }}>IMEI/Série: {aparelho.imeiSerial}</p>}
+            {aparelho?.estadoFisico && <p style={{ margin: "2px 0 0", fontSize: 10 }}>Estado: {aparelho.estadoFisico}</p>}
+          </div>
+        </div>
+
+        {/* Defeito */}
+        <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 14 }}>
+          <tbody>
+            <tr>
+              <th style={{ border: "1px solid #d1d5db", padding: "5px 8px", background: "#f3f4f6", textAlign: "left", fontSize: 10, textTransform: "uppercase", width: 140 }}>Defeito relatado</th>
+              <td style={{ border: "1px solid #d1d5db", padding: "5px 8px", fontSize: 11 }}>{selectedOrdem.defeitoRelatado}</td>
+            </tr>
+            {selectedOrdem.diagnostico && (
+              <tr>
+                <th style={{ border: "1px solid #d1d5db", padding: "5px 8px", background: "#f3f4f6", textAlign: "left", fontSize: 10, textTransform: "uppercase", width: 140 }}>Diagnóstico</th>
+                <td style={{ border: "1px solid #d1d5db", padding: "5px 8px", fontSize: 11 }}>{selectedOrdem.diagnostico}</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+
+        {/* Peças e Serviços */}
+        {(selectedOrdem.pecasUsadas ?? []).length > 0 && (
+          <>
+            <h2 style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 700, textTransform: "uppercase" }}>Peças previstas / Serviços</h2>
+            <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 14 }}>
+              <thead>
+                <tr>{["Descrição", "Qtd.", "Unitário", "Total"].map((h) => (
+                  <th key={h} style={{ border: "1px solid #d1d5db", padding: "5px 7px", background: "#f3f4f6", fontSize: 10, textTransform: "uppercase", textAlign: "left" }}>{h}</th>
+                ))}</tr>
+              </thead>
+              <tbody>
+                {selectedOrdem.pecasUsadas.map((p) => (
+                  <tr key={p.produtoId}>
+                    <td style={{ border: "1px solid #d1d5db", padding: "5px 7px" }}>{p.nome}</td>
+                    <td style={{ border: "1px solid #d1d5db", padding: "5px 7px" }}>{p.quantidade}</td>
+                    <td style={{ border: "1px solid #d1d5db", padding: "5px 7px" }}>{formatBRL(p.valorUnitario)}</td>
+                    <td style={{ border: "1px solid #d1d5db", padding: "5px 7px" }}>{formatBRL(p.valorTotal)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
+
+        {/* Totais */}
+        <table style={{ width: "50%", marginLeft: "auto", borderCollapse: "collapse", marginBottom: 14 }}>
+          <tbody>
+            <tr>
+              <th style={{ border: "1px solid #d1d5db", padding: "5px 8px", background: "#f3f4f6", textAlign: "left", fontSize: 11 }}>Mão de obra</th>
+              <td style={{ border: "1px solid #d1d5db", padding: "5px 8px", textAlign: "right" }}>{formatBRL(selectedOrdem.valorMaoObra)}</td>
+            </tr>
+            <tr>
+              <th style={{ border: "1px solid #d1d5db", padding: "5px 8px", background: "#f3f4f6", textAlign: "left", fontSize: 11 }}>Peças</th>
+              <td style={{ border: "1px solid #d1d5db", padding: "5px 8px", textAlign: "right" }}>{formatBRL(selectedOrdem.valorPecas)}</td>
+            </tr>
+            <tr style={{ fontWeight: 700 }}>
+              <th style={{ border: "1px solid #d1d5db", padding: "5px 8px", background: "#eff6ff", textAlign: "left", fontSize: 12, color: "#0284c7" }}>TOTAL</th>
+              <td style={{ border: "1px solid #d1d5db", padding: "5px 8px", textAlign: "right", color: "#0284c7", fontSize: 14 }}>{formatBRL(selectedOrdem.valorTotal)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Validade e Técnico */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14, fontSize: 11 }}>
+          <div style={{ border: "1px solid #d1d5db", borderRadius: 6, padding: 8 }}>
+            <span style={{ display: "block", color: "#6b7280", fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>Prazo de validade do orçamento</span>
+            <strong>7 dias a partir da emissão</strong>
+          </div>
+          <div style={{ border: "1px solid #d1d5db", borderRadius: 6, padding: 8 }}>
+            <span style={{ display: "block", color: "#6b7280", fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>Técnico responsável</span>
+            <strong>{selectedOrdem.tecnicoResponsavel ?? EMPRESA.tecnicoPadrao}</strong>
+          </div>
+        </div>
+
+        {/* Assinatura */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, marginTop: 24 }}>
+          {["Aprovação do cliente", `${EMPRESA.nome} — ${selectedOrdem.tecnicoResponsavel ?? EMPRESA.tecnicoPadrao}`].map((label) => (
+            <div key={label} style={{ borderTop: "1px solid #111827", paddingTop: 6, textAlign: "center", minHeight: 48 }}>
+              <span style={{ fontSize: 10, color: "#6b7280" }}>{label}</span>
+            </div>
+          ))}
+        </div>
+      </>
+    );
+  };
+
   return (
+    <>
+    {selectedOrdem && (
+      <PrintPreviewDialog open={orcamentoPrintOpen} onOpenChange={setOrcamentoPrintOpen} title={`Nota de Orçamento — OS-${selectedOrdem.numero}`} onPrint={window.print}>
+        <NotaOrcamentoContent />
+      </PrintPreviewDialog>
+    )}
     <div className="space-y-5">
       <PageHeader
         eyebrow="Orçamentos"
@@ -334,6 +472,9 @@ const Orcamento = () => {
                   <Link to={ROUTES.manutencaoOS(selectedOrdem.id)}>
                     Manutenção
                   </Link>
+                </Button>
+                <Button variant="outline" onClick={() => setOrcamentoPrintOpen(true)}>
+                  <Eye className="h-4 w-4" /> Imprimir orçamento
                 </Button>
               </>
             )}
@@ -621,6 +762,7 @@ const Orcamento = () => {
         </div>
       )}
     </div>
+    </>
   );
 };
 

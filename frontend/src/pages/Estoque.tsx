@@ -8,8 +8,10 @@ import {
   LayoutList,
   Loader2,
   Package,
+  Pencil,
   Plus,
   Search,
+  Trash2,
   TrendingUp,
 } from "lucide-react";
 
@@ -32,13 +34,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { formatBRL } from "@/lib/formatters";
+import { formatBRL, capitalizeFirst } from "@/lib/formatters";
 import { MoneyInput } from "@/components/ui/money-input";
 import { listCategorias } from "@/services/categorias";
 import { listMarcas, createMarca } from "@/services/marcas";
 import { listFornecedores, createFornecedor } from "@/services/fornecedores";
 import { createMovimentacaoEstoque } from "@/services/movimentacoes-estoque";
-import { createProduto, listProdutos, type ProdutoCategoria } from "@/services/produtos";
+import { createProduto, listProdutos, updateProduto, deleteProduto, type ProdutoCategoria, type Produto } from "@/services/produtos";
 
 const today = new Date().toISOString().slice(0, 10);
 
@@ -68,6 +70,15 @@ const Estoque = () => {
   const [density, setDensity] = useState<"default" | "compact">(() =>
     (localStorage.getItem("rr-estoque-density") as "default" | "compact") ?? "default"
   );
+
+  // ── Editar produto ────────────────────────────────────────────────────────
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const [editProduto, setEditProduto] = useState<Partial<Produto> & { id?: string }>({});
+  const [editFormErrors, setEditFormErrors] = useState<Record<string, string>>({});
+
+  // ── Excluir produto ───────────────────────────────────────────────────────
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Produto | null>(null);
 
   // ── Dialogs inline para criação de marca/fornecedor ───────────────────────
   const [newMarcaOpen, setNewMarcaOpen] = useState(false);
@@ -171,6 +182,49 @@ const Estoque = () => {
     onError: (err) => toast.error(err instanceof Error ? err.message : "Erro ao cadastrar produto."),
   });
 
+  const editarProdutoMutation = useMutation({
+    mutationFn: async () => {
+      if (!editProduto.id) throw new Error("ID inválido");
+      return updateProduto(editProduto.id, {
+        sku: editProduto.sku?.trim() ?? "",
+        nome: editProduto.nome?.trim() ?? "",
+        categoria: (editProduto.categoria ?? "peca") as ProdutoCategoria,
+        marca: editProduto.marca || undefined,
+        fornecedor: editProduto.fornecedor || undefined,
+        codigoFornecedor: editProduto.codigoFornecedor?.trim() || undefined,
+        modelo: editProduto.modelo || undefined,
+        custo: Number(editProduto.custo) || 0,
+        precoVenda: Number(editProduto.precoVenda) || 0,
+        estoqueAtual: editProduto.estoqueAtual ?? 0,
+        estoqueMinimo: Number(editProduto.estoqueMinimo) || 1,
+        observacoes: editProduto.observacoes || undefined,
+        ativo: editProduto.ativo ?? true,
+      });
+    },
+    onSuccess: async (p) => {
+      await queryClient.invalidateQueries({ queryKey: ["produtos"] });
+      toast.success(`"${p.nome}" atualizado.`);
+      setEditSheetOpen(false);
+      setEditProduto({});
+      setEditFormErrors({});
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "Erro ao atualizar produto."),
+  });
+
+  const excluirProdutoMutation = useMutation({
+    mutationFn: async () => {
+      if (!deleteTarget?.id) throw new Error("ID inválido");
+      return deleteProduto(deleteTarget.id);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["produtos"] });
+      toast.success(`"${deleteTarget?.nome}" excluído.`);
+      setDeleteDialogOpen(false);
+      setDeleteTarget(null);
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "Erro ao excluir produto."),
+  });
+
   const produtos = useMemo(() => produtosQuery.data ?? [], [produtosQuery.data]);
   const fornecedores = useMemo(() => fornecedoresQuery.data ?? [], [fornecedoresQuery.data]);
 
@@ -221,6 +275,24 @@ const Estoque = () => {
   const upd = (field: string, value: string) => {
     setNovoProduto((p) => ({ ...p, [field]: value }));
     if (formErrors[field]) setFormErrors((e) => { const n = { ...e }; delete n[field]; return n; });
+  };
+
+  const updEdit = (field: string, value: string | number | boolean) => {
+    setEditProduto((p) => ({ ...p, [field]: value }));
+    if (editFormErrors[field]) setEditFormErrors((e) => { const n = { ...e }; delete n[field]; return n; });
+  };
+
+  const validateEdit = (): Record<string, string> => {
+    const e: Record<string, string> = {};
+    if (!editProduto.sku?.trim()) e.sku = "SKU é obrigatório.";
+    if (!editProduto.nome?.trim()) e.nome = "Nome é obrigatório.";
+    return e;
+  };
+
+  const abrirEditar = (p: Produto) => {
+    setEditProduto({ ...p });
+    setEditFormErrors({});
+    setEditSheetOpen(true);
   };
 
   const validate = (): Record<string, string> => {
@@ -339,7 +411,7 @@ const Estoque = () => {
               <Input
                 id="e-nome"
                 value={novoProduto.nome}
-                onChange={(e) => upd("nome", e.target.value)}
+                onChange={(e) => upd("nome", capitalizeFirst(e.target.value))}
                 placeholder="Ex.: Bateria iPhone 13 Pro"
                 className={formErrors.nome ? "border-destructive" : ""}
               />
@@ -391,7 +463,7 @@ const Estoque = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <FormField id="e-modelo" label="Modelo">
-                <Input id="e-modelo" value={novoProduto.modelo} onChange={(e) => upd("modelo", e.target.value)} placeholder="Opcional" />
+                <Input id="e-modelo" value={novoProduto.modelo} onChange={(e) => upd("modelo", capitalizeFirst(e.target.value))} placeholder="Opcional" />
               </FormField>
               <FormField id="e-cod-fornecedor" label="Cód. fornecedor">
                 <Input id="e-cod-fornecedor" value={novoProduto.codigoFornecedor} onChange={(e) => upd("codigoFornecedor", e.target.value)} placeholder="Ref. do fornecedor" />
@@ -502,6 +574,145 @@ const Estoque = () => {
           >
             {criarProdutoMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
             Cadastrar produto
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+
+    {/* Dialog: confirmar exclusão */}
+    <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <DialogContent className="sm:max-w-[380px]">
+        <DialogHeader>
+          <DialogTitle>Excluir produto</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 pt-1">
+          <p className="text-sm text-muted-foreground">
+            Tem certeza que deseja excluir <span className="font-semibold text-foreground">"{deleteTarget?.nome}"</span>?<br />
+            Essa ação não poderá ser desfeita.
+          </p>
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={excluirProdutoMutation.isPending}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={excluirProdutoMutation.isPending}
+              onClick={() => excluirProdutoMutation.mutate()}
+            >
+              {excluirProdutoMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              Excluir
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* Sheet: editar produto */}
+    <Sheet open={editSheetOpen} onOpenChange={(open) => { setEditSheetOpen(open); if (!open) { setEditFormErrors({}); setEditProduto({}); } }}>
+      <SheetContent side="right" className="flex w-[440px] flex-col gap-0 p-0 sm:max-w-[440px]">
+        <SheetHeader className="border-b border-border px-5 py-4">
+          <SheetTitle>Editar produto</SheetTitle>
+          <p className="text-xs text-muted-foreground">Atualize os dados do produto. A movimentação de estoque é feita separadamente.</p>
+        </SheetHeader>
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground border-b border-border pb-1.5">Produto</p>
+            <div className="grid grid-cols-2 gap-3">
+              <FormField id="ee-sku" label="SKU / Código *" error={editFormErrors.sku}>
+                <Input
+                  id="ee-sku"
+                  value={editProduto.sku ?? ""}
+                  onChange={(e) => updEdit("sku", e.target.value)}
+                  className={editFormErrors.sku ? "border-destructive" : ""}
+                />
+              </FormField>
+              <FormField id="ee-categoria" label="Categoria *">
+                <Select value={editProduto.categoria ?? "peca"} onValueChange={(v) => updEdit("categoria", v)}>
+                  <SelectTrigger id="ee-categoria"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(categoriasQuery.data ?? []).map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+            </div>
+            <FormField id="ee-nome" label="Nome do produto *" error={editFormErrors.nome}>
+              <Input
+                id="ee-nome"
+                value={editProduto.nome ?? ""}
+                onChange={(e) => updEdit("nome", capitalizeFirst(e.target.value))}
+                className={editFormErrors.nome ? "border-destructive" : ""}
+              />
+            </FormField>
+            <div className="grid grid-cols-2 gap-3">
+              <FormField id="ee-marca" label="Marca">
+                <Select value={editProduto.marca || "__none__"} onValueChange={(v) => updEdit("marca", v === "__none__" ? "" : v)}>
+                  <SelectTrigger id="ee-marca"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Sem marca</SelectItem>
+                    {(marcasQuery.data ?? []).map((m) => (
+                      <SelectItem key={m.id} value={m.nome}>{m.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+              <FormField id="ee-fornecedor" label="Fornecedor">
+                <Select value={editProduto.fornecedor || "__none__"} onValueChange={(v) => updEdit("fornecedor", v === "__none__" ? "" : v)}>
+                  <SelectTrigger id="ee-fornecedor"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Sem fornecedor</SelectItem>
+                    {fornecedores.map((f) => (
+                      <SelectItem key={f.id} value={f.nome}>{f.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <FormField id="ee-modelo" label="Modelo">
+                <Input id="ee-modelo" value={editProduto.modelo ?? ""} onChange={(e) => updEdit("modelo", capitalizeFirst(e.target.value))} placeholder="Opcional" />
+              </FormField>
+              <FormField id="ee-cod-forn" label="Cód. fornecedor">
+                <Input id="ee-cod-forn" value={editProduto.codigoFornecedor ?? ""} onChange={(e) => updEdit("codigoFornecedor", e.target.value)} />
+              </FormField>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <FormField id="ee-custo" label="Custo (R$)">
+                <MoneyInput id="ee-custo" value={String(editProduto.custo ?? "")} onChange={(v) => updEdit("custo", v)} placeholder="0,00" />
+              </FormField>
+              <FormField id="ee-venda" label="Preço de venda (R$)">
+                <MoneyInput id="ee-venda" value={String(editProduto.precoVenda ?? "")} onChange={(v) => updEdit("precoVenda", v)} placeholder="0,00" />
+              </FormField>
+            </div>
+            <FormField id="ee-minimo" label="Estoque mínimo">
+              <Input
+                id="ee-minimo"
+                type="number"
+                min="0"
+                step="1"
+                value={editProduto.estoqueMinimo ?? 1}
+                onChange={(e) => updEdit("estoqueMinimo", e.target.value)}
+              />
+            </FormField>
+            <FormField id="ee-obs" label="Observações">
+              <Textarea id="ee-obs" rows={2} value={editProduto.observacoes ?? ""}
+                onChange={(e) => updEdit("observacoes", e.target.value)} placeholder="Notas opcionais..." />
+            </FormField>
+          </div>
+        </div>
+        <div className="border-t border-border px-5 py-4">
+          <Button
+            className="w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
+            disabled={editarProdutoMutation.isPending}
+            onClick={() => {
+              const errs = validateEdit();
+              if (Object.keys(errs).length > 0) { setEditFormErrors(errs); return; }
+              editarProdutoMutation.mutate();
+            }}
+          >
+            {editarProdutoMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />}
+            Salvar alterações
           </Button>
         </div>
       </SheetContent>
@@ -700,6 +911,7 @@ const Estoque = () => {
                       <th className="px-5 py-3 text-right font-medium">Custo</th>
                       <th className="px-5 py-3 text-right font-medium">Venda</th>
                       <th className="px-5 py-3 text-right font-medium">Margem</th>
+                      <th className="px-5 py-3 text-center font-medium">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -748,6 +960,26 @@ const Estoque = () => {
                           <td className="px-5 py-3 text-right font-mono text-muted-foreground">{formatBRL(produto.custo)}</td>
                           <td className="px-5 py-3 text-right font-mono">{formatBRL(produto.precoVenda)}</td>
                           <td className="px-5 py-3 text-right font-mono font-semibold text-success">{margem.toFixed(0)}%</td>
+                          <td className="px-5 py-3 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <Button
+                                variant="ghost" size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                title="Editar"
+                                onClick={() => abrirEditar(produto)}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost" size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                title="Excluir"
+                                onClick={() => { setDeleteTarget(produto); setDeleteDialogOpen(true); }}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </td>
                         </tr>
                       );
                     })}

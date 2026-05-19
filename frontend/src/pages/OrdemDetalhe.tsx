@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatBRL, formatDate } from "@/lib/formatters";
+import { EMPRESA } from "@/constants/company";
 import { getAparelho } from "@/services/aparelhos";
 import { getCliente } from "@/services/clientes";
 import {
@@ -48,6 +49,7 @@ const OrdemDetalhe = () => {
   const [pecaQuantidade, setPecaQuantidade] = useState("1");
   const [pecaError, setPecaError] = useState<string | null>(null);
   const [previewOsOpen, setPreviewOsOpen] = useState(false);
+  const [previewOsViaInterna, setPreviewOsViaInterna] = useState(false);
   const [previewGarantiaOpen, setPreviewGarantiaOpen] = useState(false);
 
   const ordemQuery = useQuery({
@@ -216,60 +218,154 @@ const OrdemDetalhe = () => {
     );
   }
 
-  const OsPreviewContent = () => (
-    <>
-      <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "2px solid #111827", paddingBottom: 12, marginBottom: 14 }}>
-        <div>
-          <p style={{ color: "#0284c7", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>RR Infocell</p>
-          <h1 style={{ margin: 0, fontSize: 22, color: "#111827" }}>Comprovante de Ordem de Serviço</h1>
-          <p style={{ margin: 0, color: "#374151", fontSize: 11 }}>OS-{ordem.numero} · Entrada: {formatDate(ordem.entradaEm)} · Previsão: {formatDate(ordem.previsaoEntregaEm)}</p>
-        </div>
-        <div style={{ textAlign: "right", fontSize: 11 }}>
-          <strong>Status: {ordem.status.replaceAll("_", " ")}</strong>
-        </div>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
-        {[{ label: "Cliente", val: cliente?.nome ?? ordem.clienteId, sub: cliente?.telefone },
-          { label: "Aparelho", val: `${aparelho?.marca ?? ""} ${aparelho?.modelo ?? ""}`.trim(), sub: aparelho?.imeiSerial ? `IMEI ${aparelho.imeiSerial}` : undefined },
-          { label: "Total previsto", val: formatBRL(ordem.valorTotal), sub: `Peças ${formatBRL(ordem.valorPecas)} + MO ${formatBRL(ordem.valorMaoObra)}` }
-        ].map(({ label, val, sub }) => (
-          <div key={label} style={{ border: "1px solid #d1d5db", borderRadius: 6, padding: 8 }}>
-            <span style={{ display: "block", color: "#6b7280", fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>{label}</span>
-            <strong style={{ display: "block", fontSize: 12, marginTop: 2 }}>{val}</strong>
-            {sub && <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>{sub}</p>}
+  const OsPreviewContent = ({ viaInterna = false }: { viaInterna?: boolean }) => {
+    const tipoSenhaLabel: Record<string, string> = {
+      sem_senha: "Sem senha",
+      numerica: "Senha numérica",
+      padrao: "Padrão/desenho",
+      nao_informou: "Cliente não informou",
+    };
+    const senhaInfo = ordem.tipoSenha
+      ? tipoSenhaLabel[ordem.tipoSenha] ?? ordem.tipoSenha
+      : "Não informado";
+    const senhaDetalhe = viaInterna
+      ? ordem.tipoSenha === "numerica" ? ordem.senhaAparelho
+        : ordem.tipoSenha === "padrao" ? ordem.padraoDeSenha
+        : undefined
+      : undefined;
+
+    return (
+      <>
+        {/* Cabeçalho */}
+        <div style={{ borderBottom: "2px solid #111827", paddingBottom: 12, marginBottom: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div>
+              <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#111827" }}>{EMPRESA.nome}</p>
+              <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>CNPJ: {EMPRESA.cnpj}</p>
+              <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>{EMPRESA.enderecoCompleto}</p>
+              <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>Tel/WhatsApp: {EMPRESA.telefone}</p>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: "#0284c7" }}>ORDEM DE SERVIÇO</p>
+              <p style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>OS-{ordem.numero}</p>
+              <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>{viaInterna ? "Via interna" : "Via do cliente"}</p>
+            </div>
           </div>
-        ))}
-      </div>
-      <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 14 }}>
-        <tbody>
-          {[["Defeito relatado", ordem.defeitoRelatado], ["Diagnóstico", ordem.diagnostico ?? "—"], ["Técnico", ordem.tecnicoResponsavel ?? "—"]].map(([k, v]) => (
-            <tr key={k}><th style={{ border: "1px solid #d1d5db", padding: "6px 8px", background: "#f3f4f6", textAlign: "left", fontSize: 10, textTransform: "uppercase", width: 140 }}>{k}</th><td style={{ border: "1px solid #d1d5db", padding: "6px 8px" }}>{v}</td></tr>
+        </div>
+
+        {/* Datas */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
+          {[
+            { label: "Data de entrada", val: formatDate(ordem.entradaEm) },
+            { label: "Previsão de entrega", val: ordem.previsaoEntregaEm ? formatDate(ordem.previsaoEntregaEm) : "—" },
+            { label: "Técnico responsável", val: ordem.tecnicoResponsavel ?? EMPRESA.tecnicoPadrao },
+          ].map(({ label, val }) => (
+            <div key={label} style={{ border: "1px solid #d1d5db", borderRadius: 6, padding: 8 }}>
+              <span style={{ display: "block", color: "#6b7280", fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>{label}</span>
+              <strong style={{ display: "block", fontSize: 12, marginTop: 2 }}>{val}</strong>
+            </div>
           ))}
-        </tbody>
-      </table>
-      {(ordem.pecasUsadas ?? []).length > 0 && (
-        <>
-          <h2 style={{ margin: "14px 0 6px", fontSize: 13 }}>Peças usadas</h2>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead><tr>{["Peça", "Qtd.", "Unitário", "Total"].map((h) => <th key={h} style={{ border: "1px solid #d1d5db", padding: "6px 8px", background: "#f3f4f6", fontSize: 10, textTransform: "uppercase", textAlign: "left" }}>{h}</th>)}</tr></thead>
-            <tbody>{ordem.pecasUsadas.map((p) => <tr key={p.produtoId}><td style={{ border: "1px solid #d1d5db", padding: "6px 8px" }}>{p.nome}</td><td style={{ border: "1px solid #d1d5db", padding: "6px 8px" }}>{p.quantidade}</td><td style={{ border: "1px solid #d1d5db", padding: "6px 8px" }}>{formatBRL(p.valorUnitario)}</td><td style={{ border: "1px solid #d1d5db", padding: "6px 8px" }}>{formatBRL(p.valorTotal)}</td></tr>)}</tbody>
-          </table>
-        </>
-      )}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, marginTop: 32 }}>
-        {["Cliente", "RR Infocell"].map((name) => (
-          <div key={name} style={{ borderTop: "1px solid #111827", paddingTop: 6, textAlign: "center", minHeight: 48 }}>
-            <span style={{ fontSize: 10, color: "#6b7280" }}>{name}</span>
+        </div>
+
+        {/* Dados do cliente e aparelho */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+          <div style={{ border: "1px solid #d1d5db", borderRadius: 6, padding: 8 }}>
+            <p style={{ margin: "0 0 4px", color: "#6b7280", fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>Cliente</p>
+            <strong style={{ fontSize: 12 }}>{cliente?.nome ?? "—"}</strong>
+            {cliente?.telefone && <p style={{ margin: "2px 0 0", fontSize: 10 }}>Tel: {cliente.telefone}</p>}
+            {cliente?.documento && <p style={{ margin: "2px 0 0", fontSize: 10 }}>CPF/CNPJ: {cliente.documento}</p>}
+            {cliente?.email && <p style={{ margin: "2px 0 0", fontSize: 10 }}>E-mail: {cliente.email}</p>}
+            {cliente?.endereco && <p style={{ margin: "2px 0 0", fontSize: 10 }}>End.: {cliente.endereco}</p>}
           </div>
-        ))}
-      </div>
-    </>
-  );
+          <div style={{ border: "1px solid #d1d5db", borderRadius: 6, padding: 8 }}>
+            <p style={{ margin: "0 0 4px", color: "#6b7280", fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>Aparelho</p>
+            <strong style={{ fontSize: 12 }}>{aparelho ? `${aparelho.marca} ${aparelho.modelo}` : "—"}</strong>
+            {aparelho?.cor && <p style={{ margin: "2px 0 0", fontSize: 10 }}>Cor: {aparelho.cor}</p>}
+            {aparelho?.imeiSerial && <p style={{ margin: "2px 0 0", fontSize: 10 }}>IMEI/Série: {aparelho.imeiSerial}</p>}
+            {aparelho?.estadoFisico && <p style={{ margin: "2px 0 0", fontSize: 10 }}>Estado: {aparelho.estadoFisico}</p>}
+            {aparelho?.acessorios && <p style={{ margin: "2px 0 0", fontSize: 10 }}>Acessórios: {aparelho.acessorios}</p>}
+          </div>
+        </div>
+
+        {/* Defeito e diagnóstico */}
+        <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 14 }}>
+          <tbody>
+            <tr>
+              <th style={{ border: "1px solid #d1d5db", padding: "6px 8px", background: "#f3f4f6", textAlign: "left", fontSize: 10, textTransform: "uppercase", width: 140 }}>Defeito relatado</th>
+              <td style={{ border: "1px solid #d1d5db", padding: "6px 8px", fontSize: 11 }}>{ordem.defeitoRelatado}</td>
+            </tr>
+            {ordem.diagnostico && (
+              <tr>
+                <th style={{ border: "1px solid #d1d5db", padding: "6px 8px", background: "#f3f4f6", textAlign: "left", fontSize: 10, textTransform: "uppercase", width: 140 }}>Diagnóstico</th>
+                <td style={{ border: "1px solid #d1d5db", padding: "6px 8px", fontSize: 11 }}>{ordem.diagnostico}</td>
+              </tr>
+            )}
+            <tr>
+              <th style={{ border: "1px solid #d1d5db", padding: "6px 8px", background: "#f3f4f6", textAlign: "left", fontSize: 10, textTransform: "uppercase", width: 140 }}>Senha do aparelho</th>
+              <td style={{ border: "1px solid #d1d5db", padding: "6px 8px", fontSize: 11 }}>
+                {senhaInfo}
+                {senhaDetalhe && <span style={{ marginLeft: 8, fontFamily: "monospace", fontWeight: 700 }}>— {senhaDetalhe}</span>}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Peças usadas */}
+        {(ordem.pecasUsadas ?? []).length > 0 && (
+          <>
+            <h2 style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 700, textTransform: "uppercase" }}>Peças / serviços</h2>
+            <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 14 }}>
+              <thead>
+                <tr>{["Descrição", "Qtd.", "Unitário", "Total"].map((h) => (
+                  <th key={h} style={{ border: "1px solid #d1d5db", padding: "5px 7px", background: "#f3f4f6", fontSize: 10, textTransform: "uppercase", textAlign: "left" }}>{h}</th>
+                ))}</tr>
+              </thead>
+              <tbody>
+                {ordem.pecasUsadas.map((p) => (
+                  <tr key={p.produtoId}>
+                    <td style={{ border: "1px solid #d1d5db", padding: "5px 7px" }}>{p.nome}</td>
+                    <td style={{ border: "1px solid #d1d5db", padding: "5px 7px" }}>{p.quantidade}</td>
+                    <td style={{ border: "1px solid #d1d5db", padding: "5px 7px" }}>{formatBRL(p.valorUnitario)}</td>
+                    <td style={{ border: "1px solid #d1d5db", padding: "5px 7px" }}>{formatBRL(p.valorTotal)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
+
+        {/* Totais */}
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 16, marginBottom: 14, fontSize: 11 }}>
+          <span>Peças: <strong>{formatBRL(ordem.valorPecas)}</strong></span>
+          <span>Mão de obra: <strong>{formatBRL(ordem.valorMaoObra)}</strong></span>
+          <span style={{ fontWeight: 700, fontSize: 13 }}>Total: <strong>{formatBRL(ordem.valorTotal)}</strong></span>
+        </div>
+
+        {/* Termo */}
+        <div style={{ border: "1px solid #d1d5db", borderRadius: 4, padding: "8px 10px", marginBottom: 14, fontSize: 10, color: "#374151" }}>
+          <p style={{ margin: "0 0 4px", fontWeight: 700, fontSize: 11 }}>Termo de entrega e garantia</p>
+          <p style={{ margin: 0 }}>Ao assinar esta ordem de serviço, o cliente confirma as informações do aparelho, defeito relatado, acessórios entregues e condições descritas. O cliente está ciente de que deverá retirar o aparelho dentro do prazo combinado após a conclusão do serviço. A garantia cobre somente o serviço realizado e/ou a peça substituída, não se estendendo a danos causados por mau uso, queda, contato com líquido, violação por terceiros ou novos defeitos não relacionados ao reparo executado.</p>
+        </div>
+
+        {/* Assinaturas */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, marginTop: 24 }}>
+          {["Assinatura do cliente", `Atendente: ${ordem.tecnicoResponsavel ?? EMPRESA.tecnicoPadrao}`].map((label) => (
+            <div key={label} style={{ borderTop: "1px solid #111827", paddingTop: 6, textAlign: "center", minHeight: 48 }}>
+              <span style={{ fontSize: 10, color: "#6b7280" }}>{label}</span>
+            </div>
+          ))}
+        </div>
+      </>
+    );
+  };
 
   return (
     <>
-    <PrintPreviewDialog open={previewOsOpen} onOpenChange={setPreviewOsOpen} title={`Comprovante OS-${ordem.numero}`} onPrint={window.print}>
-      <OsPreviewContent />
+    <PrintPreviewDialog open={previewOsOpen} onOpenChange={setPreviewOsOpen} title={`OS-${ordem.numero} — Via do Cliente`} onPrint={window.print}>
+      <OsPreviewContent viaInterna={false} />
+    </PrintPreviewDialog>
+    <PrintPreviewDialog open={previewOsViaInterna} onOpenChange={setPreviewOsViaInterna} title={`OS-${ordem.numero} — Via Interna`} onPrint={window.print}>
+      <OsPreviewContent viaInterna={true} />
     </PrintPreviewDialog>
     <PrintPreviewDialog open={previewGarantiaOpen} onOpenChange={setPreviewGarantiaOpen} title={`Termo de Garantia OS-${ordem.numero}`} onPrint={handlePrintGarantia}>
       <div>
@@ -313,8 +409,11 @@ const OrdemDetalhe = () => {
             <Button variant="outline" onClick={() => setPreviewGarantiaOpen(true)}>
               <ShieldCheck className="h-4 w-4" /> Termo de Garantia
             </Button>
-            <Button onClick={() => setPreviewOsOpen(true)}>
-              <Printer className="h-4 w-4" /> Imprimir OS
+            <Button variant="outline" onClick={() => setPreviewOsOpen(true)}>
+              <Printer className="h-4 w-4" /> Via do cliente
+            </Button>
+            <Button onClick={() => setPreviewOsViaInterna(true)}>
+              <Printer className="h-4 w-4" /> Via interna
             </Button>
           </div>
         }
@@ -598,7 +697,7 @@ const OrdemDetalhe = () => {
           </div>
           <div className="print-meta">
             <strong>OS-{ordem.numero}</strong>
-            <span>Status: {ordem.status.replaceAll("_", " ")}</span>
+            <span>Status: {ordem.status.replace(/_/g, " ")}</span>
             <span>Entrada: {formatDate(ordem.entradaEm)}</span>
             <span>Previsão: {formatDate(ordem.previsaoEntregaEm)}</span>
           </div>

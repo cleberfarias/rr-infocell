@@ -15,6 +15,8 @@ export type OrdemServicoFormaPagamento = "pix" | "cartao" | "dinheiro" | "tercei
 export type OrdemServicoPrioridade = "baixa" | "normal" | "urgente";
 export type OrdemServicoCanalAprovacao = "balcao" | "whatsapp" | "telefone";
 
+export type TipoSenhaAparelho = "sem_senha" | "numerica" | "padrao" | "nao_informou";
+
 export type OrdemServico = {
   id: string;
   numero: number;
@@ -23,6 +25,9 @@ export type OrdemServico = {
   checklistId?: string;
   defeitoRelatado: string;
   diagnostico?: string;
+  tipoSenha?: TipoSenhaAparelho;
+  senhaAparelho?: string;
+  padraoDeSenha?: string;
   status: OrdemServicoStatus;
   prioridade: OrdemServicoPrioridade;
   tecnicoResponsavel?: string;
@@ -73,6 +78,9 @@ export type OrdemServicoInput = {
   checklistId?: string;
   defeitoRelatado: string;
   diagnostico?: string;
+  tipoSenha?: TipoSenhaAparelho;
+  senhaAparelho?: string;
+  padraoDeSenha?: string;
   status?: OrdemServicoStatus;
   prioridade?: OrdemServicoPrioridade;
   tecnicoResponsavel?: string;

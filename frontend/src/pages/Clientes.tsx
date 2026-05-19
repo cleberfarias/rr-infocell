@@ -25,7 +25,7 @@ import {
 } from "@/services/clientes";
 import { listAparelhos } from "@/services/aparelhos";
 import { listOrdensServico, type OrdemServico } from "@/services/ordens-servico";
-import { formatBRL } from "@/lib/formatters";
+import { formatBRL, capitalizeFirst } from "@/lib/formatters";
 import {
   Edit,
   History,
@@ -393,7 +393,7 @@ const Clientes = () => {
                 <Input
                   id="cliente-nome"
                   value={form.nome}
-                  onChange={(event) => updateForm("nome", event.target.value)}
+                  onChange={(event) => updateForm("nome", capitalizeFirst(event.target.value))}
                   required
                 />
               </FormField>
@@ -424,14 +424,14 @@ const Clientes = () => {
                 <Input
                   id="cliente-endereco"
                   value={form.endereco}
-                  onChange={(event) => updateForm("endereco", event.target.value)}
+                  onChange={(event) => updateForm("endereco", capitalizeFirst(event.target.value))}
                 />
               </FormField>
               <FormField id="cliente-observacoes" label="Observações" className="sm:col-span-2">
                 <Textarea
                   id="cliente-observacoes"
                   value={form.observacoes}
-                  onChange={(event) => updateForm("observacoes", event.target.value)}
+                  onChange={(event) => updateForm("observacoes", capitalizeFirst(event.target.value))}
                 />
               </FormField>
             </div>

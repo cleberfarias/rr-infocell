@@ -17,6 +17,7 @@ import {
 import { Link, useSearchParams } from "react-router-dom";
 
 import { EmptyState, FormField, PageHeader } from "@/components/design-system";
+import { PrintPreviewDialog } from "@/components/PrintPreviewDialog";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -31,6 +32,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { formatBRL } from "@/lib/formatters";
+import { EMPRESA } from "@/constants/company";
 import { MoneyInput } from "@/components/ui/money-input";
 import { listAparelhos } from "@/services/aparelhos";
 import { listClientes } from "@/services/clientes";
@@ -103,6 +105,10 @@ const PDV = () => {
   const [carrinho, setCarrinho] = useState<Array<Produto & { quantidadeVenda: number }>>([]);
   const [ordemFinalizada, setOrdemFinalizada] = useState<OrdemServico | null>(null);
   const [vendaFinalizada, setVendaFinalizada] = useState<Venda | null>(null);
+  const [cupomOpen, setCupomOpen] = useState(false);
+  const [larguraCupom, setLarguraCupom] = useState<"58mm" | "80mm">(() =>
+    (localStorage.getItem("rr-cupom-largura") as "58mm" | "80mm") ?? "80mm"
+  );
 
   // ── Busca de produto ──────────────────────────────────────────────────────
   const [buscaProduto, setBuscaProduto] = useState("");
@@ -418,6 +424,170 @@ const PDV = () => {
   const reciboVenda = vendaFinalizada;
   const reciboTerceirizado = terceirizadoFinalizado;
 
+  const buildCupomHtml = () => {
+    const venda = vendaFinalizada;
+    if (!venda) return "";
+
+    const cols = larguraCupom === "58mm" ? 32 : 42;
+    const sep = "-".repeat(cols);
+    const now = new Date().toLocaleString("pt-BR");
+    const clienteNome = (venda.clienteNome ?? (venda.clienteId ? clienteById.get(venda.clienteId)?.nome : undefined) ?? "AO CONSUMIDOR").toUpperCase();
+    const atendente = EMPRESA.tecnicoPadrao.toUpperCase();
+    const formaPgto = (venda.formaPagamento ?? "dinheiro").toUpperCase();
+
+    const center = (str: string) => {
+      const pad = Math.max(0, Math.floor((cols - str.length) / 2));
+      return " ".repeat(pad) + str;
+    };
+    const rAlign = (left: string, right: string) => {
+      const spaces = Math.max(1, cols - left.length - right.length);
+      return left + " ".repeat(spaces) + right;
+    };
+    const fBRL = (v: number) => v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    let itensHtml = "";
+    if (venda.itens.length > 0) {
+      for (const item of venda.itens) {
+        const sku = item.sku ?? "";
+        const nome = item.nome.toUpperCase();
+        const unitStr = fBRL(item.valorUnitario);
+        const totalStr = fBRL(item.valorTotal);
+        const qtdLine = rAlign(`               ${item.quantidade}   UN  ${unitStr}`, totalStr);
+        itensHtml += `
+<div>${sku}</div>
+<div>${nome}${item.imei ? " - " + item.imei : ""}</div>
+<div>${qtdLine}</div>`;
+      }
+    } else {
+      const totalStr = fBRL(venda.valorTotal);
+      itensHtml = `
+<div>SERVICOS</div>
+<div>${rAlign("               1   UN  " + fBRL(venda.valorTotal), totalStr)}</div>`;
+    }
+
+    const subtotal = fBRL(venda.valorTotal);
+    const total = fBRL(venda.valorTotal);
+    const recebido = fBRL(venda.valorRecebido);
+    const troco = venda.troco > 0 ? `\n<div>${rAlign("TROCO:", fBRL(venda.troco))}</div>` : "";
+
+    const pgWidth = larguraCupom === "58mm" ? "58mm" : "80mm";
+
+    return `<!DOCTYPE html><html lang="pt-BR"><head>
+<meta charset="UTF-8"/>
+<title>Cupom Não Fiscal</title>
+<style>
+  @page { size: ${pgWidth} auto; margin: 2mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: ${larguraCupom === "58mm" ? "11px" : "12px"};
+    line-height: 1.35;
+    color: #000;
+    background: #fff;
+    width: ${pgWidth};
+  }
+  .center { text-align: center; }
+  .bold { font-weight: 700; }
+  .small { font-size: 10px; }
+  .sep { border: none; border-top: 1px dashed #000; margin: 2px 0; }
+</style>
+</head><body>
+<div class="center">${EMPRESA.cnpj} ${EMPRESA.nome.toUpperCase()}</div>
+<div class="center">${EMPRESA.endereco.toUpperCase()} - SALA</div>
+<div class="center">${EMPRESA.bairro.toUpperCase()} - ${EMPRESA.cidade.toUpperCase()}/${EMPRESA.uf}</div>
+<div class="center">TELEFONE: ${EMPRESA.telefone.replace(/\D/g, "")}</div>
+<div class="center">CNPJ: ${EMPRESA.cnpj}</div>
+<div class="center">IE:</div>
+<div>${sep}</div>
+<div>DATA: ${now}</div>
+<div class="small">COD: ${venda.id}</div>
+<div>${sep}</div>
+<div class="center bold">CUPOM NAO FISCAL</div>
+<div>${sep}</div>
+<div>CPF:</div>
+<div>CLIENTE: ${clienteNome}</div>
+<div>ATENDENTE/VENDEDOR: ${atendente}</div>
+<div>${sep}</div>
+<div>DESCRICAO${" ".repeat(Math.max(1, cols - 8 - 3 - 3 - 7 - 8))}QTD  UN  UNIT(RS)  TOTAL</div>
+<div>${sep}</div>
+${itensHtml}
+<div>${sep}</div>
+<div>${rAlign("SUBTOTAL: R$", subtotal)}</div>
+<div class="bold">${rAlign("TOTAL: R$", total)}</div>
+<div>${sep}</div>
+<div class="bold">PAGAMENTO</div>
+<div>${rAlign(formaPgto + ": R$", recebido)}</div>
+${troco}
+<div>${sep}</div>
+<div class="center">${EMPRESA.mensagemFinal}</div>
+<div>${sep}</div>
+<div class="center small">${EMPRESA.rodape}</div>
+<script>window.onload = () => { window.print(); window.onafterprint = () => window.close(); }<\/script>
+</body></html>`;
+  };
+
+  const CupomTermicoContent = () => {
+    const venda = vendaFinalizada;
+    if (!venda) return null;
+    const cols = larguraCupom === "58mm" ? 32 : 42;
+    const sep = "-".repeat(cols);
+    const now = new Date().toLocaleString("pt-BR");
+    const clienteNome = (venda.clienteNome ?? (venda.clienteId ? clienteById.get(venda.clienteId)?.nome : undefined) ?? "AO CONSUMIDOR").toUpperCase();
+    const atendente = EMPRESA.tecnicoPadrao.toUpperCase();
+    const formaPgto = (venda.formaPagamento ?? "dinheiro").toUpperCase();
+    const fBRL = (v: number) => v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const rAlign = (left: string, right: string) => {
+      const spaces = Math.max(1, cols - left.length - right.length);
+      return left + " ".repeat(spaces) + right;
+    };
+
+    return (
+      <div style={{ fontFamily: "Courier New, Courier, monospace", fontSize: larguraCupom === "58mm" ? 11 : 12, lineHeight: 1.35, width: larguraCupom === "58mm" ? 220 : 300, margin: "0 auto", color: "#111", whiteSpace: "pre" }}>
+        <div style={{ textAlign: "center" }}>{EMPRESA.cnpj} {EMPRESA.nome.toUpperCase()}</div>
+        <div style={{ textAlign: "center" }}>{EMPRESA.endereco.toUpperCase()}</div>
+        <div style={{ textAlign: "center" }}>{EMPRESA.bairro.toUpperCase()} - {EMPRESA.cidade.toUpperCase()}/{EMPRESA.uf}</div>
+        <div style={{ textAlign: "center" }}>TELEFONE: {EMPRESA.telefone.replace(/\D/g, "")}</div>
+        <div style={{ textAlign: "center" }}>CNPJ: {EMPRESA.cnpj}</div>
+        <div style={{ textAlign: "center" }}>IE:</div>
+        <div>{sep}</div>
+        <div>DATA: {now}</div>
+        <div style={{ fontSize: 10 }}>COD: {venda.id}</div>
+        <div>{sep}</div>
+        <div style={{ textAlign: "center", fontWeight: 700 }}>CUPOM NAO FISCAL</div>
+        <div>{sep}</div>
+        <div>CPF:</div>
+        <div>CLIENTE: {clienteNome}</div>
+        <div>ATENDENTE/VENDEDOR: {atendente}</div>
+        <div>{sep}</div>
+        <div style={{ fontWeight: 700 }}>DESCRICAO{" ".repeat(Math.max(1, cols - 38))}QTD  UN  UNIT(RS)  TOTAL</div>
+        <div>{sep}</div>
+        {venda.itens.length > 0 ? venda.itens.map((item) => (
+          <div key={`${item.produtoId}-${item.imei ?? item.nome}`}>
+            <div>{item.sku ?? ""}</div>
+            <div>{item.nome.toUpperCase()}{item.imei ? " - " + item.imei : ""}</div>
+            <div>{rAlign(`               ${item.quantidade}   UN  ${fBRL(item.valorUnitario)}`, fBRL(item.valorTotal))}</div>
+          </div>
+        )) : (
+          <div>
+            <div>SERVICOS</div>
+            <div>{rAlign(`               1   UN  ${fBRL(venda.valorTotal)}`, fBRL(venda.valorTotal))}</div>
+          </div>
+        )}
+        <div>{sep}</div>
+        <div>{rAlign("SUBTOTAL: R$", fBRL(venda.valorTotal))}</div>
+        <div style={{ fontWeight: 700 }}>{rAlign("TOTAL: R$", fBRL(venda.valorTotal))}</div>
+        <div>{sep}</div>
+        <div style={{ fontWeight: 700 }}>PAGAMENTO</div>
+        <div>{rAlign(formaPgto + ": R$", fBRL(venda.valorRecebido))}</div>
+        {venda.troco > 0 && <div>{rAlign("TROCO:", fBRL(venda.troco))}</div>}
+        <div>{sep}</div>
+        <div style={{ textAlign: "center" }}>{EMPRESA.mensagemFinal}</div>
+        <div>{sep}</div>
+        <div style={{ textAlign: "center", fontSize: 10 }}>{EMPRESA.rodape}</div>
+      </div>
+    );
+  };
+
   if (isLoading) {
     return (
       <Card className="surface-panel flex min-h-[320px] items-center justify-center">
@@ -439,7 +609,36 @@ const PDV = () => {
     );
   }
 
+  const handleImprimirCupom = () => {
+    const html = buildCupomHtml();
+    if (!html) return;
+    const win = window.open("", "_blank", "width=400,height=700");
+    if (!win) return;
+    win.document.write(html);
+    win.document.close();
+  };
+
   return (
+    <>
+    {/* Dialog: cupom térmico */}
+    {vendaFinalizada && (
+      <PrintPreviewDialog open={cupomOpen} onOpenChange={setCupomOpen} title="Cupom Não Fiscal Térmico" onPrint={handleImprimirCupom}>
+        <div className="space-y-3 mb-4">
+          <div className="flex items-center gap-3 text-sm">
+            <span className="text-muted-foreground">Largura do cupom:</span>
+            {(["58mm", "80mm"] as const).map((w) => (
+              <label key={w} className={`flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1 text-xs transition-colors ${larguraCupom === w ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
+                <input type="radio" name="largura-cupom" value={w} checked={larguraCupom === w}
+                  onChange={() => { setLarguraCupom(w); localStorage.setItem("rr-cupom-largura", w); }}
+                  className="sr-only" />
+                {w}
+              </label>
+            ))}
+          </div>
+        </div>
+        <CupomTermicoContent />
+      </PrintPreviewDialog>
+    )}
     <div className="space-y-5">
       {/* ── Área de impressão de recibo (oculta na tela, visível ao imprimir) ── */}
       <section className="recibo-print-area">
@@ -906,7 +1105,10 @@ const PDV = () => {
               </div>
             )}
             <div className="mt-5 space-y-2">
-              <Button className="w-full" type="button" onClick={handleImprimirRecibo}>
+              <Button className="w-full bg-gradient-primary text-primary-foreground shadow-glow" type="button" onClick={() => setCupomOpen(true)}>
+                <Printer className="h-4 w-4" /> Imprimir cupom térmico
+              </Button>
+              <Button className="w-full" variant="outline" type="button" onClick={handleImprimirRecibo}>
                 <Printer className="h-4 w-4" /> Imprimir comprovante
               </Button>
               <Button className="w-full" variant="outline" type="button" onClick={handleNovaVenda}>
@@ -1242,6 +1444,7 @@ const PDV = () => {
         </div>
       </Card>
     </div>
+    </>
   );
 };
 

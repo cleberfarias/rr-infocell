@@ -35,6 +35,7 @@ import {
   createOrdemServico,
   type OrdemServicoInput,
   type OrdemServicoStatus,
+  type TipoSenhaAparelho,
 } from "@/services/ordens-servico";
 import { listTecnicos } from "@/services/usuarios";
 
@@ -51,6 +52,9 @@ type NovaOSForm = {
   valorMaoObra: string;
   entradaEm: string;
   previsaoEntregaEm: string;
+  tipoSenha: TipoSenhaAparelho;
+  senhaAparelho: string;
+  padraoDeSenha: string;
 };
 
 type QuickClienteForm = {
@@ -80,12 +84,15 @@ const emptyForm: NovaOSForm = {
   diagnostico: "",
   status: "recebido",
   prioridade: "normal",
-  tecnicoResponsavel: "",
+  tecnicoResponsavel: "Robison Romalino",
   garantiaDias: "90",
   valorPecas: "0",
   valorMaoObra: "0",
   entradaEm: today,
   previsaoEntregaEm: "",
+  tipoSenha: "nao_informou",
+  senhaAparelho: "",
+  padraoDeSenha: "",
 };
 
 const emptyQuickCliente: QuickClienteForm = {
@@ -288,6 +295,9 @@ const NovaOS = () => {
       previsaoEntregaEm: form.previsaoEntregaEm || undefined,
       prazoPrometidoEm: form.previsaoEntregaEm || undefined,
       garantiaDias: Number(form.garantiaDias) || undefined,
+      tipoSenha: form.tipoSenha,
+      senhaAparelho: form.tipoSenha === "numerica" ? form.senhaAparelho || undefined : undefined,
+      padraoDeSenha: form.tipoSenha === "padrao" ? form.padraoDeSenha || undefined : undefined,
     });
   };
 
@@ -613,6 +623,103 @@ const NovaOS = () => {
                   placeholder="Opcional: teste rápido, primeira avaliação ou notas internas..."
                 />
               </FormField>
+            </div>
+          </Card>
+
+          <Card className="surface-panel p-6">
+            <h3 className="mb-4 font-display text-base font-semibold">Senha do aparelho</h3>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {(["sem_senha", "numerica", "padrao", "nao_informou"] as TipoSenhaAparelho[]).map((tipo) => {
+                  const labels: Record<TipoSenhaAparelho, string> = {
+                    sem_senha: "Sem senha",
+                    numerica: "Numérica",
+                    padrao: "Padrão/desenho",
+                    nao_informou: "Não informou",
+                  };
+                  return (
+                    <label key={tipo} className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${form.tipoSenha === tipo ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}>
+                      <input
+                        type="radio"
+                        name="tipo-senha"
+                        value={tipo}
+                        checked={form.tipoSenha === tipo}
+                        onChange={() => updateForm("tipoSenha", tipo)}
+                        className="sr-only"
+                      />
+                      {labels[tipo]}
+                    </label>
+                  );
+                })}
+              </div>
+
+              {form.tipoSenha === "numerica" && (
+                <FormField id="nova-os-senha" label="Digite a senha">
+                  <Input
+                    id="nova-os-senha"
+                    value={form.senhaAparelho}
+                    onChange={(e) => updateForm("senhaAparelho", e.target.value)}
+                    placeholder="Senha numérica do aparelho"
+                    autoComplete="off"
+                    inputMode="numeric"
+                  />
+                </FormField>
+              )}
+
+              {form.tipoSenha === "padrao" && (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">Clique nos pontos em sequência para registrar o padrão:</p>
+                  <div className="flex items-start gap-4">
+                    <div className="grid grid-cols-3 gap-3">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => {
+                        const seq = form.padraoDeSenha ? form.padraoDeSenha.split("→").map(s => s.trim()) : [];
+                        const idx = seq.indexOf(String(n));
+                        const isSelected = idx !== -1;
+                        const isLast = idx === seq.length - 1;
+                        return (
+                          <button
+                            key={n}
+                            type="button"
+                            onClick={() => {
+                              const seq = form.padraoDeSenha ? form.padraoDeSenha.split("→").map(s => s.trim()).filter(Boolean) : [];
+                              const i = seq.indexOf(String(n));
+                              let newSeq: string[];
+                              if (i !== -1) {
+                                newSeq = seq.filter((_, idx) => idx < i);
+                              } else {
+                                newSeq = [...seq, String(n)];
+                              }
+                              updateForm("padraoDeSenha", newSeq.join(" → "));
+                            }}
+                            className={`flex h-12 w-12 items-center justify-center rounded-full border-2 text-sm font-bold transition-all ${
+                              isLast ? "border-primary bg-primary text-primary-foreground scale-110" :
+                              isSelected ? "border-primary/60 bg-primary/20 text-primary" :
+                              "border-border text-muted-foreground hover:border-primary/50"
+                            }`}
+                          >
+                            {isSelected ? <><span className="text-[10px] absolute -mt-5 font-mono">{idx + 1}</span>{n}</> : n}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <p className="font-mono text-xs text-muted-foreground">Sequência:</p>
+                      <p className="font-mono text-sm font-semibold text-primary min-h-[1.5rem]">
+                        {form.padraoDeSenha || "—"}
+                      </p>
+                      {form.padraoDeSenha && (
+                        <button
+                          type="button"
+                          onClick={() => updateForm("padraoDeSenha", "")}
+                          className="text-xs text-destructive underline"
+                        >
+                          Limpar padrão
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
         </div>

@@ -239,16 +239,22 @@ const Financeiro = () => {
       }
     });
 
+    const lucroEmProdutos = receitaProdutos - custoPecas;
+    const lucroEmServicos = receitaServicos;
+
     return {
       custoPecas,
       despesasFixas,
       faturamentoSemanal: dias,
       historicoPagamentos: [...vendas].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
       lucroBruto,
+      lucroEmProdutos,
+      lucroEmServicos,
       lucroLiquido,
       produtos,
       receitaProdutos,
       receitaServicos,
+      quantidadeVendas: vendas.length + ordensFaturadasFallback.length,
     };
   }, [despesasQuery.data, ordensQuery.data, produtosQuery.data, vendasQuery.data, dataInicio]);
 
@@ -293,12 +299,14 @@ const Financeiro = () => {
   const margem =
     receitaTotal > 0 ? (financeiro.lucroLiquido / receitaTotal) * 100 : 0;
   const linhas = [
-    { label: "Receita com serviços", valor: financeiro.receitaServicos, tipo: "in" as const },
-    { label: "Receita com produtos", valor: financeiro.receitaProdutos, tipo: "in" as const },
+    { label: "Receita com serviços (mão de obra)", valor: financeiro.receitaServicos, tipo: "in" as const },
+    { label: "Lucro em serviços", valor: financeiro.lucroEmServicos, tipo: "in" as const, note: "100% lucro" },
+    { label: "Receita com produtos/peças", valor: financeiro.receitaProdutos, tipo: "in" as const },
     { label: "(-) Custo de peças", valor: -financeiro.custoPecas, tipo: "out" as const },
+    { label: "Lucro em produtos/peças", valor: financeiro.lucroEmProdutos, tipo: financeiro.lucroEmProdutos >= 0 ? "in" as const : "out" as const },
     { label: "= Lucro bruto", valor: financeiro.lucroBruto, tipo: "sum" as const },
     { label: "(-) Despesas fixas", valor: -financeiro.despesasFixas, tipo: "out" as const },
-    { label: "= Lucro líquido estimado", valor: financeiro.lucroLiquido, tipo: "sum" as const },
+    { label: "= Lucro líquido total", valor: financeiro.lucroLiquido, tipo: "sum" as const },
   ];
 
   const contas = contasQuery.data ?? [];

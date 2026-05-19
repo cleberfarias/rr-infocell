@@ -31,6 +31,7 @@ import {
   type AparelhoInput,
 } from "@/services/aparelhos";
 import { listClientes, type Cliente } from "@/services/clientes";
+import { capitalizeFirst } from "@/lib/formatters";
 
 const emptyForm: AparelhoInput = {
   clienteId: "",
@@ -399,7 +400,7 @@ const Aparelhos = () => {
                 <Input
                   id="aparelho-marca"
                   value={form.marca}
-                  onChange={(event) => updateForm("marca", event.target.value)}
+                  onChange={(event) => updateForm("marca", capitalizeFirst(event.target.value))}
                   required
                 />
               </FormField>
@@ -407,7 +408,7 @@ const Aparelhos = () => {
                 <Input
                   id="aparelho-modelo"
                   value={form.modelo}
-                  onChange={(event) => updateForm("modelo", event.target.value)}
+                  onChange={(event) => updateForm("modelo", capitalizeFirst(event.target.value))}
                   required
                 />
               </FormField>
@@ -415,7 +416,7 @@ const Aparelhos = () => {
                 <Input
                   id="aparelho-cor"
                   value={form.cor}
-                  onChange={(event) => updateForm("cor", event.target.value)}
+                  onChange={(event) => updateForm("cor", capitalizeFirst(event.target.value))}
                 />
               </FormField>
               <FormField id="aparelho-imei" label="IMEI / Serial">
@@ -437,7 +438,7 @@ const Aparelhos = () => {
                   id="aparelho-estado"
                   value={form.estadoFisico}
                   onChange={(event) =>
-                    updateForm("estadoFisico", event.target.value)
+                    updateForm("estadoFisico", capitalizeFirst(event.target.value))
                   }
                 />
               </FormField>
@@ -450,7 +451,7 @@ const Aparelhos = () => {
                   id="aparelho-acessorios"
                   value={form.acessorios}
                   onChange={(event) =>
-                    updateForm("acessorios", event.target.value)
+                    updateForm("acessorios", capitalizeFirst(event.target.value))
                   }
                 />
               </FormField>
