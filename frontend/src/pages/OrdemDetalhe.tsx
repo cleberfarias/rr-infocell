@@ -8,8 +8,9 @@ import {
   PackagePlus,
   Printer,
   ShieldCheck,
+  Trash2,
 } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import {
   EmptyState,
@@ -18,7 +19,19 @@ import {
   SectionPanel,
 } from "@/components/design-system";
 import { PrintPreviewDialog } from "@/components/PrintPreviewDialog";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "@/components/ui/sonner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -35,15 +48,16 @@ import { EMPRESA } from "@/constants/company";
 import { getAparelho } from "@/services/aparelhos";
 import { getCliente } from "@/services/clientes";
 import {
+  deleteOrdemServico,
   getOrdemServico,
   updateOrdemServico,
   type OrdemServicoPecaInput,
 } from "@/services/ordens-servico";
 import { listProdutos } from "@/services/produtos";
 
-
 const OrdemDetalhe = () => {
   const { ordemId } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [pecaProdutoId, setPecaProdutoId] = useState("");
   const [pecaQuantidade, setPecaQuantidade] = useState("1");
@@ -51,6 +65,7 @@ const OrdemDetalhe = () => {
   const [previewOsOpen, setPreviewOsOpen] = useState(false);
   const [previewOsViaInterna, setPreviewOsViaInterna] = useState(false);
   const [previewGarantiaOpen, setPreviewGarantiaOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const ordemQuery = useQuery({
     queryKey: ["ordem-servico", ordemId],
@@ -80,6 +95,16 @@ const OrdemDetalhe = () => {
   const cliente = clienteQuery.data;
   const aparelho = aparelhoQuery.data;
 
+  const excluirOsMutation = useMutation({
+    mutationFn: () => deleteOrdemServico(ordemId ?? ""),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ordens-servico"] });
+      toast.success(`OS-${ordem?.numero} excluída.`);
+      navigate("/app/ordens");
+    },
+    onError: () => toast.error("Não foi possível excluir a OS."),
+  });
+
   const handlePrintGarantia = () => {
     document.body.classList.add("print-garantia");
     window.print();
@@ -104,7 +129,9 @@ const OrdemDetalhe = () => {
   }, [aparelho]);
 
   const produtos = produtosQuery.data ?? [];
-  const selectedProduto = produtos.find((produto) => produto.id === pecaProdutoId);
+  const selectedProduto = produtos.find(
+    (produto) => produto.id === pecaProdutoId,
+  );
 
   const updatePecasMutation = useMutation({
     mutationFn: (pecasUsadas: OrdemServicoPecaInput[]) => {
@@ -218,7 +245,11 @@ const OrdemDetalhe = () => {
     );
   }
 
-  const OsPreviewContent = ({ viaInterna = false }: { viaInterna?: boolean }) => {
+  const OsPreviewContent = ({
+    viaInterna = false,
+  }: {
+    viaInterna?: boolean;
+  }) => {
     const tipoSenhaLabel: Record<string, string> = {
       sem_senha: "Sem senha",
       numerica: "Senha numérica",
@@ -226,85 +257,300 @@ const OrdemDetalhe = () => {
       nao_informou: "Cliente não informou",
     };
     const senhaInfo = ordem.tipoSenha
-      ? tipoSenhaLabel[ordem.tipoSenha] ?? ordem.tipoSenha
+      ? (tipoSenhaLabel[ordem.tipoSenha] ?? ordem.tipoSenha)
       : "Não informado";
     const senhaDetalhe = viaInterna
-      ? ordem.tipoSenha === "numerica" ? ordem.senhaAparelho
-        : ordem.tipoSenha === "padrao" ? ordem.padraoDeSenha
-        : undefined
+      ? ordem.tipoSenha === "numerica"
+        ? ordem.senhaAparelho
+        : ordem.tipoSenha === "padrao"
+          ? ordem.padraoDeSenha
+          : undefined
       : undefined;
 
     return (
       <>
         {/* Cabeçalho */}
-        <div style={{ borderBottom: "2px solid #111827", paddingBottom: 12, marginBottom: 14 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div
+          style={{
+            borderBottom: "2px solid #111827",
+            paddingBottom: 12,
+            marginBottom: 14,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+            }}
+          >
             <div>
-              <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#111827" }}>{EMPRESA.nome}</p>
-              <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>CNPJ: {EMPRESA.cnpj}</p>
-              <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>{EMPRESA.enderecoCompleto}</p>
-              <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>Tel/WhatsApp: {EMPRESA.telefone}</p>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: "#111827",
+                }}
+              >
+                {EMPRESA.nome}
+              </p>
+              <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>
+                CNPJ: {EMPRESA.cnpj}
+              </p>
+              <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>
+                {EMPRESA.enderecoCompleto}
+              </p>
+              <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>
+                Tel/WhatsApp: {EMPRESA.telefone}
+              </p>
             </div>
             <div style={{ textAlign: "right" }}>
-              <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: "#0284c7" }}>ORDEM DE SERVIÇO</p>
-              <p style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>OS-{ordem.numero}</p>
-              <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>{viaInterna ? "Via interna" : "Via do cliente"}</p>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#0284c7",
+                }}
+              >
+                ORDEM DE SERVIÇO
+              </p>
+              <p style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>
+                OS-{ordem.numero}
+              </p>
+              <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>
+                {viaInterna ? "Via interna" : "Via do cliente"}
+              </p>
             </div>
           </div>
         </div>
 
         {/* Datas */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr 1fr",
+            gap: 8,
+            marginBottom: 14,
+          }}
+        >
           {[
             { label: "Data de entrada", val: formatDate(ordem.entradaEm) },
-            { label: "Previsão de entrega", val: ordem.previsaoEntregaEm ? formatDate(ordem.previsaoEntregaEm) : "—" },
-            { label: "Técnico responsável", val: ordem.tecnicoResponsavel ?? EMPRESA.tecnicoPadrao },
+            {
+              label: "Previsão de entrega",
+              val: ordem.previsaoEntregaEm
+                ? formatDate(ordem.previsaoEntregaEm)
+                : "—",
+            },
+            {
+              label: "Técnico responsável",
+              val: ordem.tecnicoResponsavel ?? EMPRESA.tecnicoPadrao,
+            },
           ].map(({ label, val }) => (
-            <div key={label} style={{ border: "1px solid #d1d5db", borderRadius: 6, padding: 8 }}>
-              <span style={{ display: "block", color: "#6b7280", fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>{label}</span>
-              <strong style={{ display: "block", fontSize: 12, marginTop: 2 }}>{val}</strong>
+            <div
+              key={label}
+              style={{
+                border: "1px solid #d1d5db",
+                borderRadius: 6,
+                padding: 8,
+              }}
+            >
+              <span
+                style={{
+                  display: "block",
+                  color: "#6b7280",
+                  fontSize: 9,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                }}
+              >
+                {label}
+              </span>
+              <strong style={{ display: "block", fontSize: 12, marginTop: 2 }}>
+                {val}
+              </strong>
             </div>
           ))}
         </div>
 
         {/* Dados do cliente e aparelho */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
-          <div style={{ border: "1px solid #d1d5db", borderRadius: 6, padding: 8 }}>
-            <p style={{ margin: "0 0 4px", color: "#6b7280", fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>Cliente</p>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 8,
+            marginBottom: 14,
+          }}
+        >
+          <div
+            style={{ border: "1px solid #d1d5db", borderRadius: 6, padding: 8 }}
+          >
+            <p
+              style={{
+                margin: "0 0 4px",
+                color: "#6b7280",
+                fontSize: 9,
+                fontWeight: 700,
+                textTransform: "uppercase",
+              }}
+            >
+              Cliente
+            </p>
             <strong style={{ fontSize: 12 }}>{cliente?.nome ?? "—"}</strong>
-            {cliente?.telefone && <p style={{ margin: "2px 0 0", fontSize: 10 }}>Tel: {cliente.telefone}</p>}
-            {cliente?.documento && <p style={{ margin: "2px 0 0", fontSize: 10 }}>CPF/CNPJ: {cliente.documento}</p>}
-            {cliente?.email && <p style={{ margin: "2px 0 0", fontSize: 10 }}>E-mail: {cliente.email}</p>}
-            {cliente?.endereco && <p style={{ margin: "2px 0 0", fontSize: 10 }}>End.: {cliente.endereco}</p>}
+            {cliente?.telefone && (
+              <p style={{ margin: "2px 0 0", fontSize: 10 }}>
+                Tel: {cliente.telefone}
+              </p>
+            )}
+            {cliente?.documento && (
+              <p style={{ margin: "2px 0 0", fontSize: 10 }}>
+                CPF/CNPJ: {cliente.documento}
+              </p>
+            )}
+            {cliente?.email && (
+              <p style={{ margin: "2px 0 0", fontSize: 10 }}>
+                E-mail: {cliente.email}
+              </p>
+            )}
+            {cliente?.endereco && (
+              <p style={{ margin: "2px 0 0", fontSize: 10 }}>
+                End.: {cliente.endereco}
+              </p>
+            )}
           </div>
-          <div style={{ border: "1px solid #d1d5db", borderRadius: 6, padding: 8 }}>
-            <p style={{ margin: "0 0 4px", color: "#6b7280", fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>Aparelho</p>
-            <strong style={{ fontSize: 12 }}>{aparelho ? `${aparelho.marca} ${aparelho.modelo}` : "—"}</strong>
-            {aparelho?.cor && <p style={{ margin: "2px 0 0", fontSize: 10 }}>Cor: {aparelho.cor}</p>}
-            {aparelho?.imeiSerial && <p style={{ margin: "2px 0 0", fontSize: 10 }}>IMEI/Série: {aparelho.imeiSerial}</p>}
-            {aparelho?.estadoFisico && <p style={{ margin: "2px 0 0", fontSize: 10 }}>Estado: {aparelho.estadoFisico}</p>}
-            {aparelho?.acessorios && <p style={{ margin: "2px 0 0", fontSize: 10 }}>Acessórios: {aparelho.acessorios}</p>}
+          <div
+            style={{ border: "1px solid #d1d5db", borderRadius: 6, padding: 8 }}
+          >
+            <p
+              style={{
+                margin: "0 0 4px",
+                color: "#6b7280",
+                fontSize: 9,
+                fontWeight: 700,
+                textTransform: "uppercase",
+              }}
+            >
+              Aparelho
+            </p>
+            <strong style={{ fontSize: 12 }}>
+              {aparelho ? `${aparelho.marca} ${aparelho.modelo}` : "—"}
+            </strong>
+            {aparelho?.cor && (
+              <p style={{ margin: "2px 0 0", fontSize: 10 }}>
+                Cor: {aparelho.cor}
+              </p>
+            )}
+            {aparelho?.imeiSerial && (
+              <p style={{ margin: "2px 0 0", fontSize: 10 }}>
+                IMEI/Série: {aparelho.imeiSerial}
+              </p>
+            )}
+            {aparelho?.estadoFisico && (
+              <p style={{ margin: "2px 0 0", fontSize: 10 }}>
+                Estado: {aparelho.estadoFisico}
+              </p>
+            )}
+            {aparelho?.acessorios && (
+              <p style={{ margin: "2px 0 0", fontSize: 10 }}>
+                Acessórios: {aparelho.acessorios}
+              </p>
+            )}
           </div>
         </div>
 
         {/* Defeito e diagnóstico */}
-        <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 14 }}>
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            marginBottom: 14,
+          }}
+        >
           <tbody>
             <tr>
-              <th style={{ border: "1px solid #d1d5db", padding: "6px 8px", background: "#f3f4f6", textAlign: "left", fontSize: 10, textTransform: "uppercase", width: 140 }}>Defeito relatado</th>
-              <td style={{ border: "1px solid #d1d5db", padding: "6px 8px", fontSize: 11 }}>{ordem.defeitoRelatado}</td>
+              <th
+                style={{
+                  border: "1px solid #d1d5db",
+                  padding: "6px 8px",
+                  background: "#f3f4f6",
+                  textAlign: "left",
+                  fontSize: 10,
+                  textTransform: "uppercase",
+                  width: 140,
+                }}
+              >
+                Defeito relatado
+              </th>
+              <td
+                style={{
+                  border: "1px solid #d1d5db",
+                  padding: "6px 8px",
+                  fontSize: 11,
+                }}
+              >
+                {ordem.defeitoRelatado}
+              </td>
             </tr>
             {ordem.diagnostico && (
               <tr>
-                <th style={{ border: "1px solid #d1d5db", padding: "6px 8px", background: "#f3f4f6", textAlign: "left", fontSize: 10, textTransform: "uppercase", width: 140 }}>Diagnóstico</th>
-                <td style={{ border: "1px solid #d1d5db", padding: "6px 8px", fontSize: 11 }}>{ordem.diagnostico}</td>
+                <th
+                  style={{
+                    border: "1px solid #d1d5db",
+                    padding: "6px 8px",
+                    background: "#f3f4f6",
+                    textAlign: "left",
+                    fontSize: 10,
+                    textTransform: "uppercase",
+                    width: 140,
+                  }}
+                >
+                  Diagnóstico
+                </th>
+                <td
+                  style={{
+                    border: "1px solid #d1d5db",
+                    padding: "6px 8px",
+                    fontSize: 11,
+                  }}
+                >
+                  {ordem.diagnostico}
+                </td>
               </tr>
             )}
             <tr>
-              <th style={{ border: "1px solid #d1d5db", padding: "6px 8px", background: "#f3f4f6", textAlign: "left", fontSize: 10, textTransform: "uppercase", width: 140 }}>Senha do aparelho</th>
-              <td style={{ border: "1px solid #d1d5db", padding: "6px 8px", fontSize: 11 }}>
+              <th
+                style={{
+                  border: "1px solid #d1d5db",
+                  padding: "6px 8px",
+                  background: "#f3f4f6",
+                  textAlign: "left",
+                  fontSize: 10,
+                  textTransform: "uppercase",
+                  width: 140,
+                }}
+              >
+                Senha do aparelho
+              </th>
+              <td
+                style={{
+                  border: "1px solid #d1d5db",
+                  padding: "6px 8px",
+                  fontSize: 11,
+                }}
+              >
                 {senhaInfo}
-                {senhaDetalhe && <span style={{ marginLeft: 8, fontFamily: "monospace", fontWeight: 700 }}>— {senhaDetalhe}</span>}
+                {senhaDetalhe && (
+                  <span
+                    style={{
+                      marginLeft: 8,
+                      fontFamily: "monospace",
+                      fontWeight: 700,
+                    }}
+                  >
+                    — {senhaDetalhe}
+                  </span>
+                )}
               </td>
             </tr>
           </tbody>
@@ -313,20 +559,77 @@ const OrdemDetalhe = () => {
         {/* Peças usadas */}
         {(ordem.pecasUsadas ?? []).length > 0 && (
           <>
-            <h2 style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 700, textTransform: "uppercase" }}>Peças / serviços</h2>
-            <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 14 }}>
+            <h2
+              style={{
+                margin: "0 0 6px",
+                fontSize: 12,
+                fontWeight: 700,
+                textTransform: "uppercase",
+              }}
+            >
+              Peças / serviços
+            </h2>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                marginBottom: 14,
+              }}
+            >
               <thead>
-                <tr>{["Descrição", "Qtd.", "Unitário", "Total"].map((h) => (
-                  <th key={h} style={{ border: "1px solid #d1d5db", padding: "5px 7px", background: "#f3f4f6", fontSize: 10, textTransform: "uppercase", textAlign: "left" }}>{h}</th>
-                ))}</tr>
+                <tr>
+                  {["Descrição", "Qtd.", "Unitário", "Total"].map((h) => (
+                    <th
+                      key={h}
+                      style={{
+                        border: "1px solid #d1d5db",
+                        padding: "5px 7px",
+                        background: "#f3f4f6",
+                        fontSize: 10,
+                        textTransform: "uppercase",
+                        textAlign: "left",
+                      }}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
               </thead>
               <tbody>
                 {ordem.pecasUsadas.map((p) => (
                   <tr key={p.produtoId}>
-                    <td style={{ border: "1px solid #d1d5db", padding: "5px 7px" }}>{p.nome}</td>
-                    <td style={{ border: "1px solid #d1d5db", padding: "5px 7px" }}>{p.quantidade}</td>
-                    <td style={{ border: "1px solid #d1d5db", padding: "5px 7px" }}>{formatBRL(p.valorUnitario)}</td>
-                    <td style={{ border: "1px solid #d1d5db", padding: "5px 7px" }}>{formatBRL(p.valorTotal)}</td>
+                    <td
+                      style={{
+                        border: "1px solid #d1d5db",
+                        padding: "5px 7px",
+                      }}
+                    >
+                      {p.nome}
+                    </td>
+                    <td
+                      style={{
+                        border: "1px solid #d1d5db",
+                        padding: "5px 7px",
+                      }}
+                    >
+                      {p.quantidade}
+                    </td>
+                    <td
+                      style={{
+                        border: "1px solid #d1d5db",
+                        padding: "5px 7px",
+                      }}
+                    >
+                      {formatBRL(p.valorUnitario)}
+                    </td>
+                    <td
+                      style={{
+                        border: "1px solid #d1d5db",
+                        padding: "5px 7px",
+                      }}
+                    >
+                      {formatBRL(p.valorTotal)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -335,22 +638,74 @@ const OrdemDetalhe = () => {
         )}
 
         {/* Totais */}
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 16, marginBottom: 14, fontSize: 11 }}>
-          <span>Peças: <strong>{formatBRL(ordem.valorPecas)}</strong></span>
-          <span>Mão de obra: <strong>{formatBRL(ordem.valorMaoObra)}</strong></span>
-          <span style={{ fontWeight: 700, fontSize: 13 }}>Total: <strong>{formatBRL(ordem.valorTotal)}</strong></span>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: 16,
+            marginBottom: 14,
+            fontSize: 11,
+          }}
+        >
+          <span>
+            Peças: <strong>{formatBRL(ordem.valorPecas)}</strong>
+          </span>
+          <span>
+            Mão de obra: <strong>{formatBRL(ordem.valorMaoObra)}</strong>
+          </span>
+          <span style={{ fontWeight: 700, fontSize: 13 }}>
+            Total: <strong>{formatBRL(ordem.valorTotal)}</strong>
+          </span>
         </div>
 
         {/* Termo */}
-        <div style={{ border: "1px solid #d1d5db", borderRadius: 4, padding: "8px 10px", marginBottom: 14, fontSize: 10, color: "#374151" }}>
-          <p style={{ margin: "0 0 4px", fontWeight: 700, fontSize: 11 }}>Termo de entrega e garantia</p>
-          <p style={{ margin: 0 }}>Ao assinar esta ordem de serviço, o cliente confirma as informações do aparelho, defeito relatado, acessórios entregues e condições descritas. O cliente está ciente de que deverá retirar o aparelho dentro do prazo combinado após a conclusão do serviço. A garantia cobre somente o serviço realizado e/ou a peça substituída, não se estendendo a danos causados por mau uso, queda, contato com líquido, violação por terceiros ou novos defeitos não relacionados ao reparo executado.</p>
+        <div
+          style={{
+            border: "1px solid #d1d5db",
+            borderRadius: 4,
+            padding: "8px 10px",
+            marginBottom: 14,
+            fontSize: 10,
+            color: "#374151",
+          }}
+        >
+          <p style={{ margin: "0 0 4px", fontWeight: 700, fontSize: 11 }}>
+            Termo de entrega e garantia
+          </p>
+          <p style={{ margin: 0 }}>
+            Ao assinar esta ordem de serviço, o cliente confirma as informações
+            do aparelho, defeito relatado, acessórios entregues e condições
+            descritas. O cliente está ciente de que deverá retirar o aparelho
+            dentro do prazo combinado após a conclusão do serviço. A garantia
+            cobre somente o serviço realizado e/ou a peça substituída, não se
+            estendendo a danos causados por mau uso, queda, contato com líquido,
+            violação por terceiros ou novos defeitos não relacionados ao reparo
+            executado.
+          </p>
         </div>
 
         {/* Assinaturas */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, marginTop: 24 }}>
-          {["Assinatura do cliente", `Atendente: ${ordem.tecnicoResponsavel ?? EMPRESA.tecnicoPadrao}`].map((label) => (
-            <div key={label} style={{ borderTop: "1px solid #111827", paddingTop: 6, textAlign: "center", minHeight: 48 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 32,
+            marginTop: 24,
+          }}
+        >
+          {[
+            "Assinatura do cliente",
+            `Atendente: ${ordem.tecnicoResponsavel ?? EMPRESA.tecnicoPadrao}`,
+          ].map((label) => (
+            <div
+              key={label}
+              style={{
+                borderTop: "1px solid #111827",
+                paddingTop: 6,
+                textAlign: "center",
+                minHeight: 48,
+              }}
+            >
               <span style={{ fontSize: 10, color: "#6b7280" }}>{label}</span>
             </div>
           ))}
@@ -361,551 +716,707 @@ const OrdemDetalhe = () => {
 
   return (
     <>
-    <PrintPreviewDialog open={previewOsOpen} onOpenChange={setPreviewOsOpen} title={`OS-${ordem.numero} — Via do Cliente`} onPrint={window.print}>
-      <OsPreviewContent viaInterna={false} />
-    </PrintPreviewDialog>
-    <PrintPreviewDialog open={previewOsViaInterna} onOpenChange={setPreviewOsViaInterna} title={`OS-${ordem.numero} — Via Interna`} onPrint={window.print}>
-      <OsPreviewContent viaInterna={true} />
-    </PrintPreviewDialog>
-    <PrintPreviewDialog open={previewGarantiaOpen} onOpenChange={setPreviewGarantiaOpen} title={`Termo de Garantia OS-${ordem.numero}`} onPrint={handlePrintGarantia}>
-      <div>
-        <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "2px solid #111827", paddingBottom: 12, marginBottom: 14 }}>
-          <div>
-            <p style={{ color: "#0284c7", fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>RR Infocell</p>
-            <h1 style={{ margin: 0, fontSize: 22, color: "#111827" }}>Termo de Garantia</h1>
-            <p style={{ margin: 0, fontSize: 11, color: "#374151" }}>OS-{ordem.numero} · Técnico: {ordem.tecnicoResponsavel ?? "—"}</p>
-          </div>
-        </div>
-        <div style={{ border: "2px solid #0284c7", borderRadius: 6, padding: "10px 14px", textAlign: "center", margin: "14px 0", background: "#f0f9ff" }}>
-          <span style={{ display: "block", color: "#6b7280", fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>Garantia do serviço</span>
-          <strong style={{ display: "block", fontSize: 18, color: "#0284c7", margin: "4px 0" }}>{ordem.garantiaDias ? `${ordem.garantiaDias} dias` : "—"}</strong>
-          <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>Válida até {formatDate(ordem.garantiaAte)}</p>
-        </div>
-        <p style={{ fontSize: 10, color: "#374151" }}>A RR Infocell garante os serviços realizados e as peças substituídas pelo prazo acima. A garantia não cobre danos físicos, líquidos, mau uso ou intervenção de terceiros.</p>
-      </div>
-    </PrintPreviewDialog>
-    <div className="space-y-5">
-      <PageHeader
-        eyebrow="Ordem de serviço"
-        title={`OS-${ordem.numero}`}
-        description="Detalhes operacionais e comprovante simples para impressao."
-        actions={
-          <div className="flex flex-wrap gap-2">
-            <Button asChild variant="outline">
-              <Link to="/app/ordens">
-                <ArrowLeft className="h-4 w-4" /> Voltar
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to={`/app/checklist?ordemId=${ordem.id}`}>
-                <ClipboardCheck className="h-4 w-4" /> Checklist
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to={`/app/checklist?ordemId=${ordem.id}&tipo=saida`}>
-                <ClipboardCheck className="h-4 w-4" /> Saida
-              </Link>
-            </Button>
-            <Button variant="outline" onClick={() => setPreviewGarantiaOpen(true)}>
-              <ShieldCheck className="h-4 w-4" /> Termo de Garantia
-            </Button>
-            <Button variant="outline" onClick={() => setPreviewOsOpen(true)}>
-              <Printer className="h-4 w-4" /> Via do cliente
-            </Button>
-            <Button onClick={() => setPreviewOsViaInterna(true)}>
-              <Printer className="h-4 w-4" /> Via interna
-            </Button>
-          </div>
-        }
-      />
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <Card className="surface-panel p-4">
-          <p className="text-xs text-muted-foreground">Status</p>
-          <div className="mt-2">
-            <StatusBadge status={ordem.status} />
-          </div>
-        </Card>
-        <Card className="surface-panel p-4">
-          <p className="text-xs text-muted-foreground">Entrada</p>
-          <p className="mt-1 font-mono text-lg">{formatDate(ordem.entradaEm)}</p>
-        </Card>
-        <Card className="surface-panel p-4">
-          <p className="text-xs text-muted-foreground">Prazo prometido</p>
-          <p className="mt-1 font-mono text-lg">
-            {formatDate(ordem.prazoPrometidoEm ?? ordem.previsaoEntregaEm)}
-          </p>
-        </Card>
-        <Card className="surface-panel p-4">
-          <p className="text-xs text-muted-foreground">Total</p>
-          <p className="mt-1 font-display text-lg font-semibold">
-            {formatBRL(ordem.valorTotal)}
-          </p>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <SectionPanel title="Cliente" className="lg:col-span-1">
-          <dl className="space-y-3 text-sm">
-            <div>
-              <dt className="text-xs text-muted-foreground">Nome</dt>
-              <dd className="font-medium">{cliente?.nome ?? ordem.clienteId}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Telefone</dt>
-              <dd className="flex items-center gap-2">
-                <span>{cliente?.telefone ?? "-"}</span>
-                {cliente?.telefone && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <a
-                          href={`https://wa.me/55${cliente.telefone.replace(/\D/g, "")}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors"
-                        >
-                          <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                        </a>
-                      </TooltipTrigger>
-                      <TooltipContent>Abrir WhatsApp</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Documento</dt>
-              <dd>{cliente?.documento ?? "-"}</dd>
-            </div>
-            {cliente?.email && (
-              <div>
-                <dt className="text-xs text-muted-foreground">E-mail</dt>
-                <dd className="truncate">{cliente.email}</dd>
-              </div>
-            )}
-            {cliente?.observacoes && (
-              <div>
-                <dt className="text-xs text-muted-foreground">Observações</dt>
-                <dd className="text-muted-foreground">{cliente.observacoes}</dd>
-              </div>
-            )}
-          </dl>
-        </SectionPanel>
-
-        <SectionPanel title="Aparelho" className="lg:col-span-1">
-          <dl className="space-y-3 text-sm">
-            <div>
-              <dt className="text-xs text-muted-foreground">Modelo</dt>
-              <dd className="font-medium">{deviceLabel}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">IMEI/serial</dt>
-              <dd>{aparelho?.imeiSerial ?? "-"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Cor</dt>
-              <dd>{aparelho?.cor ?? "-"}</dd>
-            </div>
-          </dl>
-        </SectionPanel>
-
-        <SectionPanel title="Valores" className="lg:col-span-1">
-          <dl className="space-y-3 text-sm">
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Peças</dt>
-              <dd className="font-mono">{formatBRL(ordem.valorPecas)}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Mão de obra</dt>
-              <dd className="font-mono">{formatBRL(ordem.valorMaoObra)}</dd>
-            </div>
-            <div className="flex justify-between gap-4 border-t border-border pt-3">
-              <dt className="font-medium">Total</dt>
-              <dd className="font-mono font-semibold">
-                {formatBRL(ordem.valorTotal)}
-              </dd>
-            </div>
-          </dl>
-        </SectionPanel>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <SectionPanel title="Controle da OS" className="lg:col-span-1">
-          <dl className="space-y-3 text-sm">
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Prioridade</dt>
-              <dd className="font-medium capitalize">{ordem.prioridade}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Técnico</dt>
-              <dd>{ordem.tecnicoResponsavel ?? "-"}</dd>
-            </div>
-          </dl>
-        </SectionPanel>
-        <SectionPanel title="Aprovacao" className="lg:col-span-1">
-          <dl className="space-y-3 text-sm">
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Aprovado por</dt>
-              <dd>{ordem.aprovadoPor ?? "-"}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Canal</dt>
-              <dd>{ordem.canalAprovacao ?? "-"}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Data</dt>
-              <dd>{formatDate(ordem.aprovadoEm)}</dd>
-            </div>
-          </dl>
-        </SectionPanel>
-        <SectionPanel title="Garantia" className="lg:col-span-1">
-          <dl className="space-y-3 text-sm">
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Prazo</dt>
-              <dd>{ordem.garantiaDias ? `${ordem.garantiaDias} dias` : "-"}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Valida ate</dt>
-              <dd>{formatDate(ordem.garantiaAte)}</dd>
-            </div>
-          </dl>
-        </SectionPanel>
-      </div>
-
-      <SectionPanel title="Defeito e diagnóstico">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
-            <p className="text-xs text-muted-foreground">Defeito relatado</p>
-            <p className="mt-1 text-sm">{ordem.defeitoRelatado}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Diagnóstico</p>
-            <p className="mt-1 text-sm">{ordem.diagnostico ?? "-"}</p>
-          </div>
-        </div>
-      </SectionPanel>
-
-      <SectionPanel title="Peças usadas">
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
-          <div className="overflow-x-auto rounded-md border border-border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
-                  <th className="px-4 py-3 text-left font-medium">Peça</th>
-                  <th className="px-4 py-3 text-center font-medium">Qtd.</th>
-                  <th className="px-4 py-3 text-right font-medium">Unitário</th>
-                  <th className="px-4 py-3 text-right font-medium">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(ordem.pecasUsadas ?? []).length === 0 ? (
-                  <tr>
-                    <td
-                      className="px-4 py-5 text-center text-muted-foreground"
-                      colSpan={4}
-                    >
-                      Nenhuma peça vinculada a esta OS.
-                    </td>
-                  </tr>
-                ) : (
-                  ordem.pecasUsadas.map((peca) => (
-                    <tr
-                      key={peca.produtoId}
-                      className="border-b border-border/40 last:border-b-0"
-                    >
-                      <td className="px-4 py-3">
-                        <p className="font-medium">{peca.nome}</p>
-                        <p className="font-mono text-xs text-muted-foreground">
-                          {peca.sku}
-                        </p>
-                      </td>
-                      <td className="px-4 py-3 text-center font-mono">
-                        {peca.quantidade}
-                      </td>
-                      <td className="px-4 py-3 text-right font-mono">
-                        {formatBRL(peca.valorUnitario)}
-                      </td>
-                      <td className="px-4 py-3 text-right font-mono font-semibold">
-                        {formatBRL(peca.valorTotal)}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <form className="space-y-3" onSubmit={handleAddPeca}>
-            <FormField id="os-peca-produto" label="Peça do estoque">
-              <Select
-                value={pecaProdutoId}
-                onValueChange={setPecaProdutoId}
-                disabled={produtosQuery.isLoading}
+      {/* Dialog: confirmar exclusão */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Excluir ordem de serviço</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-1">
+            <p className="text-sm text-muted-foreground">
+              Tem certeza que deseja excluir a{" "}
+              <span className="font-semibold text-foreground">
+                OS-{ordem.numero}
+              </span>
+              ?
+              <br />
+              <span className="text-destructive">
+                Essa ação não poderá ser desfeita.
+              </span>
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteDialogOpen(false)}
+                disabled={excluirOsMutation.isPending}
               >
-                <SelectTrigger id="os-peca-produto">
-                  <SelectValue placeholder="Selecione a peça" />
-                </SelectTrigger>
-                <SelectContent>
-                  {produtos.map((produto) => (
-                    <SelectItem key={produto.id} value={produto.id}>
-                      {produto.nome} ({produto.estoqueAtual})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormField>
-            <FormField id="os-peca-quantidade" label="Quantidade">
-              <Input
-                id="os-peca-quantidade"
-                min="1"
-                step="1"
-                type="number"
-                value={pecaQuantidade}
-                onChange={(event) => setPecaQuantidade(event.target.value)}
-              />
-            </FormField>
-            {selectedProduto && (
-              <p className="text-xs text-muted-foreground">
-                Estoque atual: {selectedProduto.estoqueAtual} - venda:{" "}
-                {formatBRL(selectedProduto.precoVenda)}
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={excluirOsMutation.isPending}
+                onClick={() => excluirOsMutation.mutate()}
+              >
+                {excluirOsMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+                Excluir OS
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <PrintPreviewDialog
+        open={previewOsOpen}
+        onOpenChange={setPreviewOsOpen}
+        title={`OS-${ordem.numero} — Via do Cliente`}
+        onPrint={window.print}
+      >
+        <OsPreviewContent viaInterna={false} />
+      </PrintPreviewDialog>
+      <PrintPreviewDialog
+        open={previewOsViaInterna}
+        onOpenChange={setPreviewOsViaInterna}
+        title={`OS-${ordem.numero} — Via Interna`}
+        onPrint={window.print}
+      >
+        <OsPreviewContent viaInterna={true} />
+      </PrintPreviewDialog>
+      <PrintPreviewDialog
+        open={previewGarantiaOpen}
+        onOpenChange={setPreviewGarantiaOpen}
+        title={`Termo de Garantia OS-${ordem.numero}`}
+        onPrint={handlePrintGarantia}
+      >
+        <div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              borderBottom: "2px solid #111827",
+              paddingBottom: 12,
+              marginBottom: 14,
+            }}
+          >
+            <div>
+              <p
+                style={{
+                  color: "#0284c7",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                }}
+              >
+                RR Infocell
               </p>
-            )}
-            {pecaError && <p className="text-sm text-destructive">{pecaError}</p>}
-            <Button
-              className="w-full"
-              disabled={updatePecasMutation.isPending || !pecaProdutoId}
-              type="submit"
+              <h1 style={{ margin: 0, fontSize: 22, color: "#111827" }}>
+                Termo de Garantia
+              </h1>
+              <p style={{ margin: 0, fontSize: 11, color: "#374151" }}>
+                OS-{ordem.numero} · Técnico: {ordem.tecnicoResponsavel ?? "—"}
+              </p>
+            </div>
+          </div>
+          <div
+            style={{
+              border: "2px solid #0284c7",
+              borderRadius: 6,
+              padding: "10px 14px",
+              textAlign: "center",
+              margin: "14px 0",
+              background: "#f0f9ff",
+            }}
+          >
+            <span
+              style={{
+                display: "block",
+                color: "#6b7280",
+                fontSize: 9,
+                fontWeight: 700,
+                textTransform: "uppercase",
+              }}
             >
-              {updatePecasMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <PackagePlus className="h-4 w-4" />
-              )}
-              Adicionar e baixar
-            </Button>
-          </form>
-        </div>
-      </SectionPanel>
-
-      <section className="checklist-print-area">
-        <header className="print-header">
-          <div>
-            <p className="print-kicker">RR Infocell</p>
-            <h1>Comprovante de ordem de serviço</h1>
-            <p>Documento simples para controle de entrada e retirada.</p>
-          </div>
-          <div className="print-meta">
-            <strong>OS-{ordem.numero}</strong>
-            <span>Status: {ordem.status.replace(/_/g, " ")}</span>
-            <span>Entrada: {formatDate(ordem.entradaEm)}</span>
-            <span>Previsão: {formatDate(ordem.previsaoEntregaEm)}</span>
-          </div>
-        </header>
-
-        <div className="print-grid print-summary">
-          <div>
-            <span>Cliente</span>
-            <strong>{cliente?.nome ?? ordem.clienteId}</strong>
-            <p>{cliente?.telefone ?? "-"}</p>
-          </div>
-          <div>
-            <span>Aparelho</span>
-            <strong>{deviceLabel}</strong>
-            <p>{aparelho?.imeiSerial ? `IMEI ${aparelho.imeiSerial}` : "-"}</p>
-          </div>
-          <div>
-            <span>Total previsto</span>
-            <strong>{formatBRL(ordem.valorTotal)}</strong>
-            <p>
-              Peças {formatBRL(ordem.valorPecas)} + mão de obra{" "}
-              {formatBRL(ordem.valorMaoObra)}
+              Garantia do serviço
+            </span>
+            <strong
+              style={{
+                display: "block",
+                fontSize: 18,
+                color: "#0284c7",
+                margin: "4px 0",
+              }}
+            >
+              {ordem.garantiaDias ? `${ordem.garantiaDias} dias` : "—"}
+            </strong>
+            <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>
+              Válida até {formatDate(ordem.garantiaAte)}
             </p>
           </div>
+          <p style={{ fontSize: 10, color: "#374151" }}>
+            A RR Infocell garante os serviços realizados e as peças substituídas
+            pelo prazo acima. A garantia não cobre danos físicos, líquidos, mau
+            uso ou intervenção de terceiros.
+          </p>
+        </div>
+      </PrintPreviewDialog>
+      <div className="space-y-5">
+        <PageHeader
+          eyebrow="Ordem de serviço"
+          title={`OS-${ordem.numero}`}
+          description="Detalhes operacionais e comprovante simples para impressao."
+          actions={
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="outline">
+                <Link to="/app/ordens">
+                  <ArrowLeft className="h-4 w-4" /> Voltar
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link to={`/app/checklist?ordemId=${ordem.id}`}>
+                  <ClipboardCheck className="h-4 w-4" /> Checklist
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link to={`/app/checklist?ordemId=${ordem.id}&tipo=saida`}>
+                  <ClipboardCheck className="h-4 w-4" /> Saida
+                </Link>
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setPreviewGarantiaOpen(true)}
+              >
+                <ShieldCheck className="h-4 w-4" /> Termo de Garantia
+              </Button>
+              <Button variant="outline" onClick={() => setPreviewOsOpen(true)}>
+                <Printer className="h-4 w-4" /> Via do cliente
+              </Button>
+              <Button onClick={() => setPreviewOsViaInterna(true)}>
+                <Printer className="h-4 w-4" /> Via interna
+              </Button>
+              <Button
+                variant="outline"
+                className="text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => setDeleteDialogOpen(true)}
+              >
+                <Trash2 className="h-4 w-4" /> Excluir OS
+              </Button>
+            </div>
+          }
+        />
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+          <Card className="surface-panel p-4">
+            <p className="text-xs text-muted-foreground">Status</p>
+            <div className="mt-2">
+              <StatusBadge status={ordem.status} />
+            </div>
+          </Card>
+          <Card className="surface-panel p-4">
+            <p className="text-xs text-muted-foreground">Entrada</p>
+            <p className="mt-1 font-mono text-lg">
+              {formatDate(ordem.entradaEm)}
+            </p>
+          </Card>
+          <Card className="surface-panel p-4">
+            <p className="text-xs text-muted-foreground">Prazo prometido</p>
+            <p className="mt-1 font-mono text-lg">
+              {formatDate(ordem.prazoPrometidoEm ?? ordem.previsaoEntregaEm)}
+            </p>
+          </Card>
+          <Card className="surface-panel p-4">
+            <p className="text-xs text-muted-foreground">Total</p>
+            <p className="mt-1 font-display text-lg font-semibold">
+              {formatBRL(ordem.valorTotal)}
+            </p>
+          </Card>
         </div>
 
-        <h2>Relato e diagnóstico</h2>
-        <table className="print-table">
-          <tbody>
-            <tr>
-              <th>Defeito relatado</th>
-              <td>{ordem.defeitoRelatado}</td>
-            </tr>
-            <tr>
-              <th>Diagnóstico</th>
-              <td>{ordem.diagnostico ?? "-"}</td>
-            </tr>
-            <tr>
-              <th>Técnico responsável</th>
-              <td>{ordem.tecnicoResponsavel ?? "-"}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <SectionPanel title="Cliente" className="lg:col-span-1">
+            <dl className="space-y-3 text-sm">
+              <div>
+                <dt className="text-xs text-muted-foreground">Nome</dt>
+                <dd className="font-medium">
+                  {cliente?.nome ?? ordem.clienteId}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Telefone</dt>
+                <dd className="flex items-center gap-2">
+                  <span>{cliente?.telefone ?? "-"}</span>
+                  {cliente?.telefone && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <a
+                            href={`https://wa.me/55${cliente.telefone.replace(/\D/g, "")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors"
+                          >
+                            <svg
+                              viewBox="0 0 24 24"
+                              className="h-3.5 w-3.5 fill-current"
+                            >
+                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                            </svg>
+                          </a>
+                        </TooltipTrigger>
+                        <TooltipContent>Abrir WhatsApp</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Documento</dt>
+                <dd>{cliente?.documento ?? "-"}</dd>
+              </div>
+              {cliente?.email && (
+                <div>
+                  <dt className="text-xs text-muted-foreground">E-mail</dt>
+                  <dd className="truncate">{cliente.email}</dd>
+                </div>
+              )}
+              {cliente?.observacoes && (
+                <div>
+                  <dt className="text-xs text-muted-foreground">Observações</dt>
+                  <dd className="text-muted-foreground">
+                    {cliente.observacoes}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          </SectionPanel>
 
-        <h2>Peças usadas</h2>
-        <table className="print-table">
-          <thead>
-            <tr>
-              <th>Peça</th>
-              <th>Qtd.</th>
-              <th>Unitário</th>
-              <th>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(ordem.pecasUsadas ?? []).length === 0 ? (
+          <SectionPanel title="Aparelho" className="lg:col-span-1">
+            <dl className="space-y-3 text-sm">
+              <div>
+                <dt className="text-xs text-muted-foreground">Modelo</dt>
+                <dd className="font-medium">{deviceLabel}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">IMEI/serial</dt>
+                <dd>{aparelho?.imeiSerial ?? "-"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Cor</dt>
+                <dd>{aparelho?.cor ?? "-"}</dd>
+              </div>
+            </dl>
+          </SectionPanel>
+
+          <SectionPanel title="Valores" className="lg:col-span-1">
+            <dl className="space-y-3 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Peças</dt>
+                <dd className="font-mono">{formatBRL(ordem.valorPecas)}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Mão de obra</dt>
+                <dd className="font-mono">{formatBRL(ordem.valorMaoObra)}</dd>
+              </div>
+              <div className="flex justify-between gap-4 border-t border-border pt-3">
+                <dt className="font-medium">Total</dt>
+                <dd className="font-mono font-semibold">
+                  {formatBRL(ordem.valorTotal)}
+                </dd>
+              </div>
+            </dl>
+          </SectionPanel>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <SectionPanel title="Controle da OS" className="lg:col-span-1">
+            <dl className="space-y-3 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Prioridade</dt>
+                <dd className="font-medium capitalize">{ordem.prioridade}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Técnico</dt>
+                <dd>{ordem.tecnicoResponsavel ?? "-"}</dd>
+              </div>
+            </dl>
+          </SectionPanel>
+          <SectionPanel title="Aprovacao" className="lg:col-span-1">
+            <dl className="space-y-3 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Aprovado por</dt>
+                <dd>{ordem.aprovadoPor ?? "-"}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Canal</dt>
+                <dd>{ordem.canalAprovacao ?? "-"}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Data</dt>
+                <dd>{formatDate(ordem.aprovadoEm)}</dd>
+              </div>
+            </dl>
+          </SectionPanel>
+          <SectionPanel title="Garantia" className="lg:col-span-1">
+            <dl className="space-y-3 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Prazo</dt>
+                <dd>
+                  {ordem.garantiaDias ? `${ordem.garantiaDias} dias` : "-"}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Valida ate</dt>
+                <dd>{formatDate(ordem.garantiaAte)}</dd>
+              </div>
+            </dl>
+          </SectionPanel>
+        </div>
+
+        <SectionPanel title="Defeito e diagnóstico">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <p className="text-xs text-muted-foreground">Defeito relatado</p>
+              <p className="mt-1 text-sm">{ordem.defeitoRelatado}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Diagnóstico</p>
+              <p className="mt-1 text-sm">{ordem.diagnostico ?? "-"}</p>
+            </div>
+          </div>
+        </SectionPanel>
+
+        <SectionPanel title="Peças usadas">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
+            <div className="overflow-x-auto rounded-md border border-border">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
+                    <th className="px-4 py-3 text-left font-medium">Peça</th>
+                    <th className="px-4 py-3 text-center font-medium">Qtd.</th>
+                    <th className="px-4 py-3 text-right font-medium">
+                      Unitário
+                    </th>
+                    <th className="px-4 py-3 text-right font-medium">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(ordem.pecasUsadas ?? []).length === 0 ? (
+                    <tr>
+                      <td
+                        className="px-4 py-5 text-center text-muted-foreground"
+                        colSpan={4}
+                      >
+                        Nenhuma peça vinculada a esta OS.
+                      </td>
+                    </tr>
+                  ) : (
+                    ordem.pecasUsadas.map((peca) => (
+                      <tr
+                        key={peca.produtoId}
+                        className="border-b border-border/40 last:border-b-0"
+                      >
+                        <td className="px-4 py-3">
+                          <p className="font-medium">{peca.nome}</p>
+                          <p className="font-mono text-xs text-muted-foreground">
+                            {peca.sku}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3 text-center font-mono">
+                          {peca.quantidade}
+                        </td>
+                        <td className="px-4 py-3 text-right font-mono">
+                          {formatBRL(peca.valorUnitario)}
+                        </td>
+                        <td className="px-4 py-3 text-right font-mono font-semibold">
+                          {formatBRL(peca.valorTotal)}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <form className="space-y-3" onSubmit={handleAddPeca}>
+              <FormField id="os-peca-produto" label="Peça do estoque">
+                <Select
+                  value={pecaProdutoId}
+                  onValueChange={setPecaProdutoId}
+                  disabled={produtosQuery.isLoading}
+                >
+                  <SelectTrigger id="os-peca-produto">
+                    <SelectValue placeholder="Selecione a peça" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {produtos.map((produto) => (
+                      <SelectItem key={produto.id} value={produto.id}>
+                        {produto.nome} ({produto.estoqueAtual})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+              <FormField id="os-peca-quantidade" label="Quantidade">
+                <Input
+                  id="os-peca-quantidade"
+                  min="1"
+                  step="1"
+                  type="number"
+                  value={pecaQuantidade}
+                  onChange={(event) => setPecaQuantidade(event.target.value)}
+                />
+              </FormField>
+              {selectedProduto && (
+                <p className="text-xs text-muted-foreground">
+                  Estoque atual: {selectedProduto.estoqueAtual} - venda:{" "}
+                  {formatBRL(selectedProduto.precoVenda)}
+                </p>
+              )}
+              {pecaError && (
+                <p className="text-sm text-destructive">{pecaError}</p>
+              )}
+              <Button
+                className="w-full"
+                disabled={updatePecasMutation.isPending || !pecaProdutoId}
+                type="submit"
+              >
+                {updatePecasMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <PackagePlus className="h-4 w-4" />
+                )}
+                Adicionar e baixar
+              </Button>
+            </form>
+          </div>
+        </SectionPanel>
+
+        <section className="checklist-print-area">
+          <header className="print-header">
+            <div>
+              <p className="print-kicker">RR Infocell</p>
+              <h1>Comprovante de ordem de serviço</h1>
+              <p>Documento simples para controle de entrada e retirada.</p>
+            </div>
+            <div className="print-meta">
+              <strong>OS-{ordem.numero}</strong>
+              <span>Status: {ordem.status.replace(/_/g, " ")}</span>
+              <span>Entrada: {formatDate(ordem.entradaEm)}</span>
+              <span>Previsão: {formatDate(ordem.previsaoEntregaEm)}</span>
+            </div>
+          </header>
+
+          <div className="print-grid print-summary">
+            <div>
+              <span>Cliente</span>
+              <strong>{cliente?.nome ?? ordem.clienteId}</strong>
+              <p>{cliente?.telefone ?? "-"}</p>
+            </div>
+            <div>
+              <span>Aparelho</span>
+              <strong>{deviceLabel}</strong>
+              <p>
+                {aparelho?.imeiSerial ? `IMEI ${aparelho.imeiSerial}` : "-"}
+              </p>
+            </div>
+            <div>
+              <span>Total previsto</span>
+              <strong>{formatBRL(ordem.valorTotal)}</strong>
+              <p>
+                Peças {formatBRL(ordem.valorPecas)} + mão de obra{" "}
+                {formatBRL(ordem.valorMaoObra)}
+              </p>
+            </div>
+          </div>
+
+          <h2>Relato e diagnóstico</h2>
+          <table className="print-table">
+            <tbody>
               <tr>
-                <td colSpan={4}>Nenhuma peça vinculada.</td>
+                <th>Defeito relatado</th>
+                <td>{ordem.defeitoRelatado}</td>
               </tr>
-            ) : (
-              ordem.pecasUsadas.map((peca) => (
-                <tr key={peca.produtoId}>
-                  <td>
-                    {peca.nome} ({peca.sku})
-                  </td>
-                  <td>{peca.quantidade}</td>
-                  <td>{formatBRL(peca.valorUnitario)}</td>
-                  <td>{formatBRL(peca.valorTotal)}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-
-        <div className="print-signatures">
-          <div>
-            <span>Cliente</span>
-          </div>
-          <div>
-            <span>RR Infocell</span>
-          </div>
-        </div>
-      </section>
-
-      <section className="garantia-print-area">
-        <header className="print-header">
-          <div>
-            <p className="print-kicker">RR Infocell</p>
-            <h1>Termo de Garantia</h1>
-            <p>OS-{ordem.numero} — emitido em {formatDate(new Date().toISOString())}</p>
-          </div>
-          <div className="print-meta">
-            <strong>OS-{ordem.numero}</strong>
-            <span>Técnico: {ordem.tecnicoResponsavel ?? "—"}</span>
-            <span>Entrega: {formatDate(ordem.entregueEm ?? new Date().toISOString())}</span>
-          </div>
-        </header>
-
-        <div className="print-grid print-summary">
-          <div>
-            <span>Cliente</span>
-            <strong>{cliente?.nome ?? ordem.clienteId}</strong>
-            <p>{cliente?.telefone ?? "—"}</p>
-            <p>{cliente?.documento ?? "—"}</p>
-          </div>
-          <div>
-            <span>Aparelho</span>
-            <strong>{deviceLabel}</strong>
-            <p>{aparelho?.imeiSerial ? `IMEI ${aparelho.imeiSerial}` : "—"}</p>
-            {aparelho?.cor && <p>Cor: {aparelho.cor}</p>}
-            {aparelho?.acessorios && <p>Acessórios: {aparelho.acessorios}</p>}
-          </div>
-          <div>
-            <span>Total pago</span>
-            <strong>{formatBRL(ordem.valorTotal)}</strong>
-            <p>Peças: {formatBRL(ordem.valorPecas)}</p>
-            <p>Mão de obra: {formatBRL(ordem.valorMaoObra)}</p>
-            {ordem.formaPagamento && <p>Pagamento: {ordem.formaPagamento.toUpperCase()}</p>}
-          </div>
-        </div>
-
-        <h2>Serviço realizado</h2>
-        <table className="print-table">
-          <tbody>
-            <tr>
-              <th>Defeito relatado</th>
-              <td>{ordem.defeitoRelatado}</td>
-            </tr>
-            <tr>
-              <th>Diagnóstico / serviço executado</th>
-              <td>{ordem.diagnostico ?? "—"}</td>
-            </tr>
-            <tr>
-              <th>Técnico responsável</th>
-              <td>{ordem.tecnicoResponsavel ?? "—"}</td>
-            </tr>
-            {aparelho?.estadoFisico && (
               <tr>
-                <th>Estado físico na entrega</th>
-                <td>{aparelho.estadoFisico}</td>
+                <th>Diagnóstico</th>
+                <td>{ordem.diagnostico ?? "-"}</td>
               </tr>
-            )}
-          </tbody>
-        </table>
+              <tr>
+                <th>Técnico responsável</th>
+                <td>{ordem.tecnicoResponsavel ?? "-"}</td>
+              </tr>
+            </tbody>
+          </table>
 
-        {(ordem.pecasUsadas ?? []).length > 0 && (
-          <>
-            <h2>Peças substituídas</h2>
-            <table className="print-table">
-              <thead>
+          <h2>Peças usadas</h2>
+          <table className="print-table">
+            <thead>
+              <tr>
+                <th>Peça</th>
+                <th>Qtd.</th>
+                <th>Unitário</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(ordem.pecasUsadas ?? []).length === 0 ? (
                 <tr>
-                  <th>Peça</th>
-                  <th>Qtd.</th>
-                  <th>Total</th>
+                  <td colSpan={4}>Nenhuma peça vinculada.</td>
                 </tr>
-              </thead>
-              <tbody>
-                {ordem.pecasUsadas.map((peca) => (
+              ) : (
+                ordem.pecasUsadas.map((peca) => (
                   <tr key={peca.produtoId}>
-                    <td>{peca.nome}</td>
+                    <td>
+                      {peca.nome} ({peca.sku})
+                    </td>
                     <td>{peca.quantidade}</td>
+                    <td>{formatBRL(peca.valorUnitario)}</td>
                     <td>{formatBRL(peca.valorTotal)}</td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
-        )}
+                ))
+              )}
+            </tbody>
+          </table>
 
-        <div className="garantia-highlight">
-          <span>Garantia do serviço</span>
-          <strong>{ordem.garantiaDias ? `${ordem.garantiaDias} dias` : "—"}</strong>
-          <p>Válida até {formatDate(ordem.garantiaAte)}</p>
-          {ordem.garantiaObservacoes && <p>{ordem.garantiaObservacoes}</p>}
-        </div>
-
-        <div className="garantia-terms">
-          <strong>Termos da garantia</strong>
-          <p style={{ marginTop: 6 }}>
-            A RR Infocell garante os serviços realizados e as peças substituídas pelo prazo
-            acima, contado a partir da data de entrega do aparelho. A garantia cobre
-            exclusivamente defeitos relacionados ao serviço descrito neste documento.
-          </p>
-          <p style={{ marginTop: 8 }}>
-            <strong>A garantia não cobre:</strong>
-          </p>
-          <ul>
-            <li>Danos físicos, quedas, impactos ou pressão mecânica</li>
-            <li>Danos por líquidos ou umidade</li>
-            <li>Mau uso ou instalação de softwares não autorizados</li>
-            <li>Intervenção de terceiros após a realização do serviço</li>
-            <li>Desgaste natural do equipamento</li>
-          </ul>
-          <p style={{ marginTop: 8 }}>
-            Para acionar a garantia, o cliente deverá apresentar este documento na RR Infocell.
-          </p>
-        </div>
-
-        <div className="print-signatures">
-          <div>
-            <span>Cliente — {cliente?.nome ?? "—"}</span>
+          <div className="print-signatures">
+            <div>
+              <span>Cliente</span>
+            </div>
+            <div>
+              <span>RR Infocell</span>
+            </div>
           </div>
-          <div>
-            <span>RR Infocell</span>
+        </section>
+
+        <section className="garantia-print-area">
+          <header className="print-header">
+            <div>
+              <p className="print-kicker">RR Infocell</p>
+              <h1>Termo de Garantia</h1>
+              <p>
+                OS-{ordem.numero} — emitido em{" "}
+                {formatDate(new Date().toISOString())}
+              </p>
+            </div>
+            <div className="print-meta">
+              <strong>OS-{ordem.numero}</strong>
+              <span>Técnico: {ordem.tecnicoResponsavel ?? "—"}</span>
+              <span>
+                Entrega:{" "}
+                {formatDate(ordem.entregueEm ?? new Date().toISOString())}
+              </span>
+            </div>
+          </header>
+
+          <div className="print-grid print-summary">
+            <div>
+              <span>Cliente</span>
+              <strong>{cliente?.nome ?? ordem.clienteId}</strong>
+              <p>{cliente?.telefone ?? "—"}</p>
+              <p>{cliente?.documento ?? "—"}</p>
+            </div>
+            <div>
+              <span>Aparelho</span>
+              <strong>{deviceLabel}</strong>
+              <p>
+                {aparelho?.imeiSerial ? `IMEI ${aparelho.imeiSerial}` : "—"}
+              </p>
+              {aparelho?.cor && <p>Cor: {aparelho.cor}</p>}
+              {aparelho?.acessorios && <p>Acessórios: {aparelho.acessorios}</p>}
+            </div>
+            <div>
+              <span>Total pago</span>
+              <strong>{formatBRL(ordem.valorTotal)}</strong>
+              <p>Peças: {formatBRL(ordem.valorPecas)}</p>
+              <p>Mão de obra: {formatBRL(ordem.valorMaoObra)}</p>
+              {ordem.formaPagamento && (
+                <p>Pagamento: {ordem.formaPagamento.toUpperCase()}</p>
+              )}
+            </div>
           </div>
-        </div>
-      </section>
-    </div>
+
+          <h2>Serviço realizado</h2>
+          <table className="print-table">
+            <tbody>
+              <tr>
+                <th>Defeito relatado</th>
+                <td>{ordem.defeitoRelatado}</td>
+              </tr>
+              <tr>
+                <th>Diagnóstico / serviço executado</th>
+                <td>{ordem.diagnostico ?? "—"}</td>
+              </tr>
+              <tr>
+                <th>Técnico responsável</th>
+                <td>{ordem.tecnicoResponsavel ?? "—"}</td>
+              </tr>
+              {aparelho?.estadoFisico && (
+                <tr>
+                  <th>Estado físico na entrega</th>
+                  <td>{aparelho.estadoFisico}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+
+          {(ordem.pecasUsadas ?? []).length > 0 && (
+            <>
+              <h2>Peças substituídas</h2>
+              <table className="print-table">
+                <thead>
+                  <tr>
+                    <th>Peça</th>
+                    <th>Qtd.</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ordem.pecasUsadas.map((peca) => (
+                    <tr key={peca.produtoId}>
+                      <td>{peca.nome}</td>
+                      <td>{peca.quantidade}</td>
+                      <td>{formatBRL(peca.valorTotal)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
+
+          <div className="garantia-highlight">
+            <span>Garantia do serviço</span>
+            <strong>
+              {ordem.garantiaDias ? `${ordem.garantiaDias} dias` : "—"}
+            </strong>
+            <p>Válida até {formatDate(ordem.garantiaAte)}</p>
+            {ordem.garantiaObservacoes && <p>{ordem.garantiaObservacoes}</p>}
+          </div>
+
+          <div className="garantia-terms">
+            <strong>Termos da garantia</strong>
+            <p style={{ marginTop: 6 }}>
+              A RR Infocell garante os serviços realizados e as peças
+              substituídas pelo prazo acima, contado a partir da data de entrega
+              do aparelho. A garantia cobre exclusivamente defeitos relacionados
+              ao serviço descrito neste documento.
+            </p>
+            <p style={{ marginTop: 8 }}>
+              <strong>A garantia não cobre:</strong>
+            </p>
+            <ul>
+              <li>Danos físicos, quedas, impactos ou pressão mecânica</li>
+              <li>Danos por líquidos ou umidade</li>
+              <li>Mau uso ou instalação de softwares não autorizados</li>
+              <li>Intervenção de terceiros após a realização do serviço</li>
+              <li>Desgaste natural do equipamento</li>
+            </ul>
+            <p style={{ marginTop: 8 }}>
+              Para acionar a garantia, o cliente deverá apresentar este
+              documento na RR Infocell.
+            </p>
+          </div>
+
+          <div className="print-signatures">
+            <div>
+              <span>Cliente — {cliente?.nome ?? "—"}</span>
+            </div>
+            <div>
+              <span>RR Infocell</span>
+            </div>
+          </div>
+        </section>
+      </div>
     </>
   );
 };
