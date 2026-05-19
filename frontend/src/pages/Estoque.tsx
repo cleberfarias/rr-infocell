@@ -10,11 +10,9 @@ import {
   Package,
   Pencil,
   Plus,
-  PowerOff,
   Search,
   Trash2,
   TrendingUp,
-  Zap,
 } from "lucide-react";
 
 import { EmptyState, FormField, PageHeader } from "@/components/design-system";
@@ -1606,26 +1604,38 @@ const Estoque = () => {
                               {produto.estoqueMinimo}
                             </td>
                             <td className="px-5 py-3">
-                              <div className="flex flex-col gap-1">
-                                {!produto.ativo && (
-                                  <Badge
-                                    variant="outline"
-                                    className="border-muted-foreground/30 bg-muted/30 text-muted-foreground text-[10px] font-bold uppercase w-fit"
-                                  >
-                                    Inativo
-                                  </Badge>
-                                )}
+                              <div className="flex flex-col items-start gap-1">
+                                <button
+                                  type="button"
+                                  disabled={toggleAtivoMutation.isPending}
+                                  onClick={() =>
+                                    toggleAtivoMutation.mutate(produto)
+                                  }
+                                  title={
+                                    produto.ativo
+                                      ? "Clique para desativar"
+                                      : "Clique para ativar"
+                                  }
+                                  className={cn(
+                                    "rounded px-3 py-1 text-xs font-bold uppercase tracking-wide transition-all",
+                                    produto.ativo
+                                      ? "bg-success/20 text-success hover:bg-success/30 border border-success/40"
+                                      : "bg-muted/50 text-muted-foreground hover:bg-muted border border-border",
+                                  )}
+                                >
+                                  {produto.ativo ? "Ativo" : "Inativo"}
+                                </button>
                                 {produto.ativo && zerado ? (
                                   <Badge
                                     variant="destructive"
-                                    className="text-[10px] font-bold uppercase w-fit"
+                                    className="text-[10px] font-bold uppercase"
                                   >
                                     Zerado
                                   </Badge>
                                 ) : produto.ativo && baixo ? (
                                   <Badge
                                     variant="outline"
-                                    className="border-amber-500/50 bg-amber-500/10 text-amber-600 text-[10px] font-bold uppercase w-fit"
+                                    className="border-amber-500/50 bg-amber-500/10 text-amber-600 text-[10px] font-bold uppercase"
                                   >
                                     Baixo
                                   </Badge>
@@ -1651,31 +1661,6 @@ const Estoque = () => {
                                   onClick={() => abrirEditar(produto)}
                                 >
                                   <Pencil className="h-3.5 w-3.5" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  disabled={toggleAtivoMutation.isPending}
-                                  className={cn(
-                                    "h-7 w-7",
-                                    produto.ativo
-                                      ? "text-muted-foreground hover:text-amber-500"
-                                      : "text-success hover:text-success",
-                                  )}
-                                  title={
-                                    produto.ativo
-                                      ? "Desativar produto"
-                                      : "Reativar produto"
-                                  }
-                                  onClick={() =>
-                                    toggleAtivoMutation.mutate(produto)
-                                  }
-                                >
-                                  {produto.ativo ? (
-                                    <PowerOff className="h-3.5 w-3.5" />
-                                  ) : (
-                                    <Zap className="h-3.5 w-3.5" />
-                                  )}
                                 </Button>
                                 <Button
                                   variant="ghost"
