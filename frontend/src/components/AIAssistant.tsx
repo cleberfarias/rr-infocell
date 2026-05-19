@@ -18,12 +18,39 @@ type Message = {
 };
 
 const quickGuides = [
-  { label: "Como abrir uma OS?", question: "Como eu abro uma nova ordem de serviço no sistema?" },
-  { label: "Como fazer o checklist?", question: "Como eu faço o checklist de entrada do aparelho?" },
-  { label: "Como criar um orçamento?", question: "Como eu crio e envio um orçamento para o cliente?" },
-  { label: "Como entregar o aparelho?", question: "Quais são os passos para entregar o aparelho ao cliente com garantia?" },
-  { label: "Como cadastrar no estoque?", question: "Como eu cadastro um produto ou peça no estoque?" },
-  { label: "Como usar o PDV?", question: "Como eu faço uma venda direta no PDV?" },
+  {
+    label: "Como abrir uma OS?",
+    question: "Como eu abro uma nova ordem de serviço no sistema?",
+  },
+  {
+    label: "Senha do aparelho",
+    question: "Como eu registro a senha ou padrão do aparelho na OS?",
+  },
+  {
+    label: "Imprimir OS",
+    question:
+      "Como eu imprimo a via do cliente e a via interna da ordem de serviço?",
+  },
+  {
+    label: "Cupom térmico",
+    question: "Como eu imprimo o cupom não fiscal térmico no PDV?",
+  },
+  {
+    label: "Produto ativo/inativo",
+    question: "Como eu deixo um produto inativo no estoque sem excluir?",
+  },
+  {
+    label: "Como criar um orçamento?",
+    question: "Como eu crio e imprimo um orçamento para o cliente?",
+  },
+  {
+    label: "Como cadastrar no estoque?",
+    question: "Como eu cadastro um produto ou peça no estoque?",
+  },
+  {
+    label: "Como usar o PDV?",
+    question: "Como eu faço uma venda direta no PDV?",
+  },
 ];
 
 const INITIAL_MESSAGE: Message = {
@@ -42,7 +69,10 @@ export const AIAssistant = () => {
 
   useEffect(() => {
     if (open) {
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+      setTimeout(
+        () => bottomRef.current?.scrollIntoView({ behavior: "smooth" }),
+        100,
+      );
     }
   }, [messages, open]);
 
@@ -50,7 +80,11 @@ export const AIAssistant = () => {
     const text = question.trim();
     if (!text || isLoading) return;
 
-    const userMsg: Message = { id: `u-${Date.now()}`, role: "user", content: text };
+    const userMsg: Message = {
+      id: `u-${Date.now()}`,
+      role: "user",
+      content: text,
+    };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setIsLoading(true);
@@ -62,7 +96,8 @@ export const AIAssistant = () => {
         { id: `a-${Date.now()}`, role: "assistant", content: resposta },
       ]);
     } catch (error) {
-      const detail = error instanceof Error ? error.message : "Erro desconhecido.";
+      const detail =
+        error instanceof Error ? error.message : "Erro desconhecido.";
       setMessages((prev) => [
         ...prev,
         {
@@ -101,7 +136,9 @@ export const AIAssistant = () => {
                 <Sparkles className="h-4 w-4 text-primary-foreground" />
               </div>
               <div>
-                <SheetTitle className="text-left text-base">Assistente RR Infocell</SheetTitle>
+                <SheetTitle className="text-left text-base">
+                  Assistente RR Infocell
+                </SheetTitle>
                 <p className="text-xs text-muted-foreground">
                   Tire dúvidas sobre como usar o sistema
                 </p>
@@ -132,12 +169,17 @@ export const AIAssistant = () => {
               {messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={cn("flex gap-3", msg.role === "user" && "flex-row-reverse")}
+                  className={cn(
+                    "flex gap-3",
+                    msg.role === "user" && "flex-row-reverse",
+                  )}
                 >
                   <div
                     className={cn(
                       "flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
-                      msg.role === "assistant" ? "bg-gradient-primary" : "bg-secondary",
+                      msg.role === "assistant"
+                        ? "bg-gradient-primary"
+                        : "bg-secondary",
                     )}
                   >
                     {msg.role === "assistant" ? (
@@ -166,7 +208,9 @@ export const AIAssistant = () => {
                   </div>
                   <div className="flex items-center rounded-lg bg-secondary/60 px-3 py-2">
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    <span className="ml-2 text-xs text-muted-foreground">Pensando...</span>
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      Pensando...
+                    </span>
                   </div>
                 </div>
               )}
