@@ -396,13 +396,9 @@ const Usuarios = () => {
                       Perfil
                     </p>
                     {usuario.role ? (
-                      <StatusBadge
-                        status={
-                          usuario.role === "admin" ? "aprovado" : "pendente"
-                        }
-                      />
+                      <StatusBadge status="aprovado" />
                     ) : (
-                      <span className="text-muted-foreground">Sem claim</span>
+                      <span className="text-muted-foreground">Sem acesso</span>
                     )}
                     <p className="mt-1 text-xs text-muted-foreground">
                       {usuario.role ? roleLabels[usuario.role] : "-"}
