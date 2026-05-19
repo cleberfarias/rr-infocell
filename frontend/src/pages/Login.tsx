@@ -142,7 +142,7 @@ const Login = () => {
         </div>
 
         <div className="relative z-10 flex items-center justify-between gap-4 font-mono text-xs text-muted-foreground">
-          <span>v1.0 - build {new Date().toLocaleDateString("pt-BR")}</span>
+          <span>v1.1.0 - build 19/05/2026</span>
           <DeveloperCredit variant="sidebar" />
         </div>
       </aside>
