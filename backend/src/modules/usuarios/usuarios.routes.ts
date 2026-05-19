@@ -103,3 +103,12 @@ usuariosRoutes.put(
     });
   }),
 );
+
+usuariosRoutes.delete(
+  "/:uid",
+  asyncHandler(async (request, response) => {
+    const uid = String(request.params.uid);
+    await usuariosService.delete(uid);
+    response.status(204).send();
+  }),
+);

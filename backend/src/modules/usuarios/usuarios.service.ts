@@ -58,6 +58,11 @@ export class UsuariosService {
     return mapUser(await client.getUser(user.uid));
   }
 
+  async delete(uid: string) {
+    const client = this.getAuth();
+    await client.deleteUser(uid);
+  }
+
   async update(uid: string, input: UsuarioUpdateInput) {
     const client = this.getAuth();
     const current = await client.getUser(uid);

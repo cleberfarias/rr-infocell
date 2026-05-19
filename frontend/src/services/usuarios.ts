@@ -61,3 +61,7 @@ export const updateUsuario = async (uid: string, input: UsuarioUpdateInput) => {
 
   return response.data;
 };
+
+export const deleteUsuario = async (uid: string) => {
+  await apiRequest<void>(`/usuarios/${uid}`, { method: "DELETE" });
+};
