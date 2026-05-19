@@ -96,10 +96,7 @@ async function main() {
   console.log("🧹 Iniciando limpeza dos dados de teste...\n");
 
   // 1. Busca o cliente pelo telefone de teste
-  const clienteSnap = await db
-    .collection("clientes")
-    .where("telefone", "==", TELEFONE_TESTE)
-    .get();
+  const clienteSnap = await db.collection("clientes").where("telefone", "==", TELEFONE_TESTE).get();
 
   if (clienteSnap.empty) {
     console.log("ℹ️  Cliente de teste não encontrado — talvez já tenha sido removido.");
@@ -126,19 +123,13 @@ async function main() {
   await limparOS(OS_ID_TESTE, "OS-3");
 
   // 6. Restaura o estoque da tela de celular (1 unidade foi baixada no teste)
-  const telaSnap = await db
-    .collection("produtos")
-    .where("sku", "==", "12345")
-    .limit(1)
-    .get();
+  const telaSnap = await db.collection("produtos").where("sku", "==", "12345").limit(1).get();
 
   if (!telaSnap.empty) {
     const tela = telaSnap.docs[0];
     const estoqueAtual = tela.data().estoqueAtual as number;
     await tela.ref.update({ estoqueAtual: estoqueAtual + 1 });
-    console.log(
-      `\n📦 Estoque "tela de celular" restaurado: ${estoqueAtual} → ${estoqueAtual + 1}`,
-    );
+    console.log(`\n📦 Estoque "tela de celular" restaurado: ${estoqueAtual} → ${estoqueAtual + 1}`);
   }
 
   console.log("\n✅ Limpeza concluída!");

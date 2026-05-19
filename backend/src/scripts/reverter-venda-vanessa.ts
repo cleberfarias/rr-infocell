@@ -26,7 +26,7 @@ async function main() {
   // 1. Busca clientes com nome contendo "Vanessa"
   const clientesSnap = await db.collection("clientes").get();
   const clientesVanessa = clientesSnap.docs.filter((d) =>
-    (d.data().nome as string ?? "").toLowerCase().includes("vanessa"),
+    ((d.data().nome as string) ?? "").toLowerCase().includes("vanessa"),
   );
 
   if (clientesVanessa.length === 0) {
@@ -50,7 +50,7 @@ async function main() {
   if (vendasVanessa.length === 0) {
     const allVendas = await db.collection("vendas").limit(100).get();
     vendasVanessa = allVendas.docs.filter((v) =>
-      (v.data().clienteNome as string ?? "").toLowerCase().includes("vanessa")
+      ((v.data().clienteNome as string) ?? "").toLowerCase().includes("vanessa"),
     );
   }
 
@@ -71,7 +71,9 @@ async function main() {
   });
 
   if (vendasVanessa.length > 1) {
-    console.log("\n⚠️  Mais de uma venda encontrada. Editando o script para especificar o ID correto.");
+    console.log(
+      "\n⚠️  Mais de uma venda encontrada. Editando o script para especificar o ID correto.",
+    );
     console.log("   Defina VENDA_ID no script e reexecute.");
     return;
   }
@@ -100,7 +102,8 @@ async function main() {
     console.log(`   ✅ OS ${ordemId} revertida para "pronto_para_retirada".`);
 
     // 5. Deleta o evento de venda associado à OS
-    const eventosSnap = await db.collection("ordemEventos")
+    const eventosSnap = await db
+      .collection("ordemEventos")
       .where("ordemServicoId", "==", ordemId)
       .where("tipo", "==", "venda")
       .get();
