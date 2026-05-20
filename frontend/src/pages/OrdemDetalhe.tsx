@@ -7,10 +7,16 @@ import {
   Loader2,
   PackagePlus,
   Printer,
+  Search,
   ShieldCheck,
   Trash2,
 } from "lucide-react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 
 import {
   EmptyState,
@@ -37,6 +43,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -64,6 +71,8 @@ const OrdemDetalhe = () => {
   const queryClient = useQueryClient();
   const [pecaProdutoId, setPecaProdutoId] = useState("");
   const [pecaQuantidade, setPecaQuantidade] = useState("1");
+  const [pecaBusca, setPecaBusca] = useState("");
+  const [descontoTexto, setDescontoTexto] = useState("");
   const [pecaError, setPecaError] = useState<string | null>(null);
   const [previewOsOpen, setPreviewOsOpen] = useState(false);
   const [previewOsViaInterna, setPreviewOsViaInterna] = useState(false);
@@ -73,12 +82,14 @@ const OrdemDetalhe = () => {
   const [garantiaDiasTexto, setGarantiaDiasTexto] = useState("");
   const [garantiaObservacoesTexto, setGarantiaObservacoesTexto] = useState("");
   const [termoTexto, setTermoTexto] = useState(
-    () => localStorage.getItem("rr-termo-garantia") ??
-      "A RR Infocell garante os serviços realizados e as peças substituídas pelo prazo acima. A garantia não cobre danos físicos, líquidos, mau uso ou intervenção de terceiros."
+    () =>
+      localStorage.getItem("rr-termo-garantia") ??
+      "A RR Infocell garante os serviços realizados e as peças substituídas pelo prazo acima. A garantia não cobre danos físicos, líquidos, mau uso ou intervenção de terceiros.",
   );
   const [termoOsTexto, setTermoOsTexto] = useState(
-    () => localStorage.getItem("rr-termo-os") ??
-      "Ao assinar esta ordem de serviço, o cliente confirma as informações do aparelho, defeito relatado, acessórios entregues e condições descritas. O cliente está ciente de que deverá retirar o aparelho dentro do prazo combinado após a conclusão do serviço. A garantia cobre somente o serviço realizado e/ou a peça substituída, não se estendendo a danos causados por mau uso, queda, contato com líquido, violação por terceiros ou novos defeitos não relacionados ao reparo executado."
+    () =>
+      localStorage.getItem("rr-termo-os") ??
+      "Ao assinar esta ordem de serviço, o cliente confirma as informações do aparelho, defeito relatado, acessórios entregues e condições descritas. O cliente está ciente de que deverá retirar o aparelho dentro do prazo combinado após a conclusão do serviço. A garantia cobre somente o serviço realizado e/ou a peça substituída, não se estendendo a danos causados por mau uso, queda, contato com líquido, violação por terceiros ou novos defeitos não relacionados ao reparo executado.",
   );
   const [editTermoOsOpen, setEditTermoOsOpen] = useState(false);
 
@@ -115,6 +126,12 @@ const OrdemDetalhe = () => {
       setPreviewGarantiaOpen(true);
     }
   }, [ordem, searchParams]);
+
+  useEffect(() => {
+    if (ordem) {
+      setDescontoTexto(ordem.desconto ? String(ordem.desconto) : "");
+    }
+  }, [ordem]);
 
   const excluirOsMutation = useMutation({
     mutationFn: () => deleteOrdemServico(ordemId ?? ""),
@@ -153,10 +170,14 @@ const OrdemDetalhe = () => {
               }))
             : undefined,
         valorMaoObra: ordem.valorMaoObra,
+        desconto: ordem.desconto,
         entradaEm: ordem.entradaEm,
         previsaoEntregaEm: ordem.previsaoEntregaEm,
         prazoPrometidoEm: ordem.prazoPrometidoEm,
-        garantiaDias: garantiaDiasTexto.trim() === "" ? undefined : Number(garantiaDiasTexto),
+        garantiaDias:
+          garantiaDiasTexto.trim() === ""
+            ? undefined
+            : Number(garantiaDiasTexto),
         garantiaObservacoes: garantiaObservacoesTexto.trim() || undefined,
         aprovadoPor: ordem.aprovadoPor,
         aprovadoEm: ordem.aprovadoEm,
@@ -177,6 +198,64 @@ const OrdemDetalhe = () => {
         error instanceof Error
           ? error.message
           : "Nao foi possivel atualizar a garantia.",
+      );
+    },
+  });
+
+  const descontoMutation = useMutation({
+    mutationFn: () => {
+      if (!ordem) {
+        throw new Error("OS nao carregada.");
+      }
+
+      return updateOrdemServico(ordem.id, {
+        clienteId: ordem.clienteId,
+        aparelhoId: ordem.aparelhoId,
+        checklistId: ordem.checklistId,
+        defeitoRelatado: ordem.defeitoRelatado,
+        diagnostico: ordem.diagnostico,
+        tipoSenha: ordem.tipoSenha,
+        senhaAparelho: ordem.senhaAparelho,
+        padraoDeSenha: ordem.padraoDeSenha,
+        status: ordem.status,
+        prioridade: ordem.prioridade,
+        tecnicoResponsavel: ordem.tecnicoResponsavel,
+        pecasUsadas:
+          ordem.pecasUsadas.length > 0
+            ? ordem.pecasUsadas.map((peca) => ({
+                produtoId: peca.produtoId,
+                quantidade: peca.quantidade,
+                valorUnitario: peca.valorUnitario,
+              }))
+            : undefined,
+        valorMaoObra: ordem.valorMaoObra,
+        desconto:
+          descontoTexto.trim() === ""
+            ? undefined
+            : Number(descontoTexto.replace(",", ".")),
+        entradaEm: ordem.entradaEm,
+        previsaoEntregaEm: ordem.previsaoEntregaEm,
+        prazoPrometidoEm: ordem.prazoPrometidoEm,
+        garantiaDias: ordem.garantiaDias,
+        garantiaObservacoes: ordem.garantiaObservacoes,
+        aprovadoPor: ordem.aprovadoPor,
+        aprovadoEm: ordem.aprovadoEm,
+        canalAprovacao: ordem.canalAprovacao,
+        mensagemAprovacao: ordem.mensagemAprovacao,
+      });
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["ordem-servico", ordemId] }),
+        queryClient.invalidateQueries({ queryKey: ["ordens-servico"] }),
+      ]);
+      toast.success("Desconto da OS atualizado.");
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Nao foi possivel atualizar o desconto.",
       );
     },
   });
@@ -211,6 +290,27 @@ const OrdemDetalhe = () => {
   }, [aparelho]);
 
   const produtos = produtosQuery.data ?? [];
+  const produtosFiltrados = useMemo(() => {
+    const termo = pecaBusca.trim().toLowerCase();
+
+    if (!termo) {
+      return produtos.slice(0, 80);
+    }
+
+    return produtos
+      .filter((produto) =>
+        [
+          produto.sku,
+          produto.nome,
+          produto.marca ?? "",
+          produto.modelo ?? "",
+          produto.codigoFornecedor ?? "",
+          String(produto.precoVenda),
+          formatBRL(produto.precoVenda),
+        ].some((valor) => valor.toLowerCase().includes(termo)),
+      )
+      .slice(0, 80);
+  }, [pecaBusca, produtos]);
   const selectedProduto = produtos.find(
     (produto) => produto.id === pecaProdutoId,
   );
@@ -231,6 +331,7 @@ const OrdemDetalhe = () => {
         tecnicoResponsavel: ordem.tecnicoResponsavel,
         pecasUsadas,
         valorMaoObra: ordem.valorMaoObra,
+        desconto: ordem.desconto,
         entradaEm: ordem.entradaEm,
         previsaoEntregaEm: ordem.previsaoEntregaEm,
       });
@@ -377,29 +478,38 @@ const OrdemDetalhe = () => {
               {(() => {
                 const logoUrl = localStorage.getItem("rr-logo-url");
                 return logoUrl ? (
-                  <img src={logoUrl} alt="Logo" style={{ maxHeight: 60, maxWidth: 140, objectFit: "contain", flexShrink: 0 }} />
+                  <img
+                    src={logoUrl}
+                    alt="Logo"
+                    style={{
+                      maxHeight: 60,
+                      maxWidth: 140,
+                      objectFit: "contain",
+                      flexShrink: 0,
+                    }}
+                  />
                 ) : null;
               })()}
               <div>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 18,
-                  fontWeight: 700,
-                  color: "#111827",
-                }}
-              >
-                {EMPRESA.nome}
-              </p>
-              <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>
-                CNPJ: {EMPRESA.cnpj}
-              </p>
-              <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>
-                {EMPRESA.enderecoCompleto}
-              </p>
-              <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>
-                Tel/WhatsApp: {EMPRESA.telefone}
-              </p>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 18,
+                    fontWeight: 700,
+                    color: "#111827",
+                  }}
+                >
+                  {EMPRESA.nome}
+                </p>
+                <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>
+                  CNPJ: {EMPRESA.cnpj}
+                </p>
+                <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>
+                  {EMPRESA.enderecoCompleto}
+                </p>
+                <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>
+                  Tel/WhatsApp: {EMPRESA.telefone}
+                </p>
               </div>
             </div>
             <div style={{ textAlign: "right" }}>
@@ -861,7 +971,11 @@ const OrdemDetalhe = () => {
         title={`OS-${ordem.numero} — Via do Cliente`}
         onPrint={window.print}
         actions={
-          <Button variant="outline" size="sm" onClick={() => setEditTermoOsOpen(true)}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setEditTermoOsOpen(true)}
+          >
             Editar termo
           </Button>
         }
@@ -874,7 +988,11 @@ const OrdemDetalhe = () => {
         title={`OS-${ordem.numero} — Via Interna`}
         onPrint={window.print}
         actions={
-          <Button variant="outline" size="sm" onClick={() => setEditTermoOsOpen(true)}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setEditTermoOsOpen(true)}
+          >
             Editar termo
           </Button>
         }
@@ -959,9 +1077,7 @@ const OrdemDetalhe = () => {
               Valida ate {garantiaValidadeLabel}
             </p>
           </div>
-          <p style={{ fontSize: 10, color: "#374151" }}>
-            {termoTexto}
-          </p>
+          <p style={{ fontSize: 10, color: "#374151" }}>{termoTexto}</p>
         </div>
       </PrintPreviewDialog>
 
@@ -971,7 +1087,8 @@ const OrdemDetalhe = () => {
           <DialogHeader>
             <DialogTitle>Editar termo da OS</DialogTitle>
             <DialogDescription>
-              Este texto aparece no rodape de todas as OS impressas. A alteracao fica salva no navegador.
+              Este texto aparece no rodape de todas as OS impressas. A alteracao
+              fica salva no navegador.
             </DialogDescription>
           </DialogHeader>
           <Textarea
@@ -980,11 +1097,18 @@ const OrdemDetalhe = () => {
             onChange={(e) => setTermoOsTexto(e.target.value)}
           />
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setEditTermoOsOpen(false)}>Cancelar</Button>
-            <Button className="bg-gradient-primary text-primary-foreground shadow-glow" onClick={() => {
-              localStorage.setItem("rr-termo-os", termoOsTexto);
-              setEditTermoOsOpen(false);
-            }}>Salvar</Button>
+            <Button variant="outline" onClick={() => setEditTermoOsOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              className="bg-gradient-primary text-primary-foreground shadow-glow"
+              onClick={() => {
+                localStorage.setItem("rr-termo-os", termoOsTexto);
+                setEditTermoOsOpen(false);
+              }}
+            >
+              Salvar
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -995,7 +1119,8 @@ const OrdemDetalhe = () => {
           <DialogHeader>
             <DialogTitle>Editar garantia</DialogTitle>
             <DialogDescription>
-              Ajuste o prazo e a observacao que aparecem no Termo de Garantia impresso.
+              Ajuste o prazo e a observacao que aparecem no Termo de Garantia
+              impresso.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -1022,7 +1147,9 @@ const OrdemDetalhe = () => {
             </FormField>
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setEditTermoOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setEditTermoOpen(false)}>
+              Cancelar
+            </Button>
             <Button
               className="bg-gradient-primary text-primary-foreground shadow-glow"
               disabled={garantiaMutation.isPending}
@@ -1212,11 +1339,38 @@ const OrdemDetalhe = () => {
                   <dd className="font-mono">{formatBRL(ordem.valorMaoObra)}</dd>
                 </div>
               )}
+              {ordem.desconto ? (
+                <div className="flex justify-between gap-4 text-amber-600">
+                  <dt>Desconto</dt>
+                  <dd className="font-mono">- {formatBRL(ordem.desconto)}</dd>
+                </div>
+              ) : null}
               <div className="flex justify-between gap-4 border-t border-border pt-3">
                 <dt className="font-medium">Total</dt>
                 <dd className="font-mono font-semibold">
                   {formatBRL(ordem.valorTotal)}
                 </dd>
+              </div>
+              <div className="space-y-2 border-t border-border pt-3">
+                <FormField id="os-desconto" label="Desconto na OS">
+                  <MoneyInput
+                    id="os-desconto"
+                    value={descontoTexto}
+                    onChange={setDescontoTexto}
+                  />
+                </FormField>
+                <Button
+                  className="w-full"
+                  disabled={descontoMutation.isPending}
+                  onClick={() => descontoMutation.mutate()}
+                  type="button"
+                  variant="outline"
+                >
+                  {descontoMutation.isPending && (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
+                  Salvar desconto
+                </Button>
               </div>
             </dl>
           </SectionPanel>
@@ -1337,6 +1491,18 @@ const OrdemDetalhe = () => {
             </div>
 
             <form className="space-y-3" onSubmit={handleAddPeca}>
+              <FormField id="os-peca-busca" label="Pesquisar peça">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="os-peca-busca"
+                    className="pl-9"
+                    value={pecaBusca}
+                    onChange={(event) => setPecaBusca(event.target.value)}
+                    placeholder="Código, nome ou valor"
+                  />
+                </div>
+              </FormField>
               <FormField id="os-peca-produto" label="Peça do estoque">
                 <Select
                   value={pecaProdutoId}
@@ -1347,9 +1513,10 @@ const OrdemDetalhe = () => {
                     <SelectValue placeholder="Selecione a peça" />
                   </SelectTrigger>
                   <SelectContent>
-                    {produtos.map((produto) => (
+                    {produtosFiltrados.map((produto) => (
                       <SelectItem key={produto.id} value={produto.id}>
-                        {produto.nome} ({produto.estoqueAtual})
+                        {produto.sku} - {produto.nome} -{" "}
+                        {formatBRL(produto.precoVenda)} ({produto.estoqueAtual})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1423,7 +1590,9 @@ const OrdemDetalhe = () => {
               <strong>{formatBRL(ordem.valorTotal)}</strong>
               <p>
                 Peças {formatBRL(ordem.valorPecas)}
-                {ordem.valorMaoObra > 0 ? ` + mão de obra ${formatBRL(ordem.valorMaoObra)}` : ""}
+                {ordem.valorMaoObra > 0
+                  ? ` + mão de obra ${formatBRL(ordem.valorMaoObra)}`
+                  : ""}
               </p>
             </div>
           </div>
@@ -1523,7 +1692,9 @@ const OrdemDetalhe = () => {
               <span>Total pago</span>
               <strong>{formatBRL(ordem.valorTotal)}</strong>
               <p>Peças: {formatBRL(ordem.valorPecas)}</p>
-              {ordem.valorMaoObra > 0 && <p>Mão de obra: {formatBRL(ordem.valorMaoObra)}</p>}
+              {ordem.valorMaoObra > 0 && (
+                <p>Mão de obra: {formatBRL(ordem.valorMaoObra)}</p>
+              )}
               {ordem.formaPagamento && (
                 <p>Pagamento: {ordem.formaPagamento.toUpperCase()}</p>
               )}
@@ -1592,9 +1763,9 @@ const OrdemDetalhe = () => {
             <strong>Termos da garantia</strong>
             <p style={{ marginTop: 6 }}>
               A RR Infocell garante os serviços realizados e as peças
-              substituídas pelo prazo acima, contado a partir da data de retirada
-              do aparelho pelo cliente. A garantia cobre exclusivamente defeitos relacionados
-              ao serviço descrito neste documento.
+              substituídas pelo prazo acima, contado a partir da data de
+              retirada do aparelho pelo cliente. A garantia cobre exclusivamente
+              defeitos relacionados ao serviço descrito neste documento.
             </p>
             <p style={{ marginTop: 8 }}>
               <strong>A garantia não cobre:</strong>

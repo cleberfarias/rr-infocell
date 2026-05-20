@@ -34,6 +34,7 @@ export type OrdemServico = {
   pecasUsadas: OrdemServicoPeca[];
   valorPecas: number;
   valorMaoObra: number;
+  desconto?: number;
   valorTotal: number;
   entradaEm: string;
   previsaoEntregaEm?: string;
@@ -87,6 +88,7 @@ export type OrdemServicoInput = {
   pecasUsadas?: OrdemServicoPecaInput[];
   valorPecas?: number;
   valorMaoObra?: number;
+  desconto?: number;
   entradaEm?: string;
   previsaoEntregaEm?: string;
   prazoPrometidoEm?: string;

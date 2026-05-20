@@ -47,7 +47,8 @@ const buildOrdem = (
       ? pecasUsadas.reduce((total, peca) => total + peca.valorTotal, 0)
       : (input.valorPecas ?? current?.valorPecas ?? 0);
   const valorMaoObra = input.valorMaoObra ?? current?.valorMaoObra ?? 0;
-  const valorTotal = valorPecas + valorMaoObra;
+  const desconto = input.desconto ?? current?.desconto ?? 0;
+  const valorTotal = Math.max(0, valorPecas + valorMaoObra - desconto);
   const valorRecebido = input.valorRecebido ?? current?.valorRecebido;
   const troco =
     valorRecebido !== undefined ? Math.max(0, valorRecebido - valorTotal) : current?.troco;
@@ -81,6 +82,7 @@ const buildOrdem = (
     pecasUsadas,
     valorPecas,
     valorMaoObra,
+    desconto: desconto > 0 ? desconto : undefined,
     valorTotal,
     entradaEm: input.entradaEm ?? current?.entradaEm ?? timestamp,
     previsaoEntregaEm: input.previsaoEntregaEm,
@@ -332,6 +334,7 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
   private fromDocument(id: string, data: FirebaseFirestore.DocumentData): OrdemServico {
     const valorPecas = Number(data.valorPecas ?? 0);
     const valorMaoObra = Number(data.valorMaoObra ?? 0);
+    const desconto = Number(data.desconto ?? 0);
 
     return {
       id,
@@ -350,7 +353,8 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
       pecasUsadas: this.fromPecasUsadas(data.pecasUsadas),
       valorPecas,
       valorMaoObra,
-      valorTotal: Number(data.valorTotal ?? valorPecas + valorMaoObra),
+      desconto: desconto > 0 ? desconto : undefined,
+      valorTotal: Number(data.valorTotal ?? Math.max(0, valorPecas + valorMaoObra - desconto)),
       entradaEm: String(data.entradaEm ?? ""),
       previsaoEntregaEm: data.previsaoEntregaEm ? String(data.previsaoEntregaEm) : undefined,
       prazoPrometidoEm: data.prazoPrometidoEm ? String(data.prazoPrometidoEm) : undefined,

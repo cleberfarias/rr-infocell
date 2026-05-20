@@ -76,6 +76,38 @@ describe("ordens-servico routes", () => {
     expect(response.body.error.code).toBe("validation_error");
   });
 
+  it("applies discount directly on ordem total", async () => {
+    const createResponse = await request(app).post("/api/ordens-servico").send({
+      clienteId: "cli_marcos_almeida",
+      aparelhoId: "apa_iphone_11_marcos",
+      defeitoRelatado: "Tela quebrada com desconto",
+      status: "em_manutencao",
+      valorPecas: 120,
+      valorMaoObra: 80,
+      desconto: 30,
+    });
+
+    expect(createResponse.status).toBe(201);
+    expect(createResponse.body.data.desconto).toBe(30);
+    expect(createResponse.body.data.valorTotal).toBe(170);
+
+    const updateResponse = await request(app)
+      .put(`/api/ordens-servico/${createResponse.body.data.id}`)
+      .send({
+        clienteId: "cli_marcos_almeida",
+        aparelhoId: "apa_iphone_11_marcos",
+        defeitoRelatado: "Tela quebrada com desconto",
+        status: "pronto_para_retirada",
+        valorPecas: 120,
+        valorMaoObra: 80,
+        desconto: 50,
+      });
+
+    expect(updateResponse.status).toBe(200);
+    expect(updateResponse.body.data.desconto).toBe(50);
+    expect(updateResponse.body.data.valorTotal).toBe(150);
+  });
+
   it("does not create ordem for aparelho from another cliente", async () => {
     const response = await request(app).post("/api/ordens-servico").send({
       clienteId: "cli_marcos_almeida",

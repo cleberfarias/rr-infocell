@@ -77,12 +77,16 @@ describe("vendas routes", () => {
       .send({
         clienteNome: "Cliente Balcao",
         formaPagamento: "pix",
-        valorRecebido: 1700,
+        valorRecebido: 1600,
+        desconto: 100,
         itens: [{ produtoId: produto.id, quantidade: 1 }],
       });
 
     expect(vendaResponse.status).toBe(201);
     expect(vendaResponse.body.data.tipo).toBe("direta");
+    expect(vendaResponse.body.data.desconto).toBe(100);
+    expect(vendaResponse.body.data.valorTotal).toBe(1600);
+    expect(vendaResponse.body.data.troco).toBe(0);
     expect(vendaResponse.body.data.itens[0].imei).toBe("359222222222222");
     expect(vendaResponse.body.data.itens[0].garantiaDias).toBe(90);
 

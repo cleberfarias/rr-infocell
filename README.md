@@ -6,9 +6,12 @@ Sistema web de gestão para assistência técnica e loja de celulares.
 
 Sistema completo para centralizar o fluxo operacional da RR Infocell: clientes, aparelhos, ordens de serviço, checklist técnico, estoque, movimentações, PDV/Caixa, financeiro, WhatsApp e treinamento.
 
+Horário de atendimento: segunda a sexta, 8:00 às 12:00 e 13:30 às 18:00; sábado, 8:00 às 12:00.
+
 ## Stack
 
 ### Frontend
+
 - React + TypeScript + Vite
 - Tailwind CSS + shadcn/ui
 - react-icons + lucide-react
@@ -16,11 +19,13 @@ Sistema completo para centralizar o fluxo operacional da RR Infocell: clientes, 
 - @tanstack/react-query
 
 ### Backend
+
 - Node.js + Express + TypeScript
 - Firebase Admin SDK + Firestore + Firebase Auth
 - OpenAI SDK (GPT-4o-mini — Assistente IA)
 
 ### Infra
+
 - Firebase Hosting (frontend)
 - Cloud Run (backend Node/Express)
 - Firestore (banco principal)
@@ -57,10 +62,12 @@ make dev
 ```
 
 Serviços locais:
+
 - Frontend: `http://127.0.0.1:5173`
 - Backend: `http://localhost:3333`
 
 Se as portas estiverem ocupadas:
+
 ```bash
 make dev-fresh
 ```
@@ -68,30 +75,31 @@ make dev-fresh
 ## Módulos implementados
 
 ### Fluxo principal de atendimento
+
 ```
 Nova OS → Checklist → Manutenção → Orçamento → PDV/Caixa → Termo de Garantia
 ```
 
 ### Telas disponíveis
 
-| Rota | Descrição |
-|---|---|
-| `/app` | Dashboard com métricas, OS recentes e alertas |
-| `/app/ordens/nova` | Nova OS com cadastro rápido de cliente + aparelho |
-| `/app/ordens` | Lista e Kanban de OS com filtros, busca e countdown de prazo |
-| `/app/checklist` | Checklist técnico de entrada e saída com fotos e drag-and-drop |
-| `/app/manutencao` | Diagnóstico, peças, linha do tempo, status |
-| `/app/orcamento` | Envio e aprovação de orçamento via WhatsApp |
-| `/app/estoque` | Dashboard de produtos com modo compacto e filtro por fornecedor |
-| `/app/movimentacoes` | Entrada/saída/transferência com NF-e |
-| `/app/pdv` | Fechamento de OS e venda direta com carrinho +/− |
-| `/app/financeiro` | DRE, gráfico semanal, contas bancárias, exportar PDF |
-| `/app/despesas` | Registro de despesas operacionais |
-| `/app/clientes` | Cadastro e histórico |
-| `/app/aparelhos` | Histórico de dispositivos por cliente |
-| `/app/atendimento` | WhatsApp integrado com Baileys |
-| `/app/usuarios` | Gestão de acessos (admin, atendente, técnico) |
-| `/app/treinamento` | Centro de treinamento com guias passo a passo |
+| Rota                 | Descrição                                                       |
+| -------------------- | --------------------------------------------------------------- |
+| `/app`               | Dashboard com métricas, OS recentes e alertas                   |
+| `/app/ordens/nova`   | Nova OS com cadastro rápido de cliente + aparelho               |
+| `/app/ordens`        | Lista e Kanban de OS com filtros, busca e countdown de prazo    |
+| `/app/checklist`     | Checklist técnico de entrada e saída com fotos e drag-and-drop  |
+| `/app/manutencao`    | Diagnóstico, peças, linha do tempo, status                      |
+| `/app/orcamento`     | Envio e aprovação de orçamento via WhatsApp                     |
+| `/app/estoque`       | Dashboard de produtos com modo compacto e filtro por fornecedor |
+| `/app/movimentacoes` | Entrada/saída/transferência com NF-e                            |
+| `/app/pdv`           | Fechamento de OS e venda direta com carrinho +/−                |
+| `/app/financeiro`    | DRE, gráfico semanal, contas bancárias, exportar PDF            |
+| `/app/despesas`      | Registro de despesas operacionais                               |
+| `/app/clientes`      | Cadastro e histórico                                            |
+| `/app/aparelhos`     | Histórico de dispositivos por cliente                           |
+| `/app/atendimento`   | WhatsApp integrado com Baileys                                  |
+| `/app/usuarios`      | Gestão de acessos (admin, atendente, técnico)                   |
+| `/app/treinamento`   | Centro de treinamento com guias passo a passo                   |
 
 ### Backend — endpoints principais
 
@@ -119,6 +127,7 @@ POST                /api/ajuda/perguntar   ← Assistente IA (GPT-4o-mini)
 Firebase Auth com custom claim `role` (`admin`, `atendente`, `tecnico`).
 
 Para criar admin:
+
 ```bash
 cd backend
 npm run auth:set-role -- --email admin@exemplo.com --role admin
@@ -127,6 +136,7 @@ npm run auth:set-role -- --email admin@exemplo.com --role admin
 ## Variáveis de ambiente
 
 ### Backend (`backend/.env`)
+
 ```
 NODE_ENV=development
 PORT=3333
@@ -137,6 +147,7 @@ OPENAI_API_KEY=sk-...
 ```
 
 ### Frontend (`frontend/.env`)
+
 ```
 VITE_API_BASE_URL=http://localhost:3333/api
 VITE_FIREBASE_API_KEY=...
@@ -166,7 +177,8 @@ cd backend && npm run build && npm run lint
 - ✅ Termo de Garantia e Comprovante de OS com pré-visualização antes de imprimir
 - ✅ Termo de Garantia com prazo por OS, validade calculada a partir da retirada e botão no PDV após finalizar venda
 - ✅ Estoque com fornecedor, código do fornecedor, marcas e categorias customizáveis
-- ✅ PDV com carrinho +/− inline, busca por fornecedor/SKU, desconto, impressão de cupom térmico e lançamento terceirizado
+- ✅ PDV com carrinho +/− inline, busca por fornecedor/SKU, desconto em OS e venda direta, impressão de cupom térmico e lançamento terceirizado
+- ✅ Desconto direto na OS, com total recalculado e persistido no cadastro da ordem
 - ✅ Terceirizados com status de repasse (Pendente/Pago) e cálculo de lucro
 - ✅ Kanban de OS com troca de status rápida e modo compacto
 - ✅ DRE simplificado com exportação em PDF

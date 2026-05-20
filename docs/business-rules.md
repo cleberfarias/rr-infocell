@@ -28,16 +28,16 @@ recebido → em_analise → aguardando_aprovacao → aguardando_peca → em_manu
                                                                                                       cancelado (qualquer etapa)
 ```
 
-| Status | Significado |
-|---|---|
-| `recebido` | Aparelho chegou, ainda não analisado |
-| `em_analise` | Técnico avaliando o defeito |
+| Status                 | Significado                                       |
+| ---------------------- | ------------------------------------------------- |
+| `recebido`             | Aparelho chegou, ainda não analisado              |
+| `em_analise`           | Técnico avaliando o defeito                       |
 | `aguardando_aprovacao` | Orçamento enviado, aguardando resposta do cliente |
-| `aguardando_peca` | Serviço pausado aguardando peça |
-| `em_manutencao` | Técnico executando o serviço |
-| `pronto_para_retirada` | Serviço concluído, avisar o cliente |
-| `entregue` | Aparelho devolvido ao cliente |
-| `cancelado` | OS encerrada sem execução |
+| `aguardando_peca`      | Serviço pausado aguardando peça                   |
+| `em_manutencao`        | Técnico executando o serviço                      |
+| `pronto_para_retirada` | Serviço concluído, avisar o cliente               |
+| `entregue`             | Aparelho devolvido ao cliente                     |
+| `cancelado`            | OS encerrada sem execução                         |
 
 ### 1.3 Navegação automática do sistema
 
@@ -51,9 +51,10 @@ O sistema navega automaticamente entre telas ao salvar:
 
 ### 1.4 Cálculo de valores
 
-- `valorTotal = valorPecas + valorMaoObra`
+- `valorTotal = max(0, valorPecas + valorMaoObra - desconto)`
 - `valorPecas` = soma dos preços de venda das peças vinculadas à OS
 - `valorMaoObra` = informado manualmente na Manutenção
+- `desconto` = valor opcional informado diretamente na OS ou no fechamento do PDV
 - O custo real de peças (para DRE) é calculado pelo custo cadastrado no estoque, não pelo preço de venda
 
 ### 1.5 Garantia
@@ -85,6 +86,7 @@ Aparelho testado, Carga funcionando, Biometria/Face ID, Câmera, Áudio, Chip/re
 ### 2.4 Status por item
 
 Cada item pode ser marcado como:
+
 - `funcionando` — testado e ok
 - `com_defeito` — problema identificado
 - `nao_testado` — não foi possível testar
@@ -173,7 +175,7 @@ Cada item pode ser marcado como:
 ### 5.1 Fechamento de OS
 
 - Apenas OS com status `pronto_para_retirada` aparecem no PDV.
-- O fechamento registra: forma de pagamento, valor recebido, troco e data/hora.
+- O fechamento registra: forma de pagamento, desconto, valor recebido, troco e data/hora.
 - Formas de pagamento: `dinheiro`, `pix`, `cartao_debito`, `cartao_credito`, `parcelado`, `outro`.
 - O troco é calculado automaticamente para pagamentos em dinheiro.
 - Após o fechamento, o status da OS muda para `entregue`.
@@ -183,9 +185,16 @@ Cada item pode ser marcado como:
 ### 5.2 Venda direta
 
 - Venda de produtos sem OS vinculada.
-- Busca produtos do estoque por nome ou SKU.
+- Busca produtos do estoque por nome, SKU, marca, fornecedor e código.
 - Suporta múltiplos itens no carrinho, desconto e formas de pagamento.
 - A baixa no estoque é automática ao finalizar a venda.
+
+---
+
+## 5.3 Horário de atendimento
+
+- Segunda a sexta: 8:00 às 12:00 e 13:30 às 18:00.
+- Sábado: 8:00 às 12:00.
 
 ---
 
@@ -247,11 +256,11 @@ Receita de produtos       = soma de valorPecas das vendas/OS entregues
 
 ### 8.1 Perfis
 
-| Perfil | Acesso |
-|---|---|
-| `admin` | Todas as telas do sistema |
-| `atendente` | OS, Checklist, Orçamento, PDV, Clientes, Aparelhos, Atendimento, Treinamento |
-| `tecnico` | OS, Checklist, Manutenção, Orçamento, Estoque, Movimentações, Atendimento, Treinamento |
+| Perfil      | Acesso                                                                                 |
+| ----------- | -------------------------------------------------------------------------------------- |
+| `admin`     | Todas as telas do sistema                                                              |
+| `atendente` | OS, Checklist, Orçamento, PDV, Clientes, Aparelhos, Atendimento, Treinamento           |
+| `tecnico`   | OS, Checklist, Manutenção, Orçamento, Estoque, Movimentações, Atendimento, Treinamento |
 
 ### 8.2 Regras de acesso
 

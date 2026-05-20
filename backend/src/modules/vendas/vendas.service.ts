@@ -143,7 +143,9 @@ export class VendasService {
       }),
     );
 
-    const valorTotal = itens.reduce((total, item) => total + item.valorTotal, 0);
+    const subtotal = itens.reduce((total, item) => total + item.valorTotal, 0);
+    const desconto = input.desconto && input.desconto > 0 ? input.desconto : 0;
+    const valorTotal = Math.max(0, subtotal - desconto);
 
     if (input.valorRecebido < valorTotal) {
       throw new AppError(
@@ -178,6 +180,7 @@ export class VendasService {
       valorMaoObra: itens
         .filter((item) => item.categoria === "servico")
         .reduce((total, item) => total + item.valorTotal, 0),
+      desconto: desconto > 0 ? desconto : undefined,
       valorTotal,
       formaPagamento: input.formaPagamento,
       valorRecebido: input.valorRecebido,
@@ -205,6 +208,7 @@ export class VendasService {
           : undefined,
       valorPecas: ordem.valorPecas,
       valorMaoObra: ordem.valorMaoObra,
+      desconto: ordem.desconto,
       entradaEm: ordem.entradaEm,
       previsaoEntregaEm: ordem.previsaoEntregaEm,
     };

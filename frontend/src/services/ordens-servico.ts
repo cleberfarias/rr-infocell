@@ -12,11 +12,19 @@ export const ordemServicoStatus = [
 
 export type OrdemServicoStatus = (typeof ordemServicoStatus)[number];
 
-export type OrdemServicoFormaPagamento = "pix" | "cartao" | "dinheiro" | "terceirizado";
+export type OrdemServicoFormaPagamento =
+  | "pix"
+  | "cartao"
+  | "dinheiro"
+  | "terceirizado";
 export type OrdemServicoPrioridade = "baixa" | "normal" | "urgente";
 export type OrdemServicoCanalAprovacao = "balcao" | "whatsapp" | "telefone";
 
-export type TipoSenhaAparelho = "sem_senha" | "numerica" | "padrao" | "nao_informou";
+export type TipoSenhaAparelho =
+  | "sem_senha"
+  | "numerica"
+  | "padrao"
+  | "nao_informou";
 
 export type OrdemServico = {
   id: string;
@@ -35,6 +43,7 @@ export type OrdemServico = {
   pecasUsadas: OrdemServicoPeca[];
   valorPecas: number;
   valorMaoObra: number;
+  desconto?: number;
   valorTotal: number;
   entradaEm: string;
   previsaoEntregaEm?: string;
@@ -80,6 +89,7 @@ export type OrdemServicoInput = {
   pecasUsadas?: OrdemServicoPecaInput[];
   valorPecas?: number;
   valorMaoObra?: number;
+  desconto?: number;
   entradaEm?: string;
   previsaoEntregaEm?: string;
   prazoPrometidoEm?: string;

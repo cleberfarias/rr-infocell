@@ -37,7 +37,12 @@ const quickGuides = [
   },
   {
     label: "Termo de garantia",
-    question: "Como eu imprimo o termo de garantia depois de finalizar uma OS no PDV?",
+    question:
+      "Como eu imprimo o termo de garantia depois de finalizar uma OS no PDV?",
+  },
+  {
+    label: "Desconto",
+    question: "Como eu aplico desconto em uma OS ou venda direta?",
   },
   {
     label: "Produto ativo/inativo",
