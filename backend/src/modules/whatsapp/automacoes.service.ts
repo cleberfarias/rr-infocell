@@ -257,6 +257,7 @@ class AutomacoesAtendimentoService {
     try {
       const cliente = await clientesRepo.findById(os.clienteId);
       if (!cliente?.telefone) return false;
+      if (cliente.receberMensagemAutomatica === false) return false;
 
       const telefone = normalizarTelefone(cliente.telefone);
       const enviada = await conexaoService.enviarTexto(telefone, texto);

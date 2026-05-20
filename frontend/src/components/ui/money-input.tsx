@@ -12,13 +12,43 @@ interface MoneyInputProps {
   min?: number;
 }
 
-const toNumeric = (raw: string) =>
-  raw.replace(/[^\d,]/g, "").replace(",", ".");
+// Converte o texto digitado para string numérica normalizada ("1121.01")
+const toNumeric = (raw: string): string => {
+  const cleaned = raw.replace(/[^\d,.]/g, "");
 
+  // Vírgula presente → é o separador decimal; pontos são separadores de milhar
+  if (cleaned.includes(",")) {
+    return cleaned.replace(/\./g, "").replace(",", ".");
+  }
+
+  const parts = cleaned.split(".");
+  if (parts.length === 1) return cleaned;
+
+  // Múltiplos pontos: verifica se último segmento é decimal (≤2 dígitos)
+  if (parts.length > 2) {
+    const last = parts[parts.length - 1];
+    return last.length <= 2
+      ? parts.slice(0, -1).join("") + "." + last
+      : parts.join("");
+  }
+
+  // Ponto único: "1.000" (3 dígitos) → milhar; "25.90" → decimal
+  return parts[1].length === 3 ? parts.join("") : cleaned;
+};
+
+// Formata o valor numérico para exibição no modo não-focado ("R$ 1.121,01")
 const toDisplay = (value: string): string => {
-  const n = parseFloat(value.replace(",", "."));
+  const n = parseFloat(value);
   if (!value || isNaN(n)) return "";
   return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+// Converte o valor numérico interno para texto de edição com vírgula ("1121,01")
+const toEditing = (value: string): string => {
+  const n = parseFloat(value);
+  if (!value || isNaN(n)) return "";
+  // Usa vírgula como decimal para manter padrão pt-BR durante a digitação
+  return String(n).replace(".", ",");
 };
 
 export function MoneyInput({
@@ -31,7 +61,25 @@ export function MoneyInput({
   min = 0,
 }: MoneyInputProps) {
   const [focused, setFocused] = useState(false);
+  const [rawText, setRawText] = useState("");
   const ref = useRef<HTMLInputElement>(null);
+
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    const editValue = toEditing(value);
+    setRawText(editValue);
+    setFocused(true);
+    setTimeout(() => e.target.select(), 0);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    setRawText(raw);
+    onChange(toNumeric(raw));
+  };
+
+  const handleBlur = () => {
+    setFocused(false);
+  };
 
   return (
     <div className="relative">
@@ -47,14 +95,11 @@ export function MoneyInput({
         type="text"
         inputMode="decimal"
         className={cn("font-mono", !focused && "pl-9", className)}
-        placeholder={focused ? placeholder : placeholder}
-        value={focused ? value : toDisplay(value)}
-        onChange={(e) => onChange(toNumeric(e.target.value))}
-        onFocus={(e) => {
-          setFocused(true);
-          setTimeout(() => e.target.select(), 0);
-        }}
-        onBlur={() => setFocused(false)}
+        placeholder={placeholder}
+        value={focused ? rawText : toDisplay(value)}
+        onChange={handleChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         min={min}
       />
     </div>

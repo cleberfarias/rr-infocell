@@ -22,6 +22,7 @@ import {
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -44,6 +45,7 @@ import {
   updateOrdemServico,
   type OrdemServico,
   type OrdemServicoStatus,
+  type TipoSenhaAparelho,
 } from "@/services/ordens-servico";
 import { createOrdemEvento, listOrdemEventos } from "@/services/ordem-eventos";
 import { toast } from "@/components/ui/sonner";
@@ -55,8 +57,12 @@ type ManutencaoForm = {
   prioridade: OrdemServico["prioridade"];
   tecnicoResponsavel: string;
   valorMaoObra: string;
+  maoObraInclusa: string;
   garantiaDias: string;
   garantiaObservacoes: string;
+  tipoSenha: TipoSenhaAparelho;
+  senhaAparelho: string;
+  padraoDeSenha: string;
 };
 
 const statusFlow: Array<{ key: OrdemServicoStatus; label: string }> = (
@@ -80,8 +86,12 @@ const buildForm = (ordem: OrdemServico): ManutencaoForm => ({
   prioridade: ordem.prioridade ?? "normal",
   tecnicoResponsavel: ordem.tecnicoResponsavel ?? "",
   valorMaoObra: String(ordem.valorMaoObra),
+  maoObraInclusa: "",
   garantiaDias: String(ordem.garantiaDias ?? GARANTIA_DIAS_PADRAO),
   garantiaObservacoes: ordem.garantiaObservacoes ?? "",
+  tipoSenha: ordem.tipoSenha ?? "nao_informou",
+  senhaAparelho: ordem.senhaAparelho ?? "",
+  padraoDeSenha: ordem.padraoDeSenha ?? "",
 });
 
 const toPecasInput = (ordem: OrdemServico) =>
@@ -232,6 +242,9 @@ const Manutencao = () => {
         prazoPrometidoEm: selectedOrdem.prazoPrometidoEm,
         garantiaDias: Number(input.garantiaDias) || undefined,
         garantiaObservacoes: input.garantiaObservacoes || undefined,
+        tipoSenha: input.tipoSenha,
+        senhaAparelho: input.tipoSenha === "numerica" ? input.senhaAparelho || undefined : undefined,
+        padraoDeSenha: input.tipoSenha === "padrao" ? input.padraoDeSenha || undefined : undefined,
       });
     },
     onSuccess: async (ordem, input) => {
@@ -475,7 +488,7 @@ const Manutencao = () => {
 
       {selectedOrdem && form && (
         <>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <Card className="surface-panel p-4">
               <p className="text-xs text-muted-foreground">Cliente</p>
               <p className="mt-1 truncate font-medium">
@@ -503,6 +516,21 @@ const Manutencao = () => {
               </p>
             </Card>
           </div>
+
+          {selectedOrdem.tipoSenha && selectedOrdem.tipoSenha !== "sem_senha" && (
+            <Card className="border-amber-500/40 bg-amber-500/10 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-500">
+                Senha do aparelho — uso interno
+              </p>
+              <p className="mt-1 font-mono text-lg font-bold text-amber-400">
+                {selectedOrdem.tipoSenha === "numerica"
+                  ? (selectedOrdem.senhaAparelho ?? "—")
+                  : selectedOrdem.tipoSenha === "padrao"
+                    ? (selectedOrdem.padraoDeSenha ?? "—")
+                    : "Cliente não informou"}
+              </p>
+            </Card>
+          )}
 
           <Card className="surface-panel p-5">
             <div className="flex items-center justify-between gap-2 overflow-x-auto">
@@ -648,10 +676,21 @@ const Manutencao = () => {
                         step="0.01"
                         type="number"
                         value={form.valorMaoObra}
+                        disabled={!!form.maoObraInclusa}
                         onChange={(event) =>
                           updateForm("valorMaoObra", event.target.value)
                         }
                       />
+                      <label className="mt-1.5 flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+                        <Checkbox
+                          checked={!!form.maoObraInclusa}
+                          onCheckedChange={(checked) => {
+                            updateForm("maoObraInclusa", checked ? "1" : "");
+                            if (checked) updateForm("valorMaoObra", "0");
+                          }}
+                        />
+                        Inclusa na peça (não cobra à parte)
+                      </label>
                     </FormField>
                   </div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-[180px_1fr]">
@@ -681,6 +720,50 @@ const Manutencao = () => {
                       />
                     </FormField>
                   </div>
+                  <div>
+                    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Senha do aparelho
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {(["sem_senha", "numerica", "padrao", "nao_informou"] as TipoSenhaAparelho[]).map((tipo) => {
+                        const labels: Record<TipoSenhaAparelho, string> = {
+                          sem_senha: "Sem senha",
+                          numerica: "Numérica",
+                          padrao: "Padrão/desenho",
+                          nao_informou: "Não informou",
+                        };
+                        return (
+                          <label key={tipo} className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${form.tipoSenha === tipo ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}>
+                            <input
+                              type="radio"
+                              className="hidden"
+                              checked={form.tipoSenha === tipo}
+                              onChange={() => updateForm("tipoSenha", tipo)}
+                            />
+                            {labels[tipo]}
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {form.tipoSenha === "numerica" && (
+                      <Input
+                        className="mt-2"
+                        inputMode="numeric"
+                        placeholder="Digite a senha numérica"
+                        value={form.senhaAparelho}
+                        onChange={(e) => updateForm("senhaAparelho", e.target.value)}
+                      />
+                    )}
+                    {form.tipoSenha === "padrao" && (
+                      <Input
+                        className="mt-2"
+                        placeholder="Ex.: 1 → 5 → 9"
+                        value={form.padraoDeSenha}
+                        onChange={(e) => updateForm("padraoDeSenha", e.target.value)}
+                      />
+                    )}
+                  </div>
+
                   {formError && (
                     <p className="text-sm text-destructive">{formError}</p>
                   )}

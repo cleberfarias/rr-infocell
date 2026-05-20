@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -13,6 +14,7 @@ interface PrintPreviewDialogProps {
   title: string;
   onPrint: () => void;
   children: React.ReactNode;
+  actions?: React.ReactNode;
 }
 
 export function PrintPreviewDialog({
@@ -21,13 +23,20 @@ export function PrintPreviewDialog({
   title,
   onPrint,
   children,
+  actions,
 }: PrintPreviewDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0">
         <DialogHeader className="flex flex-row items-center justify-between border-b border-border px-5 py-3 shrink-0">
-          <DialogTitle className="text-base">{title}</DialogTitle>
+          <div>
+            <DialogTitle className="text-base">{title}</DialogTitle>
+            <DialogDescription className="sr-only">
+              Pre-visualizacao do documento antes da impressao.
+            </DialogDescription>
+          </div>
           <div className="flex items-center gap-2">
+            {actions}
             <Button
               className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
               onClick={() => { onPrint(); onOpenChange(false); }}

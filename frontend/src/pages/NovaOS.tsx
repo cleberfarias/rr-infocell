@@ -206,15 +206,21 @@ const NovaOS = () => {
 
   const createCadastroRapidoMutation = useMutation({
     mutationFn: async () => {
-      const cliente = await createCliente({
-        nome: quickCliente.nome.trim(),
-        telefone: quickCliente.telefone.trim(),
-        documento: quickCliente.documento.trim() || undefined,
-        email: quickCliente.email.trim() || undefined,
-        observacoes: quickCliente.observacoes.trim() || undefined,
-      });
+      let clienteId = form.clienteId;
+      let clienteNome = "";
+      if (!clienteId) {
+        const cliente = await createCliente({
+          nome: quickCliente.nome.trim(),
+          telefone: quickCliente.telefone.trim(),
+          documento: quickCliente.documento.trim() || undefined,
+          email: quickCliente.email.trim() || undefined,
+          observacoes: quickCliente.observacoes.trim() || undefined,
+        });
+        clienteId = cliente.id;
+        clienteNome = cliente.nome;
+      }
       const aparelho = await createAparelho({
-        clienteId: cliente.id,
+        clienteId,
         marca: quickAparelho.marca.trim(),
         modelo: quickAparelho.modelo.trim(),
         cor: quickAparelho.cor.trim() || undefined,
@@ -223,23 +229,26 @@ const NovaOS = () => {
         acessorios: quickAparelho.acessorios.trim() || undefined,
         observacoes: quickAparelho.observacoes.trim() || undefined,
       });
-      return { cliente, aparelho };
+      return { clienteId, clienteNome, aparelho };
     },
-    onSuccess: async ({ cliente, aparelho }) => {
+    onSuccess: async ({ clienteId, clienteNome, aparelho }) => {
       await queryClient.invalidateQueries({ queryKey: ["clientes"] });
       await queryClient.invalidateQueries({ queryKey: ["aparelhos"] });
       setForm((current) => ({
         ...current,
-        clienteId: cliente.id,
+        clienteId,
         aparelhoId: aparelho.id,
       }));
       setQuickCliente(emptyQuickCliente);
       setQuickAparelho(emptyQuickAparelho);
       setCadastroRapidoError(null);
-      toast.success(`${cliente.nome} e ${aparelho.marca} ${aparelho.modelo} cadastrados.`);
+      const label = clienteNome
+        ? `${clienteNome} e ${aparelho.marca} ${aparelho.modelo} cadastrados.`
+        : `${aparelho.marca} ${aparelho.modelo} adicionado ao cliente.`;
+      toast.success(label);
     },
     onError: (error) => {
-      const msg = error instanceof Error ? error.message : "Não foi possível cadastrar cliente e aparelho.";
+      const msg = error instanceof Error ? error.message : "Não foi possível cadastrar.";
       setCadastroRapidoError(msg);
       toast.error(msg);
     },
@@ -264,9 +273,11 @@ const NovaOS = () => {
   const handleCreateCadastroRapido = () => {
     setCadastroRapidoError(null);
     const errs: Record<string, string> = {};
-    if (!quickCliente.nome.trim()) errs.clienteNome = "Nome é obrigatório.";
-    if (!quickCliente.telefone.trim()) errs.clienteTelefone = "Telefone é obrigatório.";
-    else if (quickCliente.telefone.replace(/\D/g, "").length < 10) errs.clienteTelefone = "Telefone inválido.";
+    if (!form.clienteId) {
+      if (!quickCliente.nome.trim()) errs.clienteNome = "Nome é obrigatório.";
+      if (!quickCliente.telefone.trim()) errs.clienteTelefone = "Telefone é obrigatório.";
+      else if (quickCliente.telefone.replace(/\D/g, "").length < 10) errs.clienteTelefone = "Telefone inválido.";
+    }
     if (!quickAparelho.marca.trim()) errs.aparelhoMarca = "Marca é obrigatória.";
     if (!quickAparelho.modelo.trim()) errs.aparelhoModelo = "Modelo é obrigatório.";
     if (Object.keys(errs).length > 0) { setQuickErrors(errs); return; }
@@ -308,8 +319,7 @@ const NovaOS = () => {
     form.clienteId && form.aparelhoId && form.defeitoRelatado.trim(),
   );
   const canCreateCadastroRapido = Boolean(
-    quickCliente.nome.trim() &&
-      quickCliente.telefone.trim() &&
+    (form.clienteId || (quickCliente.nome.trim() && quickCliente.telefone.trim())) &&
       quickAparelho.marca.trim() &&
       quickAparelho.modelo.trim(),
   );
@@ -460,55 +470,63 @@ const NovaOS = () => {
 
             <div className="mt-5 rounded-md border border-border bg-secondary/20 p-4">
               <div className="mb-4">
-                <p className="font-display text-sm font-semibold">Cadastro rápido</p>
+                <p className="font-display text-sm font-semibold">
+                  {form.clienteId ? "Novo aparelho" : "Cadastro rápido"}
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  Preencha cliente e aparelho e salve tudo de uma vez sem sair da OS.
+                  {form.clienteId
+                    ? "Adicione um novo aparelho ao cliente selecionado acima."
+                    : "Preencha cliente e aparelho e salve tudo de uma vez sem sair da OS."}
                 </p>
               </div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Cliente
-              </p>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Input
-                    value={quickCliente.nome}
-                    onChange={(event) => { updateQuickCliente("nome", capitalizeFirst(event.target.value)); updQuick("clienteNome", ""); }}
-                    placeholder="Nome do cliente *"
-                    className={quickErrors.clienteNome ? "border-destructive" : ""}
-                  />
-                  {quickErrors.clienteNome && <p className="text-xs text-destructive">{quickErrors.clienteNome}</p>}
-                </div>
-                <div className="space-y-1.5">
-                  <Input
-                    value={quickCliente.telefone}
-                    onChange={(event) => { updateQuickCliente("telefone", formatPhone(event.target.value)); updQuick("clienteTelefone", ""); }}
-                    placeholder="Telefone/WhatsApp *"
-                    inputMode="numeric"
-                    className={quickErrors.clienteTelefone ? "border-destructive" : ""}
-                  />
-                  {quickErrors.clienteTelefone && <p className="text-xs text-destructive">{quickErrors.clienteTelefone}</p>}
-                </div>
-                <Input
-                  value={quickCliente.documento}
-                  onChange={(event) => updateQuickCliente("documento", formatDocument(event.target.value))}
-                  placeholder="CPF/CNPJ opcional"
-                  inputMode="numeric"
-                />
-                <Input
-                  value={quickCliente.email}
-                  onChange={(event) => updateQuickCliente("email", event.target.value)}
-                  placeholder="E-mail opcional"
-                  type="email"
-                  inputMode="email"
-                />
-                <Textarea
-                  className="sm:col-span-2"
-                  rows={2}
-                  value={quickCliente.observacoes}
-                  onChange={(event) => updateQuickCliente("observacoes", capitalizeFirst(event.target.value))}
-                  placeholder="Observações do cliente"
-                />
-              </div>
+              {!form.clienteId && (
+                <>
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Cliente
+                  </p>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Input
+                        value={quickCliente.nome}
+                        onChange={(event) => { updateQuickCliente("nome", capitalizeFirst(event.target.value)); updQuick("clienteNome", ""); }}
+                        placeholder="Nome do cliente *"
+                        className={quickErrors.clienteNome ? "border-destructive" : ""}
+                      />
+                      {quickErrors.clienteNome && <p className="text-xs text-destructive">{quickErrors.clienteNome}</p>}
+                    </div>
+                    <div className="space-y-1.5">
+                      <Input
+                        value={quickCliente.telefone}
+                        onChange={(event) => { updateQuickCliente("telefone", formatPhone(event.target.value)); updQuick("clienteTelefone", ""); }}
+                        placeholder="Telefone/WhatsApp *"
+                        inputMode="numeric"
+                        className={quickErrors.clienteTelefone ? "border-destructive" : ""}
+                      />
+                      {quickErrors.clienteTelefone && <p className="text-xs text-destructive">{quickErrors.clienteTelefone}</p>}
+                    </div>
+                    <Input
+                      value={quickCliente.documento}
+                      onChange={(event) => updateQuickCliente("documento", formatDocument(event.target.value))}
+                      placeholder="CPF/CNPJ opcional"
+                      inputMode="numeric"
+                    />
+                    <Input
+                      value={quickCliente.email}
+                      onChange={(event) => updateQuickCliente("email", event.target.value)}
+                      placeholder="E-mail opcional"
+                      type="email"
+                      inputMode="email"
+                    />
+                    <Textarea
+                      className="sm:col-span-2"
+                      rows={2}
+                      value={quickCliente.observacoes}
+                      onChange={(event) => updateQuickCliente("observacoes", capitalizeFirst(event.target.value))}
+                      placeholder="Observações do cliente"
+                    />
+                  </div>
+                </>
+              )}
               <p className="mb-2 mt-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Aparelho
               </p>
@@ -573,7 +591,7 @@ const NovaOS = () => {
                 ) : (
                   <Plus className="h-4 w-4" />
                 )}
-                Salvar cliente e aparelho
+                {form.clienteId ? "Salvar aparelho" : "Salvar cliente e aparelho"}
               </Button>
             </div>
 

@@ -54,6 +54,7 @@ import {
   type ConversaDetalhe,
 } from "@/services/whatsapp";
 import type { OrdemServico } from "@/services/ordens-servico";
+import { updateCliente, type Cliente } from "@/services/clientes";
 
 const STATUS_LABEL = OS_STATUS_LABELS;
 const EMOJIS = WHATSAPP_EMOJIS;
@@ -562,6 +563,24 @@ export default function Atendimento() {
     }
   };
 
+  const toggleMensagemAutomatica = async (cliente: Cliente) => {
+    try {
+      await updateCliente(cliente.id, {
+        nome: cliente.nome,
+        telefone: cliente.telefone,
+        documento: cliente.documento,
+        email: cliente.email,
+        endereco: cliente.endereco,
+        observacoes: cliente.observacoes,
+        receberMensagemAutomatica: !(cliente.receberMensagemAutomatica ?? true),
+      });
+      await recarregarAtual();
+      toast.success("Preferência de mensagens atualizada.");
+    } catch {
+      toast.error("Não foi possível atualizar.");
+    }
+  };
+
   const iniciarGravacao = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -884,12 +903,25 @@ export default function Atendimento() {
               <PainelAtendimento conversa={conversaSelecionada} onAtualizada={recarregarAtual} />
               {detalhe?.cliente ? (
                 <>
-                  <div className="rounded-xl border border-border bg-card p-3">
+                  <div className="rounded-xl border border-border bg-card p-3 space-y-2">
                     <p className="font-semibold">{detalhe.cliente.nome}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{detalhe.cliente.telefone}</p>
+                    <p className="text-xs text-muted-foreground">{detalhe.cliente.telefone}</p>
                     {detalhe.cliente.documento && (
                       <p className="text-xs text-muted-foreground">{detalhe.cliente.documento}</p>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => toggleMensagemAutomatica(detalhe.cliente!)}
+                      className={cn(
+                        "flex w-full items-center justify-between rounded-md border px-3 py-2 text-xs font-medium transition-all",
+                        (detalhe.cliente.receberMensagemAutomatica ?? true)
+                          ? "border-success/40 bg-success/10 text-success"
+                          : "border-border bg-secondary/40 text-muted-foreground"
+                      )}
+                    >
+                      <span>Mensagem automática</span>
+                      <span>{(detalhe.cliente.receberMensagemAutomatica ?? true) ? "Ativada" : "Desativada"}</span>
+                    </button>
                   </div>
                   <div className="space-y-2">
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">OS ativas</p>
@@ -922,9 +954,22 @@ export default function Atendimento() {
                   <PainelAtendimento conversa={conversaSelecionada} onAtualizada={recarregarAtual} />
                   {detalhe?.cliente ? (
                     <>
-                      <div className="rounded-xl border border-border bg-card p-3">
+                      <div className="rounded-xl border border-border bg-card p-3 space-y-2">
                         <p className="font-semibold">{detalhe.cliente.nome}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{detalhe.cliente.telefone}</p>
+                        <p className="text-xs text-muted-foreground">{detalhe.cliente.telefone}</p>
+                        <button
+                          type="button"
+                          onClick={() => toggleMensagemAutomatica(detalhe.cliente!)}
+                          className={cn(
+                            "flex w-full items-center justify-between rounded-md border px-3 py-2 text-xs font-medium transition-all",
+                            (detalhe.cliente.receberMensagemAutomatica ?? true)
+                              ? "border-success/40 bg-success/10 text-success"
+                              : "border-border bg-secondary/40 text-muted-foreground"
+                          )}
+                        >
+                          <span>Mensagem automática</span>
+                          <span>{(detalhe.cliente.receberMensagemAutomatica ?? true) ? "Ativada" : "Desativada"}</span>
+                        </button>
                       </div>
                       <div className="space-y-2">
                         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">OS ativas</p>

@@ -11,6 +11,7 @@ import {
   QrCode,
   Receipt,
   Search,
+  ShieldCheck,
   Trash2,
   Users,
 } from "lucide-react";
@@ -99,6 +100,7 @@ const PDV = () => {
   const [formaPagamento, setFormaPagamento] =
     useState<OrdemServicoFormaPagamento>("pix");
   const [valorRecebido, setValorRecebido] = useState("");
+  const [desconto, setDesconto] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [modoVenda, setModoVenda] = useState<"os" | "direta">("os");
   const [clienteVendaDireta, setClienteVendaDireta] = useState("");
@@ -262,14 +264,41 @@ const PDV = () => {
       if (!selectedOrdemPronta) {
         throw new Error("Selecione uma OS.");
       }
+      const desc = Number(desconto.replace(",", ".")) || 0;
+      const totalFinal = Math.max(0, selectedOrdemPronta.valorTotal - desc);
+
+      if (formaPagamento === "terceirizado") {
+        const errs: Record<string, string> = {};
+        if (!terceirizadoInfo.responsavel.trim()) errs.responsavel = "Informe o responsável.";
+        if (Object.keys(errs).length > 0) { setTercErrors(errs); throw new Error("Preencha os dados do terceirizado."); }
+        const venda = await createVenda({
+          ordemServicoId: selectedOrdemPronta.id,
+          formaPagamento: "terceirizado",
+          valorRecebido: totalFinal,
+          desconto: desc > 0 ? desc : undefined,
+        });
+        const cliente = clienteById.get(selectedOrdemPronta.clienteId);
+        await createTerceirizado({
+          clienteNome: cliente?.nome,
+          responsavel: terceirizadoInfo.responsavel || undefined,
+          descricao: terceirizadoInfo.descricao || undefined,
+          valorCobrado: totalFinal,
+          valorRepasse: Number(terceirizadoInfo.valorRepasse.replace(",", ".")) || 0,
+          statusRepasse: terceirizadoInfo.statusRepasse,
+          observacoes: terceirizadoInfo.observacoes || undefined,
+        });
+        return { ordem: selectedOrdemPronta, venda };
+      }
+
       const recebido = Number(valorRecebido.replace(",", ".")) || 0;
-      if (recebido < selectedOrdemPronta.valorTotal) {
+      if (recebido < totalFinal) {
         throw new Error("Valor recebido menor que o total da OS.");
       }
       const venda = await createVenda({
         ordemServicoId: selectedOrdemPronta.id,
         formaPagamento,
         valorRecebido: recebido,
+        desconto: desc > 0 ? desc : undefined,
       });
       return { ordem: selectedOrdemPronta, venda };
     },
@@ -279,9 +308,13 @@ const PDV = () => {
         queryClient.invalidateQueries({ queryKey: ["ordem-servico", venda.ordemServicoId] }),
         queryClient.invalidateQueries({ queryKey: ["vendas"] }),
         queryClient.invalidateQueries({ queryKey: ["ordem-eventos"] }),
+        queryClient.invalidateQueries({ queryKey: ["terceirizados"] }),
       ]);
       setOrdemFinalizada({ ...ordem, status: "entregue", formaPagamento: venda.formaPagamento, valorRecebido: venda.valorRecebido, troco: venda.troco });
       setVendaFinalizada(venda);
+      setDesconto("");
+      setTerceirizadoInfo(emptyTerceirizado);
+      setTercErrors({});
       setFormError(null);
     },
     onError: (error) => {
@@ -407,7 +440,9 @@ const PDV = () => {
   };
 
   const recebido = Number(valorRecebido.replace(",", ".")) || 0;
-  const troco = selectedOrdem ? Math.max(0, recebido - selectedOrdem.valorTotal) : 0;
+  const descontoNum = Number(desconto.replace(",", ".")) || 0;
+  const totalComDesconto = selectedOrdem ? Math.max(0, selectedOrdem.valorTotal - descontoNum) : 0;
+  const troco = selectedOrdem ? Math.max(0, recebido - totalComDesconto) : 0;
   const cliente = selectedOrdem ? clienteById.get(selectedOrdem.clienteId) : undefined;
   const aparelho = selectedOrdem ? aparelhoById.get(selectedOrdem.aparelhoId) : undefined;
 
@@ -472,6 +507,11 @@ const PDV = () => {
 
     const pgWidth = larguraCupom === "58mm" ? "58mm" : "80mm";
 
+    const logoUrl = localStorage.getItem("rr-logo-url");
+    const logoHtml = logoUrl
+      ? `<div class="center" style="margin-bottom:4px"><img src="${logoUrl}" style="max-height:50px;max-width:${larguraCupom === "58mm" ? "120px" : "160px"};object-fit:contain" /></div>`
+      : "";
+
     return `<!DOCTYPE html><html lang="pt-BR"><head>
 <meta charset="UTF-8"/>
 <title>Cupom Não Fiscal</title>
@@ -492,7 +532,7 @@ const PDV = () => {
   .sep { border: none; border-top: 1px dashed #000; margin: 2px 0; }
 </style>
 </head><body>
-<div class="center">${EMPRESA.cnpj} ${EMPRESA.nome.toUpperCase()}</div>
+${logoHtml}<div class="center">${EMPRESA.cnpj} ${EMPRESA.nome.toUpperCase()}</div>
 <div class="center">${EMPRESA.endereco.toUpperCase()} - SALA</div>
 <div class="center">${EMPRESA.bairro.toUpperCase()} - ${EMPRESA.cidade.toUpperCase()}/${EMPRESA.uf}</div>
 <div class="center">TELEFONE: ${EMPRESA.telefone.replace(/\D/g, "")}</div>
@@ -1108,6 +1148,13 @@ ${troco}
               <Button className="w-full bg-gradient-primary text-primary-foreground shadow-glow" type="button" onClick={() => setCupomOpen(true)}>
                 <Printer className="h-4 w-4" /> Imprimir cupom térmico
               </Button>
+              {(vendaFinalizada.ordemServicoId || ordemFinalizada?.id) && (
+                <Button className="w-full" variant="outline" type="button" asChild>
+                  <Link to={`/app/ordens/${vendaFinalizada.ordemServicoId ?? ordemFinalizada?.id}?termoGarantia=1`}>
+                    <ShieldCheck className="h-4 w-4" /> Imprimir termo de garantia
+                  </Link>
+                </Button>
+              )}
               <Button className="w-full" variant="outline" type="button" onClick={handleImprimirRecibo}>
                 <Printer className="h-4 w-4" /> Imprimir comprovante
               </Button>
@@ -1325,8 +1372,8 @@ ${troco}
             <h3 className="mb-1 font-display text-base font-semibold">Pagamento</h3>
             <p className="mb-4 text-xs text-muted-foreground">Selecione a forma e finalize a entrega.</p>
 
-            <div className="grid grid-cols-3 gap-2">
-              {paymentOptions.filter((o) => o.key !== "terceirizado").map(({ key, label, icon: Icon }) => (
+            <div className="grid grid-cols-4 gap-2">
+              {paymentOptions.map(({ key, label, icon: Icon }) => (
                 <button
                   key={key}
                   className={
@@ -1344,19 +1391,83 @@ ${troco}
               ))}
             </div>
 
+            {/* ── Dados terceirizado (OS) ── */}
+            {formaPagamento === "terceirizado" && (
+              <div className="mt-4 rounded-md border border-border bg-secondary/20 p-3 space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Dados do terceirizado</p>
+                <FormField id="os-terc-responsavel" label="Nome / responsável" error={tercErrors.responsavel}>
+                  <Input
+                    value={terceirizadoInfo.responsavel}
+                    onChange={(e) => { setTerceirizadoInfo((p) => ({ ...p, responsavel: e.target.value })); setTercErrors((e2) => { const n = { ...e2 }; delete n.responsavel; return n; }); }}
+                    placeholder="Ex.: João Silva"
+                    className={tercErrors.responsavel ? "border-destructive" : ""}
+                  />
+                </FormField>
+                <FormField id="os-terc-descricao" label="Serviço / peça">
+                  <Input
+                    value={terceirizadoInfo.descricao}
+                    onChange={(e) => setTerceirizadoInfo((p) => ({ ...p, descricao: e.target.value }))}
+                    placeholder="Ex.: Troca de tela"
+                  />
+                </FormField>
+                <FormField id="os-terc-repasse" label="Repasse / custo (R$)">
+                  <MoneyInput
+                    id="os-terc-repasse"
+                    value={terceirizadoInfo.valorRepasse}
+                    onChange={(v) => setTerceirizadoInfo((p) => ({ ...p, valorRepasse: v }))}
+                  />
+                </FormField>
+                <FormField id="os-terc-status" label="Status do repasse">
+                  <div className="flex gap-2">
+                    {(["pendente", "pago"] as const).map((s) => (
+                      <button key={s} type="button"
+                        className={cn("flex-1 rounded-md border px-3 py-2 text-xs font-medium transition-all",
+                          terceirizadoInfo.statusRepasse === s
+                            ? s === "pendente" ? "border-amber-500/60 bg-amber-500/10 text-amber-500" : "border-success/60 bg-success/10 text-success"
+                            : "border-border bg-secondary/40 text-muted-foreground hover:text-foreground"
+                        )}
+                        onClick={() => setTerceirizadoInfo((p) => ({ ...p, statusRepasse: s }))}
+                      >
+                        {s === "pendente" ? "⏳ Pendente" : "✓ Pago"}
+                      </button>
+                    ))}
+                  </div>
+                </FormField>
+              </div>
+            )}
+
             <div className="mt-5 space-y-3">
-              <FormField id="pdv-recebido" label="Valor recebido">
+              <FormField id="pdv-desconto" label="Desconto (opcional)">
                 <MoneyInput
-                  id="pdv-recebido"
-                  value={valorRecebido}
-                  onChange={setValorRecebido}
-                  className="text-lg"
+                  id="pdv-desconto"
+                  value={desconto}
+                  onChange={setDesconto}
                 />
               </FormField>
-              <div className="flex items-center justify-between rounded-md border border-border bg-secondary/30 px-3 py-2">
-                <span className="text-xs uppercase tracking-wide text-muted-foreground">Troco</span>
-                <span className="font-mono text-lg font-semibold text-success">{formatBRL(troco)}</span>
-              </div>
+              {(descontoNum > 0 || formaPagamento === "terceirizado") && (
+                <div className="flex items-center justify-between rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+                  <span className="text-xs uppercase tracking-wide text-amber-600">
+                    {formaPagamento === "terceirizado" ? "Valor cobrado (cliente)" : "Total com desconto"}
+                  </span>
+                  <span className="font-mono text-lg font-semibold text-amber-600">{formatBRL(totalComDesconto)}</span>
+                </div>
+              )}
+              {formaPagamento !== "terceirizado" && (
+                <>
+                  <FormField id="pdv-recebido" label="Valor recebido">
+                    <MoneyInput
+                      id="pdv-recebido"
+                      value={valorRecebido}
+                      onChange={setValorRecebido}
+                      className="text-lg"
+                    />
+                  </FormField>
+                  <div className="flex items-center justify-between rounded-md border border-border bg-secondary/30 px-3 py-2">
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">Troco</span>
+                    <span className="font-mono text-lg font-semibold text-success">{formatBRL(troco)}</span>
+                  </div>
+                </>
+              )}
               <div className="flex items-center justify-between rounded-md border border-success/30 bg-success/10 px-3 py-2">
                 <span className="text-xs uppercase tracking-wide text-success">Status</span>
                 <span className="text-xs font-semibold uppercase text-success">Pronto para finalizar</span>
@@ -1372,7 +1483,7 @@ ${troco}
                 ) : (
                   <Receipt className="h-4 w-4" />
                 )}
-                Finalizar venda
+                {formaPagamento === "terceirizado" ? "Registrar e fechar OS" : "Finalizar venda"}
               </Button>
               <Button variant="outline" className="w-full" type="button" onClick={handleImprimirRecibo}>
                 <Printer className="h-4 w-4" /> Imprimir comprovante

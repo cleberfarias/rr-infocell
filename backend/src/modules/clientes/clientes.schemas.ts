@@ -18,6 +18,7 @@ export const clienteInputSchema = z.object({
     .or(z.literal("").transform(() => undefined)),
   endereco: optionalText,
   observacoes: optionalText,
+  receberMensagemAutomatica: z.boolean().optional(),
 });
 
 export const clienteSearchSchema = z.object({

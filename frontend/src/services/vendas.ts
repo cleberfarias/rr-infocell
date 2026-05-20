@@ -28,6 +28,7 @@ export type Venda = {
   itens: VendaItem[];
   valorPecas: number;
   valorMaoObra: number;
+  desconto?: number;
   valorTotal: number;
   formaPagamento: OrdemServicoFormaPagamento;
   valorRecebido: number;
@@ -48,6 +49,7 @@ export type VendaInput = {
   }>;
   formaPagamento: OrdemServicoFormaPagamento;
   valorRecebido: number;
+  desconto?: number;
 };
 
 type ApiResponse<T> = {

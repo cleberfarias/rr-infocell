@@ -71,7 +71,7 @@ const emptyNovoProduto = {
   modelo: "",
   custo: "",
   precoVenda: "",
-  estoqueMinimo: "1",
+  estoqueMinimo: "0",
   tipo: "entrada" as "entrada" | "saida",
   quantidade: "1",
   data: today,
@@ -199,7 +199,7 @@ const Estoque = () => {
         custo: Number(novoProduto.custo) || 0,
         precoVenda: Number(novoProduto.precoVenda) || 0,
         estoqueAtual: 0,
-        estoqueMinimo: Number(novoProduto.estoqueMinimo) || 1,
+        estoqueMinimo: Number(novoProduto.estoqueMinimo) || 0,
         ativo: true,
       });
 

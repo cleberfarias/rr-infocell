@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -10,7 +10,7 @@ import {
   ShieldCheck,
   Trash2,
 } from "lucide-react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import {
   EmptyState,
@@ -22,6 +22,7 @@ import { PrintPreviewDialog } from "@/components/PrintPreviewDialog";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -36,6 +37,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -58,6 +60,7 @@ import { listProdutos } from "@/services/produtos";
 const OrdemDetalhe = () => {
   const { ordemId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [pecaProdutoId, setPecaProdutoId] = useState("");
   const [pecaQuantidade, setPecaQuantidade] = useState("1");
@@ -66,6 +69,18 @@ const OrdemDetalhe = () => {
   const [previewOsViaInterna, setPreviewOsViaInterna] = useState(false);
   const [previewGarantiaOpen, setPreviewGarantiaOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editTermoOpen, setEditTermoOpen] = useState(false);
+  const [garantiaDiasTexto, setGarantiaDiasTexto] = useState("");
+  const [garantiaObservacoesTexto, setGarantiaObservacoesTexto] = useState("");
+  const [termoTexto, setTermoTexto] = useState(
+    () => localStorage.getItem("rr-termo-garantia") ??
+      "A RR Infocell garante os serviços realizados e as peças substituídas pelo prazo acima. A garantia não cobre danos físicos, líquidos, mau uso ou intervenção de terceiros."
+  );
+  const [termoOsTexto, setTermoOsTexto] = useState(
+    () => localStorage.getItem("rr-termo-os") ??
+      "Ao assinar esta ordem de serviço, o cliente confirma as informações do aparelho, defeito relatado, acessórios entregues e condições descritas. O cliente está ciente de que deverá retirar o aparelho dentro do prazo combinado após a conclusão do serviço. A garantia cobre somente o serviço realizado e/ou a peça substituída, não se estendendo a danos causados por mau uso, queda, contato com líquido, violação por terceiros ou novos defeitos não relacionados ao reparo executado."
+  );
+  const [editTermoOsOpen, setEditTermoOsOpen] = useState(false);
 
   const ordemQuery = useQuery({
     queryKey: ["ordem-servico", ordemId],
@@ -95,6 +110,12 @@ const OrdemDetalhe = () => {
   const cliente = clienteQuery.data;
   const aparelho = aparelhoQuery.data;
 
+  useEffect(() => {
+    if (ordem && searchParams.get("termoGarantia") === "1") {
+      setPreviewGarantiaOpen(true);
+    }
+  }, [ordem, searchParams]);
+
   const excluirOsMutation = useMutation({
     mutationFn: () => deleteOrdemServico(ordemId ?? ""),
     onSuccess: () => {
@@ -104,6 +125,67 @@ const OrdemDetalhe = () => {
     },
     onError: () => toast.error("Não foi possível excluir a OS."),
   });
+
+  const garantiaMutation = useMutation({
+    mutationFn: () => {
+      if (!ordem) {
+        throw new Error("OS nao carregada.");
+      }
+
+      return updateOrdemServico(ordem.id, {
+        clienteId: ordem.clienteId,
+        aparelhoId: ordem.aparelhoId,
+        checklistId: ordem.checklistId,
+        defeitoRelatado: ordem.defeitoRelatado,
+        diagnostico: ordem.diagnostico,
+        tipoSenha: ordem.tipoSenha,
+        senhaAparelho: ordem.senhaAparelho,
+        padraoDeSenha: ordem.padraoDeSenha,
+        status: ordem.status,
+        prioridade: ordem.prioridade,
+        tecnicoResponsavel: ordem.tecnicoResponsavel,
+        pecasUsadas:
+          ordem.pecasUsadas.length > 0
+            ? ordem.pecasUsadas.map((peca) => ({
+                produtoId: peca.produtoId,
+                quantidade: peca.quantidade,
+                valorUnitario: peca.valorUnitario,
+              }))
+            : undefined,
+        valorMaoObra: ordem.valorMaoObra,
+        entradaEm: ordem.entradaEm,
+        previsaoEntregaEm: ordem.previsaoEntregaEm,
+        prazoPrometidoEm: ordem.prazoPrometidoEm,
+        garantiaDias: garantiaDiasTexto.trim() === "" ? undefined : Number(garantiaDiasTexto),
+        garantiaObservacoes: garantiaObservacoesTexto.trim() || undefined,
+        aprovadoPor: ordem.aprovadoPor,
+        aprovadoEm: ordem.aprovadoEm,
+        canalAprovacao: ordem.canalAprovacao,
+        mensagemAprovacao: ordem.mensagemAprovacao,
+      });
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["ordem-servico", ordemId] }),
+        queryClient.invalidateQueries({ queryKey: ["ordens-servico"] }),
+      ]);
+      setEditTermoOpen(false);
+      toast.success("Prazo de garantia atualizado.");
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Nao foi possivel atualizar a garantia.",
+      );
+    },
+  });
+
+  const openEditGarantia = () => {
+    setGarantiaDiasTexto(String(ordem.garantiaDias ?? 90));
+    setGarantiaObservacoesTexto(ordem.garantiaObservacoes ?? "");
+    setEditTermoOpen(true);
+  };
 
   const handlePrintGarantia = () => {
     document.body.classList.add("print-garantia");
@@ -245,6 +327,13 @@ const OrdemDetalhe = () => {
     );
   }
 
+  const garantiaInicioLabel = ordem.entregueEm
+    ? formatDate(ordem.entregueEm)
+    : "A partir da retirada";
+  const garantiaValidadeLabel = ordem.garantiaAte
+    ? formatDate(ordem.garantiaAte)
+    : "Calculada na retirada";
+
   const OsPreviewContent = ({
     viaInterna = false,
   }: {
@@ -284,7 +373,14 @@ const OrdemDetalhe = () => {
               alignItems: "flex-start",
             }}
           >
-            <div>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+              {(() => {
+                const logoUrl = localStorage.getItem("rr-logo-url");
+                return logoUrl ? (
+                  <img src={logoUrl} alt="Logo" style={{ maxHeight: 60, maxWidth: 140, objectFit: "contain", flexShrink: 0 }} />
+                ) : null;
+              })()}
+              <div>
               <p
                 style={{
                   margin: 0,
@@ -304,6 +400,7 @@ const OrdemDetalhe = () => {
               <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>
                 Tel/WhatsApp: {EMPRESA.telefone}
               </p>
+              </div>
             </div>
             <div style={{ textAlign: "right" }}>
               <p
@@ -650,9 +747,11 @@ const OrdemDetalhe = () => {
           <span>
             Peças: <strong>{formatBRL(ordem.valorPecas)}</strong>
           </span>
-          <span>
-            Mão de obra: <strong>{formatBRL(ordem.valorMaoObra)}</strong>
-          </span>
+          {ordem.valorMaoObra > 0 && (
+            <span>
+              Mão de obra: <strong>{formatBRL(ordem.valorMaoObra)}</strong>
+            </span>
+          )}
           <span style={{ fontWeight: 700, fontSize: 13 }}>
             Total: <strong>{formatBRL(ordem.valorTotal)}</strong>
           </span>
@@ -673,14 +772,8 @@ const OrdemDetalhe = () => {
             Termo de entrega e garantia
           </p>
           <p style={{ margin: 0 }}>
-            Ao assinar esta ordem de serviço, o cliente confirma as informações
-            do aparelho, defeito relatado, acessórios entregues e condições
-            descritas. O cliente está ciente de que deverá retirar o aparelho
-            dentro do prazo combinado após a conclusão do serviço. A garantia
-            cobre somente o serviço realizado e/ou a peça substituída, não se
-            estendendo a danos causados por mau uso, queda, contato com líquido,
-            violação por terceiros ou novos defeitos não relacionados ao reparo
-            executado.
+            {localStorage.getItem("rr-termo-os") ??
+              "Ao assinar esta ordem de serviço, o cliente confirma as informações do aparelho, defeito relatado, acessórios entregues e condições descritas. O cliente está ciente de que deverá retirar o aparelho dentro do prazo combinado após a conclusão do serviço. A garantia cobre somente o serviço realizado e/ou a peça substituída, não se estendendo a danos causados por mau uso, queda, contato com líquido, violação por terceiros ou novos defeitos não relacionados ao reparo executado."}
           </p>
         </div>
 
@@ -721,6 +814,9 @@ const OrdemDetalhe = () => {
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle>Excluir ordem de serviço</DialogTitle>
+            <DialogDescription>
+              Confirme antes de remover esta ordem de serviço.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-1">
             <p className="text-sm text-muted-foreground">
@@ -764,6 +860,11 @@ const OrdemDetalhe = () => {
         onOpenChange={setPreviewOsOpen}
         title={`OS-${ordem.numero} — Via do Cliente`}
         onPrint={window.print}
+        actions={
+          <Button variant="outline" size="sm" onClick={() => setEditTermoOsOpen(true)}>
+            Editar termo
+          </Button>
+        }
       >
         <OsPreviewContent viaInterna={false} />
       </PrintPreviewDialog>
@@ -772,6 +873,11 @@ const OrdemDetalhe = () => {
         onOpenChange={setPreviewOsViaInterna}
         title={`OS-${ordem.numero} — Via Interna`}
         onPrint={window.print}
+        actions={
+          <Button variant="outline" size="sm" onClick={() => setEditTermoOsOpen(true)}>
+            Editar termo
+          </Button>
+        }
       >
         <OsPreviewContent viaInterna={true} />
       </PrintPreviewDialog>
@@ -780,6 +886,11 @@ const OrdemDetalhe = () => {
         onOpenChange={setPreviewGarantiaOpen}
         title={`Termo de Garantia OS-${ordem.numero}`}
         onPrint={handlePrintGarantia}
+        actions={
+          <Button variant="outline" size="sm" onClick={openEditGarantia}>
+            Editar garantia
+          </Button>
+        }
       >
         <div>
           <div
@@ -842,16 +953,90 @@ const OrdemDetalhe = () => {
               {ordem.garantiaDias ? `${ordem.garantiaDias} dias` : "—"}
             </strong>
             <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>
-              Válida até {formatDate(ordem.garantiaAte)}
+              Inicia em {garantiaInicioLabel}
+            </p>
+            <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>
+              Valida ate {garantiaValidadeLabel}
             </p>
           </div>
           <p style={{ fontSize: 10, color: "#374151" }}>
-            A RR Infocell garante os serviços realizados e as peças substituídas
-            pelo prazo acima. A garantia não cobre danos físicos, líquidos, mau
-            uso ou intervenção de terceiros.
+            {termoTexto}
           </p>
         </div>
       </PrintPreviewDialog>
+
+      {/* Dialog editar termo da OS */}
+      <Dialog open={editTermoOsOpen} onOpenChange={setEditTermoOsOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Editar termo da OS</DialogTitle>
+            <DialogDescription>
+              Este texto aparece no rodape de todas as OS impressas. A alteracao fica salva no navegador.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            rows={6}
+            value={termoOsTexto}
+            onChange={(e) => setTermoOsTexto(e.target.value)}
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setEditTermoOsOpen(false)}>Cancelar</Button>
+            <Button className="bg-gradient-primary text-primary-foreground shadow-glow" onClick={() => {
+              localStorage.setItem("rr-termo-os", termoOsTexto);
+              setEditTermoOsOpen(false);
+            }}>Salvar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog editar termo de garantia */}
+      <Dialog open={editTermoOpen} onOpenChange={setEditTermoOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Editar garantia</DialogTitle>
+            <DialogDescription>
+              Ajuste o prazo e a observacao que aparecem no Termo de Garantia impresso.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <FormField id="garantia-dias" label="Prazo de garantia (dias)">
+              <Input
+                id="garantia-dias"
+                type="number"
+                min="0"
+                step="1"
+                value={garantiaDiasTexto}
+                onChange={(event) => setGarantiaDiasTexto(event.target.value)}
+              />
+            </FormField>
+            <FormField id="garantia-observacoes" label="Observacao da garantia">
+              <Textarea
+                id="garantia-observacoes"
+                rows={4}
+                value={garantiaObservacoesTexto}
+                onChange={(event) =>
+                  setGarantiaObservacoesTexto(event.target.value)
+                }
+                placeholder="Ex.: garantia de 90 dias para tela e mao de obra"
+              />
+            </FormField>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setEditTermoOpen(false)}>Cancelar</Button>
+            <Button
+              className="bg-gradient-primary text-primary-foreground shadow-glow"
+              disabled={garantiaMutation.isPending}
+              onClick={() => garantiaMutation.mutate()}
+            >
+              {garantiaMutation.isPending && (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              )}
+              Salvar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="space-y-5">
         <PageHeader
           eyebrow="Ordem de serviço"
@@ -996,6 +1181,22 @@ const OrdemDetalhe = () => {
                 <dt className="text-xs text-muted-foreground">Cor</dt>
                 <dd>{aparelho?.cor ?? "-"}</dd>
               </div>
+              {ordem.tipoSenha && ordem.tipoSenha !== "sem_senha" && (
+                <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+                  <dt className="text-xs font-medium text-amber-600">
+                    Senha (uso interno)
+                  </dt>
+                  <dd className="mt-0.5 font-mono text-sm">
+                    {ordem.tipoSenha === "numerica" && ordem.senhaAparelho
+                      ? ordem.senhaAparelho
+                      : ordem.tipoSenha === "padrao" && ordem.padraoDeSenha
+                        ? ordem.padraoDeSenha
+                        : ordem.tipoSenha === "nao_informou"
+                          ? "Cliente não informou"
+                          : "-"}
+                  </dd>
+                </div>
+              )}
             </dl>
           </SectionPanel>
 
@@ -1005,10 +1206,12 @@ const OrdemDetalhe = () => {
                 <dt className="text-muted-foreground">Peças</dt>
                 <dd className="font-mono">{formatBRL(ordem.valorPecas)}</dd>
               </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted-foreground">Mão de obra</dt>
-                <dd className="font-mono">{formatBRL(ordem.valorMaoObra)}</dd>
-              </div>
+              {ordem.valorMaoObra > 0 && (
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted-foreground">Mão de obra</dt>
+                  <dd className="font-mono">{formatBRL(ordem.valorMaoObra)}</dd>
+                </div>
+              )}
               <div className="flex justify-between gap-4 border-t border-border pt-3">
                 <dt className="font-medium">Total</dt>
                 <dd className="font-mono font-semibold">
@@ -1057,8 +1260,12 @@ const OrdemDetalhe = () => {
                 </dd>
               </div>
               <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Inicio</dt>
+                <dd>{garantiaInicioLabel}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
                 <dt className="text-muted-foreground">Valida ate</dt>
-                <dd>{formatDate(ordem.garantiaAte)}</dd>
+                <dd>{garantiaValidadeLabel}</dd>
               </div>
             </dl>
           </SectionPanel>
@@ -1215,8 +1422,8 @@ const OrdemDetalhe = () => {
               <span>Total previsto</span>
               <strong>{formatBRL(ordem.valorTotal)}</strong>
               <p>
-                Peças {formatBRL(ordem.valorPecas)} + mão de obra{" "}
-                {formatBRL(ordem.valorMaoObra)}
+                Peças {formatBRL(ordem.valorPecas)}
+                {ordem.valorMaoObra > 0 ? ` + mão de obra ${formatBRL(ordem.valorMaoObra)}` : ""}
               </p>
             </div>
           </div>
@@ -1292,10 +1499,7 @@ const OrdemDetalhe = () => {
             <div className="print-meta">
               <strong>OS-{ordem.numero}</strong>
               <span>Técnico: {ordem.tecnicoResponsavel ?? "—"}</span>
-              <span>
-                Entrega:{" "}
-                {formatDate(ordem.entregueEm ?? new Date().toISOString())}
-              </span>
+              <span>Retirada: {garantiaInicioLabel}</span>
             </div>
           </header>
 
@@ -1319,7 +1523,7 @@ const OrdemDetalhe = () => {
               <span>Total pago</span>
               <strong>{formatBRL(ordem.valorTotal)}</strong>
               <p>Peças: {formatBRL(ordem.valorPecas)}</p>
-              <p>Mão de obra: {formatBRL(ordem.valorMaoObra)}</p>
+              {ordem.valorMaoObra > 0 && <p>Mão de obra: {formatBRL(ordem.valorMaoObra)}</p>}
               {ordem.formaPagamento && (
                 <p>Pagamento: {ordem.formaPagamento.toUpperCase()}</p>
               )}
@@ -1379,7 +1583,8 @@ const OrdemDetalhe = () => {
             <strong>
               {ordem.garantiaDias ? `${ordem.garantiaDias} dias` : "—"}
             </strong>
-            <p>Válida até {formatDate(ordem.garantiaAte)}</p>
+            <p>Inicio: {garantiaInicioLabel}</p>
+            <p>Valida ate {garantiaValidadeLabel}</p>
             {ordem.garantiaObservacoes && <p>{ordem.garantiaObservacoes}</p>}
           </div>
 
@@ -1387,8 +1592,8 @@ const OrdemDetalhe = () => {
             <strong>Termos da garantia</strong>
             <p style={{ marginTop: 6 }}>
               A RR Infocell garante os serviços realizados e as peças
-              substituídas pelo prazo acima, contado a partir da data de entrega
-              do aparelho. A garantia cobre exclusivamente defeitos relacionados
+              substituídas pelo prazo acima, contado a partir da data de retirada
+              do aparelho pelo cliente. A garantia cobre exclusivamente defeitos relacionados
               ao serviço descrito neste documento.
             </p>
             <p style={{ marginTop: 8 }}>
