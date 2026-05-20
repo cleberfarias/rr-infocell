@@ -131,6 +131,7 @@ export class FirestoreVendasRepository implements VendasRepository {
         : [],
       valorPecas: Number(data.valorPecas ?? 0),
       valorMaoObra: Number(data.valorMaoObra ?? 0),
+      desconto: data.desconto !== undefined ? Number(data.desconto) : undefined,
       valorTotal: Number(data.valorTotal ?? 0),
       formaPagamento: String(data.formaPagamento ?? "pix") as Venda["formaPagamento"],
       valorRecebido: Number(data.valorRecebido ?? 0),

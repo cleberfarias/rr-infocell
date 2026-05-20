@@ -6,6 +6,7 @@ export type Cliente = {
   email?: string;
   endereco?: string;
   observacoes?: string;
+  receberMensagemAutomatica?: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -17,4 +18,5 @@ export type ClienteInput = {
   email?: string;
   endereco?: string;
   observacoes?: string;
+  receberMensagemAutomatica?: boolean;
 };

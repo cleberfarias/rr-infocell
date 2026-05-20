@@ -20,12 +20,14 @@ describe("vendas routes", () => {
       ordemServicoId: ordem.id,
       formaPagamento: "dinheiro",
       valorRecebido: 250,
+      desconto: 25,
     });
 
     expect(vendaResponse.status).toBe(201);
     expect(vendaResponse.body.data.ordemServicoId).toBe(ordem.id);
-    expect(vendaResponse.body.data.valorTotal).toBe(200);
-    expect(vendaResponse.body.data.troco).toBe(50);
+    expect(vendaResponse.body.data.desconto).toBe(25);
+    expect(vendaResponse.body.data.valorTotal).toBe(175);
+    expect(vendaResponse.body.data.troco).toBe(75);
 
     const ordemResponse = await request(app).get(`/api/ordens-servico/${ordem.id}`);
     expect(ordemResponse.body.data.status).toBe("entregue");

@@ -33,7 +33,10 @@ export class VendasService {
       );
     }
 
-    if (input.valorRecebido < ordem.valorTotal) {
+    const desconto = input.desconto && input.desconto > 0 ? input.desconto : 0;
+    const totalComDesconto = Math.max(0, ordem.valorTotal - desconto);
+
+    if (input.valorRecebido < totalComDesconto) {
       throw new AppError(
         "pagamento_insuficiente",
         "Valor recebido menor que o total da OS.",
@@ -73,10 +76,11 @@ export class VendasService {
       })),
       valorPecas: delivered.valorPecas,
       valorMaoObra: delivered.valorMaoObra,
-      valorTotal: delivered.valorTotal,
+      desconto: desconto > 0 ? desconto : undefined,
+      valorTotal: totalComDesconto,
       formaPagamento: input.formaPagamento,
       valorRecebido: input.valorRecebido,
-      troco: delivered.troco ?? 0,
+      troco: Math.max(0, input.valorRecebido - totalComDesconto),
       status: "finalizada",
       createdAt: delivered.pagoEm ?? now(),
     });

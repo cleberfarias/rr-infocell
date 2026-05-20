@@ -17,6 +17,7 @@ export const vendaInputSchema = z
       .optional(),
     formaPagamento: z.enum(["pix", "cartao", "dinheiro", "terceirizado"]),
     valorRecebido: z.coerce.number().min(0, "Valor recebido nao pode ser negativo."),
+    desconto: z.coerce.number().min(0, "Desconto nao pode ser negativo.").optional(),
   })
   .superRefine((input, ctx) => {
     if (!input.ordemServicoId && (!input.itens || input.itens.length === 0)) {

@@ -143,7 +143,8 @@ const modulos: Modulo[] = [
       },
       {
         titulo: "Concluindo o serviço",
-        descricao: "Após aprovação e execução, mude para 'Pronto para retirada' e salve. O sistema vai para o Detalhe da OS para imprimir o Termo de Garantia.",
+        descricao: "Após aprovação e execução, informe o prazo/observação da garantia se necessário, mude para 'Pronto para retirada' e salve. O sistema vai para o Detalhe da OS para conferir o Termo de Garantia.",
+        dica: "A validade real da garantia só é calculada quando o cliente retira o aparelho e a OS é finalizada no PDV.",
       },
     ],
   },
@@ -223,8 +224,13 @@ const modulos: Modulo[] = [
     passos: [
       {
         titulo: "Fechamento de OS",
-        descricao: "OS com status 'Pronto para retirada' aparecem na aba 'Fechar OS'. Selecione, escolha a forma de pagamento e registre o valor recebido.",
-        dica: "O troco é calculado automaticamente para pagamentos em dinheiro",
+        descricao: "OS com status 'Pronto para retirada' aparecem na aba 'Fechar OS'. Selecione, escolha a forma de pagamento, aplique desconto se necessário e registre o valor recebido.",
+        dica: "Ao finalizar, a OS vira 'Entregue' e a garantia passa a contar a partir da retirada do aparelho.",
+      },
+      {
+        titulo: "Imprimindo o termo de garantia",
+        descricao: "Depois de finalizar o pagamento, o painel 'Pagamento finalizado' mostra o botão 'Imprimir termo de garantia'. Clique nele para abrir a OS com a prévia do termo já pronta para impressão.",
+        dica: "No termo aparecem a data da retirada e a validade calculada pelo prazo de garantia da OS.",
       },
       {
         titulo: "Venda direta",

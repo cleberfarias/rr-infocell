@@ -70,6 +70,11 @@ const buildOrdem = (
     checklistId: input.checklistId,
     defeitoRelatado: input.defeitoRelatado,
     diagnostico: input.diagnostico,
+    tipoSenha: input.tipoSenha ?? current?.tipoSenha,
+    senhaAparelho:
+      input.tipoSenha === "numerica" ? (input.senhaAparelho ?? current?.senhaAparelho) : undefined,
+    padraoDeSenha:
+      input.tipoSenha === "padrao" ? (input.padraoDeSenha ?? current?.padraoDeSenha) : undefined,
     status,
     prioridade,
     tecnicoResponsavel: input.tecnicoResponsavel,
@@ -336,6 +341,9 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
       checklistId: data.checklistId ? String(data.checklistId) : undefined,
       defeitoRelatado: String(data.defeitoRelatado ?? ""),
       diagnostico: data.diagnostico ? String(data.diagnostico) : undefined,
+      tipoSenha: data.tipoSenha ? (String(data.tipoSenha) as OrdemServico["tipoSenha"]) : undefined,
+      senhaAparelho: data.senhaAparelho ? String(data.senhaAparelho) : undefined,
+      padraoDeSenha: data.padraoDeSenha ? String(data.padraoDeSenha) : undefined,
       status: String(data.status ?? "recebido") as OrdemServicoStatus,
       prioridade: String(data.prioridade ?? "normal") as OrdemServico["prioridade"],
       tecnicoResponsavel: data.tecnicoResponsavel ? String(data.tecnicoResponsavel) : undefined,

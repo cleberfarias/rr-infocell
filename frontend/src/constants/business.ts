@@ -3,26 +3,26 @@ import type { ChecklistItem } from "@/services/checklists";
 export const GARANTIA_DIAS_PADRAO = 90;
 
 export const CHECKLIST_ENTRADA_ITENS: ChecklistItem[] = [
-  { nome: "Tela", status: "nao_testado" },
-  { nome: "Touch", status: "nao_testado" },
-  { nome: "Câmera", status: "nao_testado" },
-  { nome: "Microfone", status: "nao_testado" },
-  { nome: "Alto-falante", status: "nao_testado" },
-  { nome: "Botões", status: "nao_testado" },
-  { nome: "Conector de carga", status: "nao_testado" },
-  { nome: "Wi-Fi", status: "nao_testado" },
-  { nome: "Bluetooth", status: "nao_testado" },
-  { nome: "Bateria", status: "nao_testado" },
+  { nome: "Tela", status: "funcionando" },
+  { nome: "Touch", status: "funcionando" },
+  { nome: "Câmera", status: "funcionando" },
+  { nome: "Microfone", status: "funcionando" },
+  { nome: "Alto-falante", status: "funcionando" },
+  { nome: "Botões", status: "funcionando" },
+  { nome: "Conector de carga", status: "funcionando" },
+  { nome: "Wi-Fi", status: "funcionando" },
+  { nome: "Bluetooth", status: "funcionando" },
+  { nome: "Bateria", status: "funcionando" },
 ];
 
 export const CHECKLIST_SAIDA_ITENS: ChecklistItem[] = [
-  { nome: "Aparelho testado", status: "nao_testado" },
-  { nome: "Carga funcionando", status: "nao_testado" },
-  { nome: "Biometria/Face ID", status: "nao_testado" },
-  { nome: "Câmera", status: "nao_testado" },
-  { nome: "Áudio", status: "nao_testado" },
-  { nome: "Chip/rede", status: "nao_testado" },
-  { nome: "Senha removida ou confirmada", status: "nao_testado" },
+  { nome: "Aparelho testado", status: "funcionando" },
+  { nome: "Carga funcionando", status: "funcionando" },
+  { nome: "Biometria/Face ID", status: "funcionando" },
+  { nome: "Câmera", status: "funcionando" },
+  { nome: "Áudio", status: "funcionando" },
+  { nome: "Chip/rede", status: "funcionando" },
+  { nome: "Senha removida ou confirmada", status: "funcionando" },
 ];
 
 export const MOTIVOS_SAIDA = [

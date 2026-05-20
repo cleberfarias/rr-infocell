@@ -12,6 +12,7 @@ import {
   GripVertical,
   Loader2,
   PenLine,
+  Plus,
   Printer,
   Save,
   Trash2,
@@ -123,6 +124,7 @@ const Checklist = () => {
   const checklistTipo = searchParams.get("tipo") === "saida" ? "saida" : "entrada";
   const itensBase = checklistTipo === "saida" ? CHECKLIST_SAIDA_ITENS : CHECKLIST_ENTRADA_ITENS;
   const [itens, setItens] = useState<ChecklistItem[]>(itensBase);
+  const [novoItemNome, setNovoItemNome] = useState("");
   const [fotos, setFotos] = useState<ChecklistFoto[]>([]);
   const [observacoesGerais, setObservacoesGerais] = useState("");
   const [criadoPor, setCriadoPor] = useState(atendenteLogado);
@@ -213,7 +215,7 @@ const Checklist = () => {
       const input = {
         ordemServicoId: selectedOrdem.id,
         aparelhoId: selectedOrdem.aparelhoId,
-        tipo: checklistTipo,
+        tipo: checklistTipo as "entrada" | "saida",
         itens,
         fotos,
         observacoesGerais,
@@ -405,10 +407,18 @@ const Checklist = () => {
       {selectedOrdem && (
         <section className="checklist-print-area">
           <header className="print-header">
-            <div>
-              <p className="print-kicker">RR Infocell</p>
-              <h1>{checklistTipo === "saida" ? "Checklist de saída" : "Checklist de entrada"}</h1>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+              {(() => {
+                const logoUrl = localStorage.getItem("rr-logo-url");
+                return logoUrl ? (
+                  <img src={logoUrl} alt="Logo" style={{ maxHeight: 52, maxWidth: 130, objectFit: "contain", flexShrink: 0 }} />
+                ) : null;
+              })()}
+              <div>
+                <p className="print-kicker">RR Infocell</p>
+                <h1>{checklistTipo === "saida" ? "Checklist de saída" : "Checklist de entrada"}</h1>
                 <p>Ordem de serviço OS-{selectedOrdem.numero}</p>
+              </div>
             </div>
             <div className="print-meta">
               <span>Data: {new Date().toLocaleDateString("pt-BR")}</span>
@@ -597,13 +607,57 @@ const Checklist = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Input
-                    value={item.observacao ?? ""}
-                    onChange={(event) => updateItem(index, { observacao: event.target.value })}
-                    placeholder="Observação do item"
-                  />
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={item.observacao ?? ""}
+                      onChange={(event) => updateItem(index, { observacao: event.target.value })}
+                      placeholder="Observação do item"
+                    />
+                    {!itensBase.some((b) => b.nome === item.nome) && (
+                      <button
+                        type="button"
+                        className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
+                        title="Remover item"
+                        onClick={() => setItens((prev) => prev.filter((_, i) => i !== index))}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
+            </div>
+
+            {/* Adicionar item personalizado */}
+            <div className="mt-3 flex gap-2">
+              <Input
+                value={novoItemNome}
+                onChange={(e) => setNovoItemNome(e.target.value)}
+                placeholder="Nome do novo item (ex.: Alto-falante traseiro)"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    const nome = novoItemNome.trim();
+                    if (!nome) return;
+                    if (itens.some((i) => i.nome.toLowerCase() === nome.toLowerCase())) return;
+                    setItens((prev) => [...prev, { nome, status: "funcionando" }]);
+                    setNovoItemNome("");
+                  }
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  const nome = novoItemNome.trim();
+                  if (!nome) return;
+                  if (itens.some((i) => i.nome.toLowerCase() === nome.toLowerCase())) return;
+                  setItens((prev) => [...prev, { nome, status: "funcionando" }]);
+                  setNovoItemNome("");
+                }}
+              >
+                <Plus className="h-4 w-4" /> Adicionar
+              </Button>
             </div>
 
             <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">

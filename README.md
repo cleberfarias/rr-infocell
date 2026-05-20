@@ -164,8 +164,9 @@ cd backend && npm run build && npm run lint
 - ✅ Checklist técnico com upload de fotos e reordenação por drag-and-drop
 - ✅ Orçamento enviado via WhatsApp com aprovação registrada
 - ✅ Termo de Garantia e Comprovante de OS com pré-visualização antes de imprimir
+- ✅ Termo de Garantia com prazo por OS, validade calculada a partir da retirada e botão no PDV após finalizar venda
 - ✅ Estoque com fornecedor, código do fornecedor, marcas e categorias customizáveis
-- ✅ PDV com carrinho +/− inline, busca por fornecedor/SKU e lançamento terceirizado
+- ✅ PDV com carrinho +/− inline, busca por fornecedor/SKU, desconto, impressão de cupom térmico e lançamento terceirizado
 - ✅ Terceirizados com status de repasse (Pendente/Pago) e cálculo de lucro
 - ✅ Kanban de OS com troca de status rápida e modo compacto
 - ✅ DRE simplificado com exportação em PDF

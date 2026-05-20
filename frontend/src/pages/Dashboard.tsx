@@ -48,7 +48,7 @@ const activeStatuses = [
   "em_manutencao",
 ];
 
-const finalStatuses = ["pronto_para_retirada", "entregue"] as const;
+const finalStatuses: string[] = ["pronto_para_retirada", "entregue"];
 
 const isOverdue = (ordem: OrdemServico) => {
   if (!ordem.previsaoEntregaEm || ["entregue", "cancelado"].includes(ordem.status)) {

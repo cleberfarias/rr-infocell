@@ -204,6 +204,10 @@ export class FirestoreClientesRepository implements ClientesRepository {
       email: data.email ? String(data.email) : undefined,
       endereco: data.endereco ? String(data.endereco) : undefined,
       observacoes: data.observacoes ? String(data.observacoes) : undefined,
+      receberMensagemAutomatica:
+        data.receberMensagemAutomatica !== undefined
+          ? Boolean(data.receberMensagemAutomatica)
+          : undefined,
       createdAt: String(data.createdAt ?? ""),
       updatedAt: String(data.updatedAt ?? ""),
     };
