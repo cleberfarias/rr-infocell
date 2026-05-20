@@ -258,7 +258,7 @@ const NovaOS = () => {
       if (!clienteId) {
         const cliente = await createCliente({
           nome: quickCliente.nome.trim(),
-          telefone: quickCliente.telefone.trim(),
+          telefone: quickCliente.telefone.trim() || undefined,
           documento: quickCliente.documento.trim() || undefined,
           email: quickCliente.email.trim() || undefined,
           observacoes: quickCliente.observacoes.trim() || undefined,
@@ -417,7 +417,7 @@ const NovaOS = () => {
     if (!selectedCliente) return;
     setClienteEditForm({
       nome: selectedCliente.nome,
-      telefone: selectedCliente.telefone,
+      telefone: selectedCliente.telefone ?? "",
       documento: selectedCliente.documento ?? "",
       email: selectedCliente.email ?? "",
       observacoes: selectedCliente.observacoes ?? "",
@@ -458,9 +458,10 @@ const NovaOS = () => {
     if (!selectedCliente) return;
     const errs: Record<string, string> = {};
     if (!clienteEditForm.nome.trim()) errs.clienteNome = "Nome é obrigatório.";
-    if (!clienteEditForm.telefone.trim()) {
-      errs.clienteTelefone = "Telefone é obrigatório.";
-    } else if (clienteEditForm.telefone.replace(/\D/g, "").length < 10) {
+    if (
+      clienteEditForm.telefone.trim() &&
+      clienteEditForm.telefone.replace(/\D/g, "").length < 10
+    ) {
       errs.clienteTelefone = "Telefone inválido.";
     }
     if (Object.keys(errs).length > 0) {
@@ -472,7 +473,7 @@ const NovaOS = () => {
       id: selectedCliente.id,
       input: {
         nome: clienteEditForm.nome.trim(),
-        telefone: clienteEditForm.telefone.trim(),
+        telefone: clienteEditForm.telefone.trim() || undefined,
         documento: clienteEditForm.documento.trim() || undefined,
         email: clienteEditForm.email.trim() || undefined,
         observacoes: clienteEditForm.observacoes.trim() || undefined,
@@ -532,9 +533,10 @@ const NovaOS = () => {
     const errs: Record<string, string> = {};
     if (!form.clienteId) {
       if (!quickCliente.nome.trim()) errs.clienteNome = "Nome é obrigatório.";
-      if (!quickCliente.telefone.trim())
-        errs.clienteTelefone = "Telefone é obrigatório.";
-      else if (quickCliente.telefone.replace(/\D/g, "").length < 10)
+      if (
+        quickCliente.telefone.trim() &&
+        quickCliente.telefone.replace(/\D/g, "").length < 10
+      )
         errs.clienteTelefone = "Telefone inválido.";
     }
     if (!quickAparelho.marca.trim())
@@ -594,7 +596,7 @@ const NovaOS = () => {
   );
   const canCreateCadastroRapido = Boolean(
     (form.clienteId ||
-      (quickCliente.nome.trim() && quickCliente.telefone.trim())) &&
+      quickCliente.nome.trim()) &&
     quickAparelho.marca.trim() &&
     quickAparelho.modelo.trim(),
   );
@@ -659,7 +661,7 @@ const NovaOS = () => {
                             {clientes.map((cliente) => (
                               <CommandItem
                                 key={cliente.id}
-                                value={`${cliente.nome} ${cliente.telefone}`}
+                                value={`${cliente.nome} ${cliente.telefone ?? ""}`}
                                 onSelect={() => {
                                   updateForm("clienteId", cliente.id);
                                   setClienteOpen(false);
@@ -673,7 +675,8 @@ const NovaOS = () => {
                                       : "opacity-0",
                                   )}
                                 />
-                                {cliente.nome} — {cliente.telefone}
+                              {cliente.nome}
+                              {cliente.telefone ? ` — ${cliente.telefone}` : ""}
                               </CommandItem>
                             ))}
                           </CommandGroup>
@@ -801,7 +804,7 @@ const NovaOS = () => {
                             );
                             updQuick("clienteTelefone", "");
                           }}
-                          placeholder="Telefone/WhatsApp *"
+                            placeholder="Telefone/WhatsApp opcional"
                           inputMode="numeric"
                           className={
                             quickErrors.clienteTelefone
@@ -975,72 +978,12 @@ const NovaOS = () => {
                 <p className="font-mono text-[10px] uppercase text-muted-foreground">
                   Resumo
                 </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleNovoCliente}
-                  >
-                    <UserPlus className="h-4 w-4" /> Novo cliente
-                  </Button>
-                  {selectedCliente && (
-                    <>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={openClienteEditDialog}
-                      >
-                        <Pencil className="h-4 w-4" /> Editar cliente
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleDeleteCliente}
-                        disabled={deleteClienteMutation.isPending}
-                      >
-                        <Trash2 className="h-4 w-4" /> Excluir cliente
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleNovoAparelho}
-                      >
-                        <Plus className="h-4 w-4" /> Novo aparelho
-                      </Button>
-                    </>
-                  )}
-                  {selectedAparelho && (
-                    <>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={openAparelhoEditDialog}
-                      >
-                        <Pencil className="h-4 w-4" /> Editar aparelho
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleDeleteAparelho}
-                        disabled={deleteAparelhoMutation.isPending}
-                      >
-                        <Trash2 className="h-4 w-4" /> Excluir aparelho
-                      </Button>
-                    </>
-                  )}
-                </div>
-                <p className="mt-1 font-medium">
+                <p className="mt-2 font-medium">
                   {selectedCliente?.nome ?? "Cliente não selecionado"}
                 </p>
                 <p className="text-muted-foreground">
                   {selectedAparelho
-                    ? `${selectedAparelho.marca} ${selectedAparelho.modelo} ${selectedAparelho.imeiSerial ? `- ${selectedAparelho.imeiSerial}` : ""}`
+                    ? `${selectedAparelho.marca} ${selectedAparelho.modelo}${selectedAparelho.imeiSerial ? ` — ${selectedAparelho.imeiSerial}` : ""}`
                     : "Aparelho não selecionado"}
                 </p>
               </div>
@@ -1432,7 +1375,7 @@ const NovaOS = () => {
                     return next;
                   });
                 }}
-                placeholder="Telefone/WhatsApp *"
+                placeholder="Telefone/WhatsApp opcional"
                 inputMode="numeric"
                 className={
                   editErrors.clienteTelefone ? "border-destructive" : ""

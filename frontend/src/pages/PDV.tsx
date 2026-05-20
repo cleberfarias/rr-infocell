@@ -4,6 +4,7 @@ import {
   Banknote,
   CheckCircle2,
   CreditCard,
+  FileDown,
   Loader2,
   Minus,
   Plus,
@@ -810,6 +811,73 @@ ${troco}
     win.document.close();
   };
 
+  const handleSalvarReciboPdf = () => {
+    const venda = vendaFinalizada;
+    if (!venda) return;
+    const logoUrl = localStorage.getItem("rr-logo-url");
+    const cliente = venda.clienteNome ?? (venda.clienteId ? clienteById.get(venda.clienteId)?.nome : undefined) ?? "Consumidor";
+    const fBRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    const now = new Date().toLocaleString("pt-BR");
+    const logoHtml = logoUrl ? `<img src="${logoUrl}" style="max-height:60px;max-width:160px;object-fit:contain;display:block;margin-bottom:8px"/>` : "";
+    const itensHtml = venda.itens.length > 0
+      ? venda.itens.map((i) => `<tr><td>${i.nome}${i.imei ? ` — ${i.imei}` : ""}</td><td style="text-align:center">${i.quantidade}</td><td style="text-align:right">${fBRL(i.valorUnitario)}</td><td style="text-align:right">${fBRL(i.valorTotal)}</td></tr>`).join("")
+      : `<tr><td colspan="4">Serviço técnico</td></tr>`;
+    const win = window.open("", "_blank", "width=800,height=1000");
+    if (!win) return;
+    win.document.write(`<!DOCTYPE html><html lang="pt-BR"><head>
+<meta charset="UTF-8"/><title>Recibo — ${EMPRESA.nome}</title>
+<style>
+  @page { size: A4; margin: 20mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 12px; color: #111; }
+  h1 { font-size: 20px; margin-bottom: 2px; }
+  h2 { font-size: 13px; color: #0284c7; margin-bottom: 12px; }
+  .header { border-bottom: 2px solid #111; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .empresa p { margin: 2px 0; font-size: 11px; color: #374151; }
+  .info { margin-bottom: 12px; font-size: 11px; }
+  .info span { display: inline-block; margin-right: 24px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+  th { background: #f3f4f6; padding: 6px 8px; text-align: left; font-size: 11px; border: 1px solid #d1d5db; }
+  td { padding: 6px 8px; border: 1px solid #d1d5db; font-size: 11px; }
+  .totais { text-align: right; margin-bottom: 16px; }
+  .totais p { margin: 3px 0; }
+  .totais strong { font-size: 14px; }
+  .rodape { border-top: 1px solid #d1d5db; padding-top: 10px; text-align: center; font-size: 10px; color: #6b7280; }
+</style>
+</head><body>
+<div class="header">
+  <div class="empresa">
+    ${logoHtml}
+    <h1>${EMPRESA.nome}</h1>
+    <p>CNPJ: ${EMPRESA.cnpj}</p>
+    <p>${EMPRESA.enderecoCompleto}</p>
+    <p>Tel: ${EMPRESA.telefone}</p>
+  </div>
+  <div style="text-align:right">
+    <h2>RECIBO NÃO FISCAL</h2>
+    <p style="font-size:11px;color:#374151">${now}</p>
+    ${venda.numeroOs ? `<p style="font-size:11px;color:#374151">OS-${venda.numeroOs}</p>` : ""}
+  </div>
+</div>
+<div class="info">
+  <span><strong>Cliente:</strong> ${cliente}</span>
+  <span><strong>Pagamento:</strong> ${(venda.formaPagamento ?? "").toUpperCase()}</span>
+</div>
+<table>
+  <thead><tr><th>Descrição</th><th style="text-align:center">Qtd</th><th style="text-align:right">Unitário</th><th style="text-align:right">Total</th></tr></thead>
+  <tbody>${itensHtml}</tbody>
+</table>
+<div class="totais">
+  <p>Total: <strong>${fBRL(venda.valorTotal)}</strong></p>
+  <p>Recebido: ${fBRL(venda.valorRecebido)}</p>
+  ${venda.troco > 0 ? `<p>Troco: ${fBRL(venda.troco)}</p>` : ""}
+</div>
+<div class="rodape"><p>${EMPRESA.mensagemFinal ?? ""}</p></div>
+<script>window.onload = () => { window.print(); }<\/script>
+</body></html>`);
+    win.document.close();
+  };
+
   return (
     <>
       {/* Dialog: cupom térmico */}
@@ -819,6 +887,11 @@ ${troco}
           onOpenChange={setCupomOpen}
           title="Cupom Não Fiscal Térmico"
           onPrint={handleImprimirCupom}
+          actions={
+            <Button variant="outline" size="sm" onClick={handleSalvarReciboPdf}>
+              <FileDown className="h-4 w-4" /> Salvar PDF
+            </Button>
+          }
         >
           <div className="space-y-3 mb-4">
             <div className="flex items-center gap-3 text-sm">

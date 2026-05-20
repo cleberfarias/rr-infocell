@@ -1,4 +1,5 @@
-import { Printer, X } from "lucide-react";
+import { useRef } from "react";
+import { FileDown, Printer, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,6 +16,7 @@ interface PrintPreviewDialogProps {
   onPrint: () => void;
   children: React.ReactNode;
   actions?: React.ReactNode;
+  showPdfButton?: boolean;
 }
 
 export function PrintPreviewDialog({
@@ -24,7 +26,41 @@ export function PrintPreviewDialog({
   onPrint,
   children,
   actions,
+  showPdfButton = false,
 }: PrintPreviewDialogProps) {
+  const previewRef = useRef<HTMLDivElement>(null);
+
+  const handleSavePdf = () => {
+    if (!previewRef.current) return;
+    const html = previewRef.current.innerHTML;
+    const win = window.open("", "_blank", "width=800,height=1000");
+    if (!win) return;
+    win.document.write(`<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <title>${title}</title>
+  <style>
+    @page { size: A4; margin: 15mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Inter, Arial, sans-serif;
+      font-size: 11px;
+      line-height: 1.4;
+      color: #111827;
+      background: #fff;
+    }
+    img { max-width: 100%; }
+    strong { font-weight: 700; }
+  </style>
+</head>
+<body>${html}</body>
+</html>`);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 400);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0">
@@ -37,6 +73,11 @@ export function PrintPreviewDialog({
           </div>
           <div className="flex items-center gap-2">
             {actions}
+            {showPdfButton && (
+              <Button variant="outline" onClick={handleSavePdf}>
+                <FileDown className="h-4 w-4" /> Salvar PDF
+              </Button>
+            )}
             <Button
               className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
               onClick={() => { onPrint(); onOpenChange(false); }}
@@ -50,7 +91,7 @@ export function PrintPreviewDialog({
         </DialogHeader>
         {/* Preview area */}
         <div className="flex-1 overflow-y-auto bg-white p-8 text-[#111827]">
-          <div className="mx-auto max-w-[600px] font-[Inter,Arial,sans-serif] text-[11px] leading-[1.4]">
+          <div ref={previewRef} className="mx-auto max-w-[600px] font-[Inter,Arial,sans-serif] text-[11px] leading-[1.4]">
             {children}
           </div>
         </div>

@@ -978,6 +978,7 @@ const OrdemDetalhe = () => {
         onOpenChange={setPreviewOsOpen}
         title={`OS-${ordem.numero} — Via do Cliente`}
         onPrint={window.print}
+        showPdfButton
         actions={
           <Button
             variant="outline"

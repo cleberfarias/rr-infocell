@@ -192,17 +192,33 @@ const Financeiro = () => {
       ...ordensFiltradas.filter((ordem) => vendasOrdemIds.has(ordem.id)),
       ...ordensFaturadasFallback,
     ];
-    const custoPecas = ordensFaturadas.reduce(
+    // CMV de peças usadas em OS
+    const custoPecasOS = ordensFaturadas.reduce(
       (total, ordem) =>
         total +
         ordem.pecasUsadas.reduce((subtotal, peca) => {
           const produto = produtoById.get(peca.produtoId);
-          const custo = produto?.custo ?? peca.valorUnitario;
-
+          const custo = produto?.custo ?? 0;
           return subtotal + custo * peca.quantidade;
         }, 0),
       0,
     );
+
+    // CMV de produtos vendidos diretamente (sem OS)
+    const custoPecasVendasDiretas = vendas
+      .filter((v) => !v.ordemServicoId)
+      .reduce(
+        (total, venda) =>
+          total +
+          venda.itens.reduce((subtotal, item) => {
+            const produto = produtoById.get(item.produtoId);
+            const custo = produto?.custo ?? 0;
+            return subtotal + custo * item.quantidade;
+          }, 0),
+        0,
+      );
+
+    const custoPecas = custoPecasOS + custoPecasVendasDiretas;
     const despesasFixas = despesas.reduce((sum, despesa) => sum + despesa.valor, 0);
     const lucroBruto = receitaServicos + receitaProdutos - custoPecas;
     const lucroLiquido = lucroBruto - despesasFixas;

@@ -8,7 +8,16 @@ const optionalText = z
 
 export const clienteInputSchema = z.object({
   nome: z.string().trim().min(2, "Nome deve ter pelo menos 2 caracteres."),
-  telefone: z.string().trim().min(8, "Telefone deve ter pelo menos 8 caracteres."),
+  telefone: z
+    .string()
+    .trim()
+    .optional()
+    .or(z.literal(""))
+    .transform((value) => (value ? value : undefined))
+    .refine(
+      (value) => !value || value.length >= 8,
+      "Telefone deve ter pelo menos 8 caracteres.",
+    ),
   documento: optionalText,
   email: z
     .string()

@@ -811,6 +811,7 @@ const Orcamento = () => {
           onOpenChange={setOrcamentoPrintOpen}
           title={`Nota de Orçamento — OS-${selectedOrdem.numero}`}
           onPrint={window.print}
+          showPdfButton
         >
           <NotaOrcamentoContent />
         </PrintPreviewDialog>

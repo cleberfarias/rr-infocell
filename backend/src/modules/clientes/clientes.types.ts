@@ -1,7 +1,7 @@
 export type Cliente = {
   id: string;
   nome: string;
-  telefone: string;
+  telefone?: string;
   documento?: string;
   email?: string;
   endereco?: string;
@@ -13,7 +13,7 @@ export type Cliente = {
 
 export type ClienteInput = {
   nome: string;
-  telefone: string;
+  telefone?: string;
   documento?: string;
   email?: string;
   endereco?: string;

@@ -23,13 +23,16 @@ export class ClientesService {
   }
 
   async create(input: ClienteInput) {
-    return this.repository.create({ ...input, telefone: normalizarTelefone(input.telefone) });
+    return this.repository.create({
+      ...input,
+      telefone: input.telefone ? normalizarTelefone(input.telefone) : undefined,
+    });
   }
 
   async update(id: string, input: ClienteInput) {
     const cliente = await this.repository.update(id, {
       ...input,
-      telefone: normalizarTelefone(input.telefone),
+      telefone: input.telefone ? normalizarTelefone(input.telefone) : undefined,
     });
 
     if (!cliente) {
