@@ -82,6 +82,9 @@ const emptyNovoProduto = {
   observacoes: "",
 };
 
+const parseMoney = (value: string | number | undefined) =>
+  Number(String(value ?? "").replace(",", ".")) || 0;
+
 const Estoque = () => {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
@@ -196,8 +199,8 @@ const Estoque = () => {
         fornecedor: novoProduto.fornecedor || undefined,
         codigoFornecedor: novoProduto.codigoFornecedor.trim() || undefined,
         modelo: novoProduto.modelo || undefined,
-        custo: Number(novoProduto.custo) || 0,
-        precoVenda: Number(novoProduto.precoVenda) || 0,
+        custo: parseMoney(novoProduto.custo),
+        precoVenda: parseMoney(novoProduto.precoVenda),
         estoqueAtual: 0,
         estoqueMinimo: Number(novoProduto.estoqueMinimo) || 0,
         ativo: true,
@@ -241,10 +244,10 @@ const Estoque = () => {
         fornecedor: editProduto.fornecedor || undefined,
         codigoFornecedor: editProduto.codigoFornecedor?.trim() || undefined,
         modelo: editProduto.modelo || undefined,
-        custo: Number(editProduto.custo) || 0,
-        precoVenda: Number(editProduto.precoVenda) || 0,
+        custo: parseMoney(editProduto.custo),
+        precoVenda: parseMoney(editProduto.precoVenda),
         estoqueAtual: editProduto.estoqueAtual ?? 0,
-        estoqueMinimo: Number(editProduto.estoqueMinimo) || 1,
+        estoqueMinimo: Number(editProduto.estoqueMinimo) || 0,
         observacoes: editProduto.observacoes || undefined,
         ativo: editProduto.ativo ?? true,
       });
@@ -469,8 +472,8 @@ const Estoque = () => {
   };
 
   const margemCalc = () => {
-    const c = Number(novoProduto.custo) || 0;
-    const v = Number(novoProduto.precoVenda) || 0;
+    const c = parseMoney(novoProduto.custo);
+    const v = parseMoney(novoProduto.precoVenda);
     if (!v) return null;
     return Math.round(((v - c) / v) * 100);
   };
@@ -1105,7 +1108,7 @@ const Estoque = () => {
                   type="number"
                   min="0"
                   step="1"
-                  value={editProduto.estoqueMinimo ?? 1}
+                  value={editProduto.estoqueMinimo ?? 0}
                   onChange={(e) => updEdit("estoqueMinimo", e.target.value)}
                 />
               </FormField>

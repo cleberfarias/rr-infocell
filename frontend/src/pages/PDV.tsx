@@ -1413,17 +1413,23 @@ ${troco}
                       </p>
                     </div>
                   ))}
-                  <div className="flex items-center justify-between rounded-md border border-border bg-card/50 px-4 py-3">
-                    <div>
-                      <p className="font-medium">Mão de obra</p>
-                      <p className="text-xs text-muted-foreground">
-                        Serviço técnico
+                  {selectedOrdem.valorMaoObra > 0 ? (
+                    <div className="flex items-center justify-between rounded-md border border-border bg-card/50 px-4 py-3">
+                      <div>
+                        <p className="font-medium">Mão de obra</p>
+                        <p className="text-xs text-muted-foreground">
+                          Serviço técnico
+                        </p>
+                      </div>
+                      <p className="font-mono font-semibold">
+                        {formatBRL(selectedOrdem.valorMaoObra)}
                       </p>
                     </div>
-                    <p className="font-mono font-semibold">
-                      {formatBRL(selectedOrdem.valorMaoObra)}
-                    </p>
-                  </div>
+                  ) : selectedOrdem.maoObraInclusaNaPeca ? (
+                    <div className="rounded-md border border-border bg-card/50 px-4 py-3">
+                      <p className="font-medium">Mão de obra inclusa na peça</p>
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="mt-6 flex items-center justify-between border-t border-border pt-5">

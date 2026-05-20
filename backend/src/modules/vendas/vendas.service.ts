@@ -208,6 +208,7 @@ export class VendasService {
           : undefined,
       valorPecas: ordem.valorPecas,
       valorMaoObra: ordem.valorMaoObra,
+      maoObraInclusaNaPeca: ordem.maoObraInclusaNaPeca,
       desconto: ordem.desconto,
       entradaEm: ordem.entradaEm,
       previsaoEntregaEm: ordem.previsaoEntregaEm,

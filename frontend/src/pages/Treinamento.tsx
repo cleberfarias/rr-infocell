@@ -152,8 +152,8 @@ const modulos: Modulo[] = [
       {
         titulo: "Enviando para orçamento",
         descricao:
-          "Informe o valor de mão de obra, mude o status para 'Aguardando aprovação' e salve. O sistema vai automaticamente para Orçamentos.",
-        dica: "Você pode pausar em 'Aguardando peça' se precisar pedir material",
+          "Informe o valor de mão de obra quando ela for cobrada à parte. Se já estiver inclusa na peça, marque 'Inclusa na peça'. Depois mude o status para 'Aguardando aprovação' e salve.",
+        dica: "Mão de obra zerada não aparece para o cliente como R$ 0,00.",
       },
       {
         titulo: "Concluindo o serviço",
@@ -219,8 +219,8 @@ const modulos: Modulo[] = [
       {
         titulo: "Cadastrando um produto",
         descricao:
-          "Clique em '+ Novo produto'. No painel lateral, preencha SKU, categoria, nome, marca, custo e preço de venda. Informe a quantidade inicial e dados da NF-e se tiver.",
-        dica: "Marca e categoria podem ser criadas na hora com o campo de busca",
+          "Clique em '+ Novo produto'. Preencha SKU, categoria, nome, marca, custo e preço de venda. O custo aceita vírgula ou ponto e o estoque mínimo inicia em 0.",
+        dica: "Marca e categoria podem ser criadas na hora com o campo de busca.",
       },
       {
         titulo: "Registrando movimentações",

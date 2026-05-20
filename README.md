@@ -179,6 +179,7 @@ cd backend && npm run build && npm run lint
 - ✅ Estoque com fornecedor, código do fornecedor, marcas e categorias customizáveis
 - ✅ PDV com carrinho +/− inline, busca por fornecedor/SKU, desconto em OS e venda direta, impressão de cupom térmico e lançamento terceirizado
 - ✅ Desconto direto na OS, com total recalculado e persistido no cadastro da ordem
+- ✅ Produto com custo fracionado, estoque mínimo padrão 0 e mão de obra inclusa na peça
 - ✅ Terceirizados com status de repasse (Pendente/Pago) e cálculo de lucro
 - ✅ Kanban de OS com troca de status rápida e modo compacto
 - ✅ DRE simplificado com exportação em PDF

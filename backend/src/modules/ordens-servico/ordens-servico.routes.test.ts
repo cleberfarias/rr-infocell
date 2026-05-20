@@ -108,6 +108,23 @@ describe("ordens-servico routes", () => {
     expect(updateResponse.body.data.valorTotal).toBe(150);
   });
 
+  it("stores mao de obra inclusa flag without charging zero value", async () => {
+    const response = await request(app).post("/api/ordens-servico").send({
+      clienteId: "cli_marcos_almeida",
+      aparelhoId: "apa_iphone_11_marcos",
+      defeitoRelatado: "Troca de tela com mao de obra inclusa",
+      status: "em_manutencao",
+      valorPecas: 200,
+      valorMaoObra: 0,
+      maoObraInclusaNaPeca: true,
+    });
+
+    expect(response.status).toBe(201);
+    expect(response.body.data.valorMaoObra).toBe(0);
+    expect(response.body.data.maoObraInclusaNaPeca).toBe(true);
+    expect(response.body.data.valorTotal).toBe(200);
+  });
+
   it("does not create ordem for aparelho from another cliente", async () => {
     const response = await request(app).post("/api/ordens-servico").send({
       clienteId: "cli_marcos_almeida",

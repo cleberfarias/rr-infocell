@@ -170,6 +170,7 @@ const OrdemDetalhe = () => {
               }))
             : undefined,
         valorMaoObra: ordem.valorMaoObra,
+        maoObraInclusaNaPeca: ordem.maoObraInclusaNaPeca,
         desconto: ordem.desconto,
         entradaEm: ordem.entradaEm,
         previsaoEntregaEm: ordem.previsaoEntregaEm,
@@ -229,6 +230,7 @@ const OrdemDetalhe = () => {
               }))
             : undefined,
         valorMaoObra: ordem.valorMaoObra,
+        maoObraInclusaNaPeca: ordem.maoObraInclusaNaPeca,
         desconto:
           descontoTexto.trim() === ""
             ? undefined
@@ -331,6 +333,7 @@ const OrdemDetalhe = () => {
         tecnicoResponsavel: ordem.tecnicoResponsavel,
         pecasUsadas,
         valorMaoObra: ordem.valorMaoObra,
+        maoObraInclusaNaPeca: ordem.maoObraInclusaNaPeca,
         desconto: ordem.desconto,
         entradaEm: ordem.entradaEm,
         previsaoEntregaEm: ordem.previsaoEntregaEm,
@@ -862,6 +865,11 @@ const OrdemDetalhe = () => {
               Mão de obra: <strong>{formatBRL(ordem.valorMaoObra)}</strong>
             </span>
           )}
+          {ordem.maoObraInclusaNaPeca && (
+            <span>
+              Mão de obra: <strong>Inclusa na peça</strong>
+            </span>
+          )}
           <span style={{ fontWeight: 700, fontSize: 13 }}>
             Total: <strong>{formatBRL(ordem.valorTotal)}</strong>
           </span>
@@ -1339,6 +1347,12 @@ const OrdemDetalhe = () => {
                   <dd className="font-mono">{formatBRL(ordem.valorMaoObra)}</dd>
                 </div>
               )}
+              {ordem.maoObraInclusaNaPeca && (
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted-foreground">Mão de obra</dt>
+                  <dd>Inclusa na peça</dd>
+                </div>
+              )}
               {ordem.desconto ? (
                 <div className="flex justify-between gap-4 text-amber-600">
                   <dt>Desconto</dt>
@@ -1593,6 +1607,9 @@ const OrdemDetalhe = () => {
                 {ordem.valorMaoObra > 0
                   ? ` + mão de obra ${formatBRL(ordem.valorMaoObra)}`
                   : ""}
+                {ordem.maoObraInclusaNaPeca
+                  ? " + mão de obra inclusa na peça"
+                  : ""}
               </p>
             </div>
           </div>
@@ -1694,6 +1711,9 @@ const OrdemDetalhe = () => {
               <p>Peças: {formatBRL(ordem.valorPecas)}</p>
               {ordem.valorMaoObra > 0 && (
                 <p>Mão de obra: {formatBRL(ordem.valorMaoObra)}</p>
+              )}
+              {ordem.maoObraInclusaNaPeca && (
+                <p>Mão de obra: inclusa na peça</p>
               )}
               {ordem.formaPagamento && (
                 <p>Pagamento: {ordem.formaPagamento.toUpperCase()}</p>

@@ -38,6 +38,7 @@ export const ordemServicoInputSchema = z.object({
   pecasUsadas: z.array(pecaSchema).optional(),
   valorPecas: money,
   valorMaoObra: money,
+  maoObraInclusaNaPeca: z.boolean().optional(),
   desconto: money,
   entradaEm: optionalDateText,
   previsaoEntregaEm: optionalDateText,

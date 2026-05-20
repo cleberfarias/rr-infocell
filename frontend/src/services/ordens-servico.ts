@@ -43,6 +43,7 @@ export type OrdemServico = {
   pecasUsadas: OrdemServicoPeca[];
   valorPecas: number;
   valorMaoObra: number;
+  maoObraInclusaNaPeca?: boolean;
   desconto?: number;
   valorTotal: number;
   entradaEm: string;
@@ -89,6 +90,7 @@ export type OrdemServicoInput = {
   pecasUsadas?: OrdemServicoPecaInput[];
   valorPecas?: number;
   valorMaoObra?: number;
+  maoObraInclusaNaPeca?: boolean;
   desconto?: number;
   entradaEm?: string;
   previsaoEntregaEm?: string;

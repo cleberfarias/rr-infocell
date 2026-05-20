@@ -57,7 +57,7 @@ type ManutencaoForm = {
   prioridade: OrdemServico["prioridade"];
   tecnicoResponsavel: string;
   valorMaoObra: string;
-  maoObraInclusa: string;
+  maoObraInclusa: boolean;
   garantiaDias: string;
   garantiaObservacoes: string;
   tipoSenha: TipoSenhaAparelho;
@@ -86,7 +86,7 @@ const buildForm = (ordem: OrdemServico): ManutencaoForm => ({
   prioridade: ordem.prioridade ?? "normal",
   tecnicoResponsavel: ordem.tecnicoResponsavel ?? "",
   valorMaoObra: String(ordem.valorMaoObra),
-  maoObraInclusa: "",
+  maoObraInclusa: Boolean(ordem.maoObraInclusaNaPeca),
   garantiaDias: String(ordem.garantiaDias ?? GARANTIA_DIAS_PADRAO),
   garantiaObservacoes: ordem.garantiaObservacoes ?? "",
   tipoSenha: ordem.tipoSenha ?? "nao_informou",
@@ -237,14 +237,21 @@ const Manutencao = () => {
         tecnicoResponsavel: input.tecnicoResponsavel || undefined,
         pecasUsadas: toPecasInput(selectedOrdem),
         valorMaoObra: Number(input.valorMaoObra.replace(",", ".")) || 0,
+        maoObraInclusaNaPeca: input.maoObraInclusa,
         entradaEm: selectedOrdem.entradaEm,
         previsaoEntregaEm: selectedOrdem.previsaoEntregaEm,
         prazoPrometidoEm: selectedOrdem.prazoPrometidoEm,
         garantiaDias: Number(input.garantiaDias) || undefined,
         garantiaObservacoes: input.garantiaObservacoes || undefined,
         tipoSenha: input.tipoSenha,
-        senhaAparelho: input.tipoSenha === "numerica" ? input.senhaAparelho || undefined : undefined,
-        padraoDeSenha: input.tipoSenha === "padrao" ? input.padraoDeSenha || undefined : undefined,
+        senhaAparelho:
+          input.tipoSenha === "numerica"
+            ? input.senhaAparelho || undefined
+            : undefined,
+        padraoDeSenha:
+          input.tipoSenha === "padrao"
+            ? input.padraoDeSenha || undefined
+            : undefined,
       });
     },
     onSuccess: async (ordem, input) => {
@@ -266,13 +273,17 @@ const Manutencao = () => {
       ]);
 
       if (input.status === "aguardando_aprovacao") {
-        toast.success("OS enviada para orçamento. Aguardando aprovação do cliente.");
+        toast.success(
+          "OS enviada para orçamento. Aguardando aprovação do cliente.",
+        );
         navigate(ROUTES.orcamentoOS(ordem.id));
         return;
       }
 
       if (input.status === "pronto_para_retirada") {
-        toast.success("Aparelho pronto para retirada! Imprima o Termo de Garantia.");
+        toast.success(
+          "Aparelho pronto para retirada! Imprima o Termo de Garantia.",
+        );
         navigate(ROUTES.ordemDetalhe(ordem.id));
         return;
       }
@@ -283,7 +294,10 @@ const Manutencao = () => {
       setFormError(null);
     },
     onError: (error) => {
-      const msg = error instanceof Error ? error.message : "Não foi possível atualizar a manutenção.";
+      const msg =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível atualizar a manutenção.";
       setFormError(msg);
       toast.error(msg);
     },
@@ -364,7 +378,12 @@ const Manutencao = () => {
   const valorMaoObraAtual = form
     ? Number(form.valorMaoObra.replace(",", ".")) || 0
     : (selectedOrdem?.valorMaoObra ?? 0);
-  const valorTotalAtual = (selectedOrdem?.valorPecas ?? 0) + valorMaoObraAtual;
+  const valorTotalAtual = Math.max(
+    0,
+    (selectedOrdem?.valorPecas ?? 0) +
+      valorMaoObraAtual -
+      (selectedOrdem?.desconto ?? 0),
+  );
 
   if (isLoading) {
     return (
@@ -517,20 +536,21 @@ const Manutencao = () => {
             </Card>
           </div>
 
-          {selectedOrdem.tipoSenha && selectedOrdem.tipoSenha !== "sem_senha" && (
-            <Card className="border-amber-500/40 bg-amber-500/10 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-amber-500">
-                Senha do aparelho — uso interno
-              </p>
-              <p className="mt-1 font-mono text-lg font-bold text-amber-400">
-                {selectedOrdem.tipoSenha === "numerica"
-                  ? (selectedOrdem.senhaAparelho ?? "—")
-                  : selectedOrdem.tipoSenha === "padrao"
-                    ? (selectedOrdem.padraoDeSenha ?? "—")
-                    : "Cliente não informou"}
-              </p>
-            </Card>
-          )}
+          {selectedOrdem.tipoSenha &&
+            selectedOrdem.tipoSenha !== "sem_senha" && (
+              <Card className="border-amber-500/40 bg-amber-500/10 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-amber-500">
+                  Senha do aparelho — uso interno
+                </p>
+                <p className="mt-1 font-mono text-lg font-bold text-amber-400">
+                  {selectedOrdem.tipoSenha === "numerica"
+                    ? (selectedOrdem.senhaAparelho ?? "—")
+                    : selectedOrdem.tipoSenha === "padrao"
+                      ? (selectedOrdem.padraoDeSenha ?? "—")
+                      : "Cliente não informou"}
+                </p>
+              </Card>
+            )}
 
           <Card className="surface-panel p-5">
             <div className="flex items-center justify-between gap-2 overflow-x-auto">
@@ -676,16 +696,16 @@ const Manutencao = () => {
                         step="0.01"
                         type="number"
                         value={form.valorMaoObra}
-                        disabled={!!form.maoObraInclusa}
+                        disabled={form.maoObraInclusa}
                         onChange={(event) =>
                           updateForm("valorMaoObra", event.target.value)
                         }
                       />
                       <label className="mt-1.5 flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
                         <Checkbox
-                          checked={!!form.maoObraInclusa}
+                          checked={form.maoObraInclusa}
                           onCheckedChange={(checked) => {
-                            updateForm("maoObraInclusa", checked ? "1" : "");
+                            updateForm("maoObraInclusa", Boolean(checked));
                             if (checked) updateForm("valorMaoObra", "0");
                           }}
                         />
@@ -725,7 +745,14 @@ const Manutencao = () => {
                       Senha do aparelho
                     </p>
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                      {(["sem_senha", "numerica", "padrao", "nao_informou"] as TipoSenhaAparelho[]).map((tipo) => {
+                      {(
+                        [
+                          "sem_senha",
+                          "numerica",
+                          "padrao",
+                          "nao_informou",
+                        ] as TipoSenhaAparelho[]
+                      ).map((tipo) => {
                         const labels: Record<TipoSenhaAparelho, string> = {
                           sem_senha: "Sem senha",
                           numerica: "Numérica",
@@ -733,7 +760,10 @@ const Manutencao = () => {
                           nao_informou: "Não informou",
                         };
                         return (
-                          <label key={tipo} className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${form.tipoSenha === tipo ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}>
+                          <label
+                            key={tipo}
+                            className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${form.tipoSenha === tipo ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}
+                          >
                             <input
                               type="radio"
                               className="hidden"
@@ -751,7 +781,9 @@ const Manutencao = () => {
                         inputMode="numeric"
                         placeholder="Digite a senha numérica"
                         value={form.senhaAparelho}
-                        onChange={(e) => updateForm("senhaAparelho", e.target.value)}
+                        onChange={(e) =>
+                          updateForm("senhaAparelho", e.target.value)
+                        }
                       />
                     )}
                     {form.tipoSenha === "padrao" && (
@@ -759,7 +791,9 @@ const Manutencao = () => {
                         className="mt-2"
                         placeholder="Ex.: 1 → 5 → 9"
                         value={form.padraoDeSenha}
-                        onChange={(e) => updateForm("padraoDeSenha", e.target.value)}
+                        onChange={(e) =>
+                          updateForm("padraoDeSenha", e.target.value)
+                        }
                       />
                     )}
                   </div>
@@ -832,22 +866,35 @@ const Manutencao = () => {
                           </tr>
                         ))
                       )}
-                      <tr className="bg-secondary/20">
-                        <td className="px-4 py-3">
-                          <div className="font-medium">Mão de obra técnica</div>
-                          <div className="text-xs text-muted-foreground">
-                            Serviço executado por{" "}
-                            {form.tecnicoResponsavel || "técnico não definido"}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-center font-mono">1</td>
-                        <td className="px-4 py-3 text-right font-mono">
-                          {formatBRL(valorMaoObraAtual)}
-                        </td>
-                        <td className="px-4 py-3 text-right font-mono font-semibold">
-                          {formatBRL(valorMaoObraAtual)}
-                        </td>
-                      </tr>
+                      {valorMaoObraAtual > 0 ? (
+                        <tr className="bg-secondary/20">
+                          <td className="px-4 py-3">
+                            <div className="font-medium">
+                              Mão de obra técnica
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              Serviço executado por{" "}
+                              {form.tecnicoResponsavel ||
+                                "técnico não definido"}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-center font-mono">1</td>
+                          <td className="px-4 py-3 text-right font-mono">
+                            {formatBRL(valorMaoObraAtual)}
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono font-semibold">
+                            {formatBRL(valorMaoObraAtual)}
+                          </td>
+                        </tr>
+                      ) : form.maoObraInclusa ? (
+                        <tr className="bg-secondary/20">
+                          <td className="px-4 py-3" colSpan={4}>
+                            <div className="font-medium">
+                              Mão de obra inclusa na peça
+                            </div>
+                          </td>
+                        </tr>
+                      ) : null}
                     </tbody>
                   </table>
                 </div>
@@ -957,9 +1004,7 @@ const Manutencao = () => {
                   </Link>
                 </Button>
                 <Button asChild variant="outline" className="w-full">
-                  <Link
-                    to={ROUTES.checklistSaida(selectedOrdem.id)}
-                  >
+                  <Link to={ROUTES.checklistSaida(selectedOrdem.id)}>
                     Checklist de saída
                   </Link>
                 </Button>

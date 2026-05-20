@@ -54,8 +54,10 @@ O sistema navega automaticamente entre telas ao salvar:
 - `valorTotal = max(0, valorPecas + valorMaoObra - desconto)`
 - `valorPecas` = soma dos preços de venda das peças vinculadas à OS
 - `valorMaoObra` = informado manualmente na Manutenção
+- `maoObraInclusaNaPeca` = opção para indicar que a mão de obra está inclusa no valor da peça
 - `desconto` = valor opcional informado diretamente na OS ou no fechamento do PDV
 - O custo real de peças (para DRE) é calculado pelo custo cadastrado no estoque, não pelo preço de venda
+- Quando `valorMaoObra` for zero, a mão de obra não deve aparecer para o cliente como `R$ 0,00`; se estiver marcada como inclusa, aparece como "Inclusa na peça".
 
 ### 1.5 Garantia
 
@@ -123,6 +125,7 @@ Cada item pode ser marcado como:
 - `precoVenda` — valor de venda (pode ser zero).
 - `estoqueAtual` — quantidade em estoque (mínimo 0).
 - `estoqueMinimo` — ponto de reposição (mínimo 0).
+- O estoque mínimo padrão em novos cadastros é `0`, para evitar alerta de estoque baixo logo após criar o produto.
 
 ### 3.4 Alerta de estoque baixo
 
@@ -142,6 +145,7 @@ Cada item pode ser marcado como:
 - O estoque **não pode ficar negativo** em movimentações normais.
 - A baixa automática ocorre quando uma peça é vinculada a uma OS ou vendida no PDV.
 - Os dados da NF-e (número, série, data de emissão, valor adicional) são opcionais e salvos no campo `motivo`.
+- Campos monetários de custo e venda aceitam valor fracionado com vírgula ou ponto.
 
 ### 3.6 Motivos de movimentação
 

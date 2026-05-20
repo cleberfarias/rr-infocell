@@ -215,6 +215,7 @@ const Ordens = () => {
           valorUnitario: p.valorUnitario,
         })),
         valorMaoObra: ordem.valorMaoObra,
+        maoObraInclusaNaPeca: ordem.maoObraInclusaNaPeca,
         entradaEm: ordem.entradaEm,
         previsaoEntregaEm: ordem.previsaoEntregaEm,
       }),

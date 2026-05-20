@@ -47,6 +47,7 @@ const buildOrdem = (
       ? pecasUsadas.reduce((total, peca) => total + peca.valorTotal, 0)
       : (input.valorPecas ?? current?.valorPecas ?? 0);
   const valorMaoObra = input.valorMaoObra ?? current?.valorMaoObra ?? 0;
+  const maoObraInclusaNaPeca = input.maoObraInclusaNaPeca ?? current?.maoObraInclusaNaPeca;
   const desconto = input.desconto ?? current?.desconto ?? 0;
   const valorTotal = Math.max(0, valorPecas + valorMaoObra - desconto);
   const valorRecebido = input.valorRecebido ?? current?.valorRecebido;
@@ -82,6 +83,7 @@ const buildOrdem = (
     pecasUsadas,
     valorPecas,
     valorMaoObra,
+    maoObraInclusaNaPeca,
     desconto: desconto > 0 ? desconto : undefined,
     valorTotal,
     entradaEm: input.entradaEm ?? current?.entradaEm ?? timestamp,
@@ -353,6 +355,8 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
       pecasUsadas: this.fromPecasUsadas(data.pecasUsadas),
       valorPecas,
       valorMaoObra,
+      maoObraInclusaNaPeca:
+        data.maoObraInclusaNaPeca !== undefined ? Boolean(data.maoObraInclusaNaPeca) : undefined,
       desconto: desconto > 0 ? desconto : undefined,
       valorTotal: Number(data.valorTotal ?? Math.max(0, valorPecas + valorMaoObra - desconto)),
       entradaEm: String(data.entradaEm ?? ""),

@@ -45,6 +45,10 @@ const quickGuides = [
     question: "Como eu aplico desconto em uma OS ou venda direta?",
   },
   {
+    label: "Mão de obra",
+    question: "Como eu marco mão de obra inclusa na peça?",
+  },
+  {
     label: "Produto ativo/inativo",
     question: "Como eu deixo um produto inativo no estoque sem excluir?",
   },

@@ -20,7 +20,7 @@ const SYSTEM_PROMPT = `Você é o assistente do sistema RR Infocell, um sistema 
 3. **Manutenção** — O técnico:
    - Preenche o diagnóstico técnico
    - Adiciona peças usadas (pesquisa por código, nome ou valor; dá baixa automática no estoque)
-   - Informa o valor de mão de obra
+   - Informa o valor de mão de obra quando for cobrada à parte, ou marca "Inclusa na peça"
    - Muda status para "Aguardando aprovação" e salva → vai para Orçamento
 4. **Orçamento** — Revise o total, clique "Enviado ao cliente" para enviar via WhatsApp
    - Clique "Imprimir orçamento" para gerar nota com logo, CNPJ, endereço e assinatura
@@ -62,10 +62,11 @@ O Estoque tem duas telas separadas:
 
 **Como cadastrar produto DIRETO pelo botão "+ Novo produto" no Estoque:**
 1. Preencha SKU, categoria, nome, marca, modelo
-2. Informe custo e preço de venda (a margem é calculada automaticamente)
-3. Escolha o tipo de movimentação (Entrada ou Saída) e a quantidade inicial
-4. Preencha dados da NF-e se tiver nota
-5. Clique "Cadastrar produto" — cria o produto E registra a movimentação em um só passo
+2. Informe custo e preço de venda com vírgula ou ponto (a margem é calculada automaticamente)
+3. O estoque mínimo vem como 0 por padrão; ajuste só se quiser alerta de reposição
+4. Escolha o tipo de movimentação (Entrada ou Saída) e a quantidade inicial
+5. Preencha dados da NF-e se tiver nota
+6. Clique "Cadastrar produto" — cria o produto E registra a movimentação em um só passo
 
 **Categorias customizadas:** No campo Categoria, use o select e clique no "+" para criar nova.
 **Marcas customizadas:** Mesmo processo no campo Marca.
@@ -88,6 +89,10 @@ O cupom mostra: CNPJ, endereço, "CUPOM NÃO FISCAL", cliente, itens com SKU e v
 - Na OS: o desconto pode ser informado diretamente no Detalhe da OS. O total da OS é recalculado e fica salvo.
 - No PDV: o fechamento de OS aceita desconto no pagamento.
 - Na venda direta: o carrinho aceita desconto antes de finalizar; o total, troco e venda ficam com o desconto aplicado.
+
+## Mão de obra
+- Se a mão de obra for cobrada à parte, informe o valor na Manutenção.
+- Se a mão de obra estiver inclusa na peça, marque "Inclusa na peça"; nesse caso não aparece "Mão de obra R$ 0,00" para o cliente.
 
 ## Termo de garantia após finalizar OS no PDV
 Quando uma OS é finalizada no PDV:
