@@ -104,7 +104,7 @@ const modulos: Modulo[] = [
       {
         titulo: "Preenchendo os itens",
         descricao:
-          "Para cada item (tela, touch, câmera, microfone, etc.), marque 'Funcionando', 'Com defeito' ou 'Não testado'. Adicione observações específicas por item.",
+          "Os itens iniciam como 'Não testado'. Para cada item (tela, touch, câmera, microfone, etc.), marque 'Funcionando', 'Com defeito' ou mantenha 'Não testado'. Adicione observações específicas por item.",
         dica: "Itens com defeito ficam destacados em vermelho automaticamente",
       },
       {

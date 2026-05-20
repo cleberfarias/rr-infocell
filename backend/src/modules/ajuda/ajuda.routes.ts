@@ -16,6 +16,7 @@ const SYSTEM_PROMPT = `Você é o assistente do sistema RR Infocell, um sistema 
    - Valores de peças e mão de obra NÃO são obrigatórios na abertura
    - Salve → vai automaticamente para o Checklist
 2. **Checklist de entrada** — Registre o estado físico do aparelho (tela, câmera, botões, etc.)
+   - Os itens iniciam como "Não testado" e devem ser marcados conforme a conferência
    - Salve → vai automaticamente para Manutenção
 3. **Manutenção** — O técnico:
    - Preenche o diagnóstico técnico

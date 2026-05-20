@@ -39,7 +39,10 @@ import {
   isFirebaseClientConfigured,
 } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
-import { CHECKLIST_ENTRADA_ITENS, CHECKLIST_SAIDA_ITENS } from "@/constants/business";
+import {
+  CHECKLIST_ENTRADA_ITENS,
+  CHECKLIST_SAIDA_ITENS,
+} from "@/constants/business";
 import { CHECKLIST_STATUS_LABELS } from "@/constants/status";
 import { TIMEOUT } from "@/constants/query";
 import { ROUTES } from "@/constants/routes";
@@ -121,8 +124,10 @@ const Checklist = () => {
   const [selectedOrdemId, setSelectedOrdemId] = useState(
     searchParams.get("ordemId") ?? "",
   );
-  const checklistTipo = searchParams.get("tipo") === "saida" ? "saida" : "entrada";
-  const itensBase = checklistTipo === "saida" ? CHECKLIST_SAIDA_ITENS : CHECKLIST_ENTRADA_ITENS;
+  const checklistTipo =
+    searchParams.get("tipo") === "saida" ? "saida" : "entrada";
+  const itensBase =
+    checklistTipo === "saida" ? CHECKLIST_SAIDA_ITENS : CHECKLIST_ENTRADA_ITENS;
   const [itens, setItens] = useState<ChecklistItem[]>(itensBase);
   const [novoItemNome, setNovoItemNome] = useState("");
   const [fotos, setFotos] = useState<ChecklistFoto[]>([]);
@@ -158,7 +163,8 @@ const Checklist = () => {
 
   const checklistsQuery = useQuery({
     queryKey: ["checklists", selectedOrdemId],
-    queryFn: () => listChecklists({ ordemServicoId: selectedOrdemId, tipo: checklistTipo }),
+    queryFn: () =>
+      listChecklists({ ordemServicoId: selectedOrdemId, tipo: checklistTipo }),
     enabled: Boolean(selectedOrdemId),
   });
 
@@ -240,7 +246,10 @@ const Checklist = () => {
       }
     },
     onError: (error) => {
-      const msg = error instanceof Error ? error.message : "Não foi possível salvar o checklist.";
+      const msg =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível salvar o checklist.";
       setFormError(msg);
       toast.error(msg);
     },
@@ -371,7 +380,11 @@ const Checklist = () => {
     <form className="checklist-page space-y-5" onSubmit={handleSubmit}>
       <PageHeader
         eyebrow={selectedOrdem ? `OS-${selectedOrdem.numero}` : "Checklist"}
-        title={checklistTipo === "saida" ? "Checklist de saída" : "Checklist de entrada"}
+        title={
+          checklistTipo === "saida"
+            ? "Checklist de saída"
+            : "Checklist de entrada"
+        }
         description={
           checklistTipo === "saida"
             ? "Confirme os testes finais antes da entrega ao cliente."
@@ -411,12 +424,25 @@ const Checklist = () => {
               {(() => {
                 const logoUrl = localStorage.getItem("rr-logo-url");
                 return logoUrl ? (
-                  <img src={logoUrl} alt="Logo" style={{ maxHeight: 52, maxWidth: 130, objectFit: "contain", flexShrink: 0 }} />
+                  <img
+                    src={logoUrl}
+                    alt="Logo"
+                    style={{
+                      maxHeight: 52,
+                      maxWidth: 130,
+                      objectFit: "contain",
+                      flexShrink: 0,
+                    }}
+                  />
                 ) : null;
               })()}
               <div>
                 <p className="print-kicker">RR Infocell</p>
-                <h1>{checklistTipo === "saida" ? "Checklist de saída" : "Checklist de entrada"}</h1>
+                <h1>
+                  {checklistTipo === "saida"
+                    ? "Checklist de saída"
+                    : "Checklist de entrada"}
+                </h1>
                 <p>Ordem de serviço OS-{selectedOrdem.numero}</p>
               </div>
             </div>
@@ -569,7 +595,9 @@ const Checklist = () => {
             </div>
 
             <h3 className="mb-4 font-display text-base font-semibold">
-              {checklistTipo === "saida" ? "Teste final do aparelho" : "Inspeção do aparelho"}
+              {checklistTipo === "saida"
+                ? "Teste final do aparelho"
+                : "Inspeção do aparelho"}
             </h3>
             <div className="space-y-2">
               {itens.map((item, index) => (
@@ -577,7 +605,10 @@ const Checklist = () => {
                   key={item.nome}
                   draggable
                   onDragStart={() => setDragIndex(index)}
-                  onDragOver={(e) => { e.preventDefault(); setDragOverIndex(index); }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragOverIndex(index);
+                  }}
                   onDrop={() => {
                     if (dragIndex === null || dragIndex === index) return;
                     setItens((prev) => {
@@ -589,28 +620,45 @@ const Checklist = () => {
                     setDragIndex(null);
                     setDragOverIndex(null);
                   }}
-                  onDragEnd={() => { setDragIndex(null); setDragOverIndex(null); }}
+                  onDragEnd={() => {
+                    setDragIndex(null);
+                    setDragOverIndex(null);
+                  }}
                   className={`grid gap-3 rounded-md border p-3 text-sm transition-all md:grid-cols-[28px_180px_180px_1fr] cursor-grab active:cursor-grabbing ${statusClasses[item.status]} ${dragOverIndex === index && dragIndex !== index ? "border-primary/60 bg-primary/5" : ""} ${dragIndex === index ? "opacity-50" : ""}`}
                 >
                   <div className="flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground cursor-grab">
                     <GripVertical className="h-4 w-4" />
                   </div>
-                  <div className="flex items-center font-medium">{item.nome}</div>
+                  <div className="flex items-center font-medium">
+                    {item.nome}
+                  </div>
                   <Select
                     value={item.status}
-                    onValueChange={(value) => updateItem(index, { status: value as ChecklistItemStatus })}
+                    onValueChange={(value) =>
+                      updateItem(index, {
+                        status: value as ChecklistItemStatus,
+                      })
+                    }
                   >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(CHECKLIST_STATUS_LABELS).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>{label}</SelectItem>
-                      ))}
+                      {Object.entries(CHECKLIST_STATUS_LABELS).map(
+                        ([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ),
+                      )}
                     </SelectContent>
                   </Select>
                   <div className="flex items-center gap-2">
                     <Input
                       value={item.observacao ?? ""}
-                      onChange={(event) => updateItem(index, { observacao: event.target.value })}
+                      onChange={(event) =>
+                        updateItem(index, { observacao: event.target.value })
+                      }
                       placeholder="Observação do item"
                     />
                     {!itensBase.some((b) => b.nome === item.nome) && (
@@ -618,7 +666,9 @@ const Checklist = () => {
                         type="button"
                         className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
                         title="Remover item"
-                        onClick={() => setItens((prev) => prev.filter((_, i) => i !== index))}
+                        onClick={() =>
+                          setItens((prev) => prev.filter((_, i) => i !== index))
+                        }
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -639,8 +689,16 @@ const Checklist = () => {
                     e.preventDefault();
                     const nome = novoItemNome.trim();
                     if (!nome) return;
-                    if (itens.some((i) => i.nome.toLowerCase() === nome.toLowerCase())) return;
-                    setItens((prev) => [...prev, { nome, status: "funcionando" }]);
+                    if (
+                      itens.some(
+                        (i) => i.nome.toLowerCase() === nome.toLowerCase(),
+                      )
+                    )
+                      return;
+                    setItens((prev) => [
+                      ...prev,
+                      { nome, status: "nao_testado" },
+                    ]);
                     setNovoItemNome("");
                   }
                 }}
@@ -651,8 +709,16 @@ const Checklist = () => {
                 onClick={() => {
                   const nome = novoItemNome.trim();
                   if (!nome) return;
-                  if (itens.some((i) => i.nome.toLowerCase() === nome.toLowerCase())) return;
-                  setItens((prev) => [...prev, { nome, status: "funcionando" }]);
+                  if (
+                    itens.some(
+                      (i) => i.nome.toLowerCase() === nome.toLowerCase(),
+                    )
+                  )
+                    return;
+                  setItens((prev) => [
+                    ...prev,
+                    { nome, status: "nao_testado" },
+                  ]);
                   setNovoItemNome("");
                 }}
               >

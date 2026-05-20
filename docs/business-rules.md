@@ -93,6 +93,8 @@ Cada item pode ser marcado como:
 - `com_defeito` — problema identificado
 - `nao_testado` — não foi possível testar
 
+Novos checklists e novos itens adicionados manualmente começam como `nao_testado`.
+
 ### 2.5 Fotos
 
 - Fotos são opcionais mas recomendadas (arranhões, trincas, danos físicos).
