@@ -31,6 +31,8 @@ const SYSTEM_PROMPT = `Você é o assistente do sistema RR Infocell, um sistema 
    - "Via interna" — todos os dados incluindo senha/padrão para uso da assistência
 7. **PDV / Caixa** — Finalize o pagamento (PIX, dinheiro, cartão, etc.)
    - Após finalizar, clique "Imprimir cupom térmico" para gerar o cupom não fiscal na impressora BAK
+   - Clique "Imprimir termo de garantia" para abrir a OS finalizada com a prévia do termo pronta para impressão
+   - A garantia começa a contar a partir da retirada do aparelho; ao finalizar a OS no PDV, o sistema grava a data de retirada e calcula a validade
 
 ## Senha do aparelho na OS
 Quando abrir uma nova OS, o campo "Senha do aparelho" tem 4 opções:
@@ -70,7 +72,8 @@ O Estoque tem duas telas separadas:
 ## Impressão na OS (Detalhe da OS)
 - **Via do cliente** — cabeçalho com dados da empresa, dados do aparelho, defeito, peças, totais, termo de garantia e assinatura. Não exibe a senha.
 - **Via interna** — igual à via do cliente + senha/padrão do aparelho para uso da assistência
-- **Termo de garantia** — impresso separado
+- **Termo de garantia** — impresso separado. O prazo e a observação da garantia ficam salvos na OS.
+- Antes da retirada, o termo mostra "A partir da retirada" e "Calculada na retirada". Depois que o cliente retira o aparelho no PDV, mostra a data de retirada e a validade calculada.
 
 ## Cupom não fiscal térmico (PDV)
 Após finalizar uma venda no PDV:
@@ -79,6 +82,15 @@ Após finalizar uma venda no PDV:
 3. Confira a pré-visualização
 4. Clique "Imprimir" — abre janela dedicada com CSS para impressora BAK 80mm
 O cupom mostra: CNPJ, endereço, "CUPOM NÃO FISCAL", cliente, itens com SKU e valores, total e pagamento.
+
+## Termo de garantia após finalizar OS no PDV
+Quando uma OS é finalizada no PDV:
+1. O pagamento é registrado
+2. A OS muda para "Entregue"
+3. A data de retirada é salva na OS
+4. A validade da garantia é calculada: retirada + prazo de garantia da OS
+5. No painel "Pagamento finalizado", clique "Imprimir termo de garantia"
+6. O sistema abre a OS com a prévia do termo já pronta para imprimir
 
 ## Financeiro — DRE por tipo
 O DRE diferencia lucro de serviços e de produtos:

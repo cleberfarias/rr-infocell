@@ -58,10 +58,12 @@ O sistema navega automaticamente entre telas ao salvar:
 
 ### 1.5 Garantia
 
-- O prazo de garantia padrão é de **90 dias** a partir da data de entrega.
-- O prazo pode ser ajustado por OS na tela de Manutenção.
-- A data de validade da garantia (`garantiaAte`) é calculada automaticamente.
-- O Termo de Garantia pode ser impresso na tela de Detalhe da OS.
+- O prazo de garantia padrão é de **90 dias**.
+- O prazo e a observação da garantia podem ser ajustados por OS no Termo de Garantia.
+- A garantia começa a contar **a partir da retirada do aparelho pelo cliente**.
+- Antes da retirada, o termo mostra início como "A partir da retirada" e validade como "Calculada na retirada".
+- Quando o PDV finaliza uma OS, o status muda para `entregue`, a data de retirada fica registrada em `entregueEm` e a data de validade (`garantiaAte`) é calculada automaticamente.
+- O Termo de Garantia pode ser impresso no Detalhe da OS e também aparece como ação logo após finalizar o pagamento no PDV.
 
 ---
 
@@ -175,6 +177,8 @@ Cada item pode ser marcado como:
 - Formas de pagamento: `dinheiro`, `pix`, `cartao_debito`, `cartao_credito`, `parcelado`, `outro`.
 - O troco é calculado automaticamente para pagamentos em dinheiro.
 - Após o fechamento, o status da OS muda para `entregue`.
+- Após finalizar, o painel de pagamento exibe ações para imprimir cupom térmico, Termo de Garantia e comprovante.
+- O botão **Imprimir termo de garantia** abre a OS finalizada já com a pré-visualização do termo pronta para impressão.
 
 ### 5.2 Venda direta
 

@@ -36,6 +36,10 @@ const quickGuides = [
     question: "Como eu imprimo o cupom não fiscal térmico no PDV?",
   },
   {
+    label: "Termo de garantia",
+    question: "Como eu imprimo o termo de garantia depois de finalizar uma OS no PDV?",
+  },
+  {
     label: "Produto ativo/inativo",
     question: "Como eu deixo um produto inativo no estoque sem excluir?",
   },
