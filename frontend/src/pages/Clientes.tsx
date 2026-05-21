@@ -402,7 +402,6 @@ const Clientes = () => {
                   id="cliente-telefone"
                   value={form.telefone}
                   onChange={(event) => updateForm("telefone", event.target.value)}
-                  required
                 />
               </FormField>
               <FormField id="cliente-documento" label="Documento">

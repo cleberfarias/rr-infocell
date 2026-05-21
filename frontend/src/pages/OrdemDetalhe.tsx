@@ -2,12 +2,13 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
+  Check,
+  ChevronsUpDown,
   ClipboardCheck,
   ClipboardList,
   Loader2,
   PackagePlus,
   Printer,
-  Search,
   ShieldCheck,
   Trash2,
 } from "lucide-react";
@@ -46,13 +47,20 @@ import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/ui/money-input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { formatBRL, formatDate } from "@/lib/formatters";
+import { cn } from "@/lib/utils";
 import { EMPRESA } from "@/constants/company";
 import { getAparelho } from "@/services/aparelhos";
 import { getCliente } from "@/services/clientes";
@@ -72,6 +80,7 @@ const OrdemDetalhe = () => {
   const [pecaProdutoId, setPecaProdutoId] = useState("");
   const [pecaQuantidade, setPecaQuantidade] = useState("1");
   const [pecaBusca, setPecaBusca] = useState("");
+  const [pecaComboboxOpen, setPecaComboboxOpen] = useState(false);
   const [descontoTexto, setDescontoTexto] = useState("");
   const [pecaError, setPecaError] = useState<string | null>(null);
   const [previewOsOpen, setPreviewOsOpen] = useState(false);
@@ -1506,36 +1515,70 @@ const OrdemDetalhe = () => {
             </div>
 
             <form className="space-y-3" onSubmit={handleAddPeca}>
-              <FormField id="os-peca-busca" label="Pesquisar peça">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="os-peca-busca"
-                    className="pl-9"
-                    value={pecaBusca}
-                    onChange={(event) => setPecaBusca(event.target.value)}
-                    placeholder="Código, nome ou valor"
-                  />
-                </div>
-              </FormField>
               <FormField id="os-peca-produto" label="Peça do estoque">
-                <Select
-                  value={pecaProdutoId}
-                  onValueChange={setPecaProdutoId}
-                  disabled={produtosQuery.isLoading}
+                <Popover
+                  open={pecaComboboxOpen}
+                  onOpenChange={(open) => {
+                    setPecaComboboxOpen(open);
+                    if (!open) setPecaBusca("");
+                  }}
                 >
-                  <SelectTrigger id="os-peca-produto">
-                    <SelectValue placeholder="Selecione a peça" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {produtosFiltrados.map((produto) => (
-                      <SelectItem key={produto.id} value={produto.id}>
-                        {produto.sku} - {produto.nome} -{" "}
-                        {formatBRL(produto.precoVenda)} ({produto.estoqueAtual})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={pecaComboboxOpen}
+                      className="w-full justify-between font-normal"
+                      disabled={produtosQuery.isLoading}
+                    >
+                      {selectedProduto
+                        ? `${selectedProduto.sku} - ${selectedProduto.nome}`
+                        : "Selecione a peça"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="p-0"
+                    style={{ width: "var(--radix-popover-trigger-width)" }}
+                  >
+                    <Command shouldFilter={false}>
+                      <CommandInput
+                        placeholder="Código, nome ou valor"
+                        value={pecaBusca}
+                        onValueChange={setPecaBusca}
+                      />
+                      <CommandList>
+                        <CommandEmpty>Nenhuma peça encontrada.</CommandEmpty>
+                        <CommandGroup>
+                          {produtosFiltrados.map((produto) => (
+                            <CommandItem
+                              key={produto.id}
+                              value={produto.id}
+                              onSelect={() => {
+                                setPecaProdutoId(produto.id);
+                                setPecaBusca("");
+                                setPecaComboboxOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  pecaProdutoId === produto.id
+                                    ? "opacity-100"
+                                    : "opacity-0",
+                                )}
+                              />
+                              {produto.sku} - {produto.nome} —{" "}
+                              {formatBRL(produto.precoVenda)} (
+                              {produto.estoqueAtual})
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </FormField>
               <FormField id="os-peca-quantidade" label="Quantidade">
                 <Input
