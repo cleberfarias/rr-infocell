@@ -14,10 +14,7 @@ export const clienteInputSchema = z.object({
     .optional()
     .or(z.literal(""))
     .transform((value) => (value ? value : undefined))
-    .refine(
-      (value) => !value || value.length >= 8,
-      "Telefone deve ter pelo menos 8 caracteres.",
-    ),
+    .refine((value) => !value || value.length >= 8, "Telefone deve ter pelo menos 8 caracteres."),
   documento: optionalText,
   email: z
     .string()
