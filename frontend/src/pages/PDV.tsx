@@ -333,8 +333,10 @@ const PDV = () => {
       }
 
       const recebido = Number(valorRecebido.replace(",", ".")) || 0;
-      if (recebido < totalFinal) {
-        throw new Error("Valor recebido menor que o total da OS.");
+      const adiantadoOS = selectedOrdemPronta.valorAdiantado ?? 0;
+      const saldoFinal = Math.max(0, totalFinal - adiantadoOS);
+      if (recebido < saldoFinal) {
+        throw new Error("Valor recebido menor que o saldo devedor da OS.");
       }
       const venda = await createVenda({
         ordemServicoId: selectedOrdemPronta.id,
@@ -512,7 +514,9 @@ const PDV = () => {
   const totalComDesconto = selectedOrdem
     ? Math.max(0, selectedOrdem.valorTotal - descontoNum)
     : 0;
-  const troco = selectedOrdem ? Math.max(0, recebido - totalComDesconto) : 0;
+  const adiantado = selectedOrdem?.valorAdiantado ?? 0;
+  const saldo = Math.max(0, totalComDesconto - adiantado);
+  const troco = selectedOrdem ? Math.max(0, recebido - saldo) : 0;
   const cliente = selectedOrdem
     ? clienteById.get(selectedOrdem.clienteId)
     : undefined;
@@ -2072,6 +2076,26 @@ ${troco}
               )}
 
               <div className="mt-5 space-y-3">
+                {adiantado > 0 && (
+                  <div className="flex flex-col gap-1 rounded-md border border-blue-500/30 bg-blue-500/10 px-3 py-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs uppercase tracking-wide text-blue-600">
+                        Adiantado ({(selectedOrdem?.formaPagamentoAdiantamento ?? "").toUpperCase() || "—"})
+                      </span>
+                      <span className="font-mono text-sm font-semibold text-blue-600">
+                        {formatBRL(adiantado)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs uppercase tracking-wide text-blue-600">
+                        Saldo devedor
+                      </span>
+                      <span className="font-mono text-lg font-bold text-blue-600">
+                        {formatBRL(saldo)}
+                      </span>
+                    </div>
+                  </div>
+                )}
                 <FormField id="pdv-desconto" label="Desconto (opcional)">
                   <MoneyInput
                     id="pdv-desconto"

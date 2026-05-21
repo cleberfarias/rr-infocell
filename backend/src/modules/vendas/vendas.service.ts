@@ -35,11 +35,13 @@ export class VendasService {
 
     const desconto = input.desconto && input.desconto > 0 ? input.desconto : 0;
     const totalComDesconto = Math.max(0, ordem.valorTotal - desconto);
+    const valorAdiantado = ordem.valorAdiantado ?? 0;
+    const saldo = Math.max(0, totalComDesconto - valorAdiantado);
 
-    if (input.valorRecebido < totalComDesconto) {
+    if (input.valorRecebido < saldo) {
       throw new AppError(
         "pagamento_insuficiente",
-        "Valor recebido menor que o total da OS.",
+        "Valor recebido menor que o saldo devedor da OS.",
         httpStatus.badRequest,
       );
     }
@@ -54,8 +56,10 @@ export class VendasService {
       );
     }
 
+    const descontoTotal = (ordem.desconto ?? 0) + desconto;
     const delivered = await ordensServicoService.update(ordem.id, {
       ...this.toOrdemInput(ordem),
+      desconto: descontoTotal > 0 ? descontoTotal : undefined,
       status: "entregue",
       formaPagamento: input.formaPagamento,
       valorRecebido: input.valorRecebido,
@@ -80,7 +84,7 @@ export class VendasService {
       valorTotal: totalComDesconto,
       formaPagamento: input.formaPagamento,
       valorRecebido: input.valorRecebido,
-      troco: Math.max(0, input.valorRecebido - totalComDesconto),
+      troco: Math.max(0, input.valorRecebido - saldo),
       status: "finalizada",
       createdAt: delivered.pagoEm ?? now(),
     });
@@ -210,6 +214,8 @@ export class VendasService {
       valorMaoObra: ordem.valorMaoObra,
       maoObraInclusaNaPeca: ordem.maoObraInclusaNaPeca,
       desconto: ordem.desconto,
+      valorAdiantado: ordem.valorAdiantado,
+      formaPagamentoAdiantamento: ordem.formaPagamentoAdiantamento,
       entradaEm: ordem.entradaEm,
       previsaoEntregaEm: ordem.previsaoEntregaEm,
     };

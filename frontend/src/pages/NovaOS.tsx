@@ -67,6 +67,7 @@ import {
 } from "@/services/clientes";
 import {
   createOrdemServico,
+  type OrdemServicoFormaPagamento,
   type OrdemServicoInput,
   type OrdemServicoStatus,
   type TipoSenhaAparelho,
@@ -84,6 +85,8 @@ type NovaOSForm = {
   garantiaDias: string;
   valorPecas: string;
   valorMaoObra: string;
+  valorAdiantado: string;
+  formaPagamentoAdiantamento: OrdemServicoFormaPagamento | "";
   entradaEm: string;
   previsaoEntregaEm: string;
   tipoSenha: TipoSenhaAparelho;
@@ -122,6 +125,8 @@ const emptyForm: NovaOSForm = {
   garantiaDias: "90",
   valorPecas: "0",
   valorMaoObra: "0",
+  valorAdiantado: "",
+  formaPagamentoAdiantamento: "",
   entradaEm: today,
   previsaoEntregaEm: "",
   tipoSenha: "nao_informou",
@@ -572,6 +577,8 @@ const NovaOS = () => {
       tecnicoResponsavel: form.tecnicoResponsavel || undefined,
       valorPecas: parseCurrency(form.valorPecas),
       valorMaoObra: parseCurrency(form.valorMaoObra),
+      valorAdiantado: parseCurrency(form.valorAdiantado) || undefined,
+      formaPagamentoAdiantamento: form.formaPagamentoAdiantamento || undefined,
       entradaEm: form.entradaEm || undefined,
       previsaoEntregaEm: form.previsaoEntregaEm || undefined,
       prazoPrometidoEm: form.previsaoEntregaEm || undefined,
@@ -1289,6 +1296,39 @@ const NovaOS = () => {
                       currency: "BRL",
                     })}
                   </p>
+                </div>
+                <div className="col-span-2 space-y-2 border-t border-border pt-3">
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Adiantamento (opcional)
+                  </p>
+                  <FormField id="nova-os-adiantado" label="Valor recebido na entrada">
+                    <MoneyInput
+                      id="nova-os-adiantado"
+                      value={form.valorAdiantado}
+                      onChange={(v) => updateForm("valorAdiantado", v)}
+                    />
+                  </FormField>
+                  {parseCurrency(form.valorAdiantado) > 0 && (
+                    <FormField id="nova-os-forma-adiantamento" label="Forma de pagamento">
+                      <div className="flex gap-2">
+                        {(["pix", "cartao", "dinheiro"] as const).map((fp) => (
+                          <button
+                            key={fp}
+                            type="button"
+                            className={cn(
+                              "flex-1 rounded-md border px-2 py-1.5 text-xs font-medium transition-all",
+                              form.formaPagamentoAdiantamento === fp
+                                ? "border-primary bg-primary/10 text-primary"
+                                : "border-border bg-secondary/40 text-muted-foreground hover:text-foreground",
+                            )}
+                            onClick={() => updateForm("formaPagamentoAdiantamento", fp)}
+                          >
+                            {fp === "pix" ? "PIX" : fp === "cartao" ? "Cartão" : "Dinheiro"}
+                          </button>
+                        ))}
+                      </div>
+                    </FormField>
+                  )}
                 </div>
               </div>
             </Card>

@@ -102,6 +102,8 @@ const buildOrdem = (
         ? timestamp
         : current?.concluidaEm,
     entregueEm: deliveredNow ? timestamp : current?.entregueEm,
+    valorAdiantado: input.valorAdiantado ?? current?.valorAdiantado,
+    formaPagamentoAdiantamento: input.formaPagamentoAdiantamento ?? current?.formaPagamentoAdiantamento,
     formaPagamento: input.formaPagamento ?? current?.formaPagamento,
     valorRecebido,
     troco,
@@ -373,6 +375,10 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
       mensagemAprovacao: data.mensagemAprovacao ? String(data.mensagemAprovacao) : undefined,
       concluidaEm: data.concluidaEm ? String(data.concluidaEm) : undefined,
       entregueEm: data.entregueEm ? String(data.entregueEm) : undefined,
+      valorAdiantado: data.valorAdiantado !== undefined ? Number(data.valorAdiantado) : undefined,
+      formaPagamentoAdiantamento: data.formaPagamentoAdiantamento
+        ? (String(data.formaPagamentoAdiantamento) as OrdemServico["formaPagamentoAdiantamento"])
+        : undefined,
       formaPagamento: data.formaPagamento
         ? (String(data.formaPagamento) as OrdemServico["formaPagamento"])
         : undefined,

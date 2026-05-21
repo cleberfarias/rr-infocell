@@ -82,6 +82,10 @@ const OrdemDetalhe = () => {
   const [pecaBusca, setPecaBusca] = useState("");
   const [pecaComboboxOpen, setPecaComboboxOpen] = useState(false);
   const [descontoTexto, setDescontoTexto] = useState("");
+  const [adiantamentoTexto, setAdiantamentoTexto] = useState("");
+  const [formaPagamentoAdiantamento, setFormaPagamentoAdiantamento] = useState<
+    "pix" | "cartao" | "dinheiro" | ""
+  >("");
   const [pecaError, setPecaError] = useState<string | null>(null);
   const [previewOsOpen, setPreviewOsOpen] = useState(false);
   const [previewOsViaInterna, setPreviewOsViaInterna] = useState(false);
@@ -139,6 +143,11 @@ const OrdemDetalhe = () => {
   useEffect(() => {
     if (ordem) {
       setDescontoTexto(ordem.desconto ? String(ordem.desconto) : "");
+      setAdiantamentoTexto(ordem.valorAdiantado ? String(ordem.valorAdiantado) : "");
+      const fp = ordem.formaPagamentoAdiantamento;
+      setFormaPagamentoAdiantamento(
+        fp === "pix" || fp === "cartao" || fp === "dinheiro" ? fp : "",
+      );
     }
   }, [ordem]);
 
@@ -267,6 +276,62 @@ const OrdemDetalhe = () => {
         error instanceof Error
           ? error.message
           : "Nao foi possivel atualizar o desconto.",
+      );
+    },
+  });
+
+  const adiantamentoMutation = useMutation({
+    mutationFn: () => {
+      if (!ordem) throw new Error("OS nao carregada.");
+      return updateOrdemServico(ordem.id, {
+        clienteId: ordem.clienteId,
+        aparelhoId: ordem.aparelhoId,
+        checklistId: ordem.checklistId,
+        defeitoRelatado: ordem.defeitoRelatado,
+        diagnostico: ordem.diagnostico,
+        tipoSenha: ordem.tipoSenha,
+        senhaAparelho: ordem.senhaAparelho,
+        padraoDeSenha: ordem.padraoDeSenha,
+        status: ordem.status,
+        prioridade: ordem.prioridade,
+        tecnicoResponsavel: ordem.tecnicoResponsavel,
+        pecasUsadas:
+          ordem.pecasUsadas.length > 0
+            ? ordem.pecasUsadas.map((peca) => ({
+                produtoId: peca.produtoId,
+                quantidade: peca.quantidade,
+                valorUnitario: peca.valorUnitario,
+              }))
+            : undefined,
+        valorMaoObra: ordem.valorMaoObra,
+        maoObraInclusaNaPeca: ordem.maoObraInclusaNaPeca,
+        desconto: ordem.desconto,
+        valorAdiantado:
+          adiantamentoTexto.trim() === ""
+            ? undefined
+            : Number(adiantamentoTexto.replace(",", ".")),
+        formaPagamentoAdiantamento: formaPagamentoAdiantamento || undefined,
+        entradaEm: ordem.entradaEm,
+        previsaoEntregaEm: ordem.previsaoEntregaEm,
+        prazoPrometidoEm: ordem.prazoPrometidoEm,
+        garantiaDias: ordem.garantiaDias,
+        garantiaObservacoes: ordem.garantiaObservacoes,
+        aprovadoPor: ordem.aprovadoPor,
+        aprovadoEm: ordem.aprovadoEm,
+        canalAprovacao: ordem.canalAprovacao,
+        mensagemAprovacao: ordem.mensagemAprovacao,
+      });
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["ordem-servico", ordemId] }),
+        queryClient.invalidateQueries({ queryKey: ["ordens-servico"] }),
+      ]);
+      toast.success("Adiantamento atualizado.");
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Nao foi possivel atualizar o adiantamento.",
       );
     },
   });
@@ -879,9 +944,28 @@ const OrdemDetalhe = () => {
               Mão de obra: <strong>Inclusa na peça</strong>
             </span>
           )}
+          {ordem.desconto && ordem.desconto > 0 && (
+            <span>
+              Desconto: <strong>- {formatBRL(ordem.desconto)}</strong>
+            </span>
+          )}
           <span style={{ fontWeight: 700, fontSize: 13 }}>
             Total: <strong>{formatBRL(ordem.valorTotal)}</strong>
           </span>
+          {ordem.valorAdiantado && ordem.valorAdiantado > 0 && (
+            <span>
+              Adiantado ({(ordem.formaPagamentoAdiantamento ?? "").toUpperCase() || "—"}):{" "}
+              <strong>{formatBRL(ordem.valorAdiantado)}</strong>
+            </span>
+          )}
+          {ordem.valorAdiantado && ordem.valorAdiantado > 0 && (
+            <span style={{ fontWeight: 700, color: "#16a34a" }}>
+              Saldo devedor:{" "}
+              <strong>
+                {formatBRL(Math.max(0, ordem.valorTotal - ordem.valorAdiantado))}
+              </strong>
+            </span>
+          )}
         </div>
 
         {/* Termo */}
@@ -1394,6 +1478,46 @@ const OrdemDetalhe = () => {
                     <Loader2 className="h-4 w-4 animate-spin" />
                   )}
                   Salvar desconto
+                </Button>
+              </div>
+              <div className="space-y-2 border-t border-border pt-3">
+                <FormField id="os-adiantamento" label="Adiantamento recebido">
+                  <MoneyInput
+                    id="os-adiantamento"
+                    value={adiantamentoTexto}
+                    onChange={setAdiantamentoTexto}
+                  />
+                </FormField>
+                {Number(adiantamentoTexto.replace(",", ".")) > 0 && (
+                  <div className="flex gap-2">
+                    {(["pix", "cartao", "dinheiro"] as const).map((fp) => (
+                      <button
+                        key={fp}
+                        type="button"
+                        className={cn(
+                          "flex-1 rounded-md border px-2 py-1.5 text-xs font-medium transition-all",
+                          formaPagamentoAdiantamento === fp
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-secondary/40 text-muted-foreground hover:text-foreground",
+                        )}
+                        onClick={() => setFormaPagamentoAdiantamento(fp)}
+                      >
+                        {fp === "pix" ? "PIX" : fp === "cartao" ? "Cartão" : "Dinheiro"}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <Button
+                  className="w-full"
+                  disabled={adiantamentoMutation.isPending}
+                  onClick={() => adiantamentoMutation.mutate()}
+                  type="button"
+                  variant="outline"
+                >
+                  {adiantamentoMutation.isPending && (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
+                  Salvar adiantamento
                 </Button>
               </div>
             </dl>

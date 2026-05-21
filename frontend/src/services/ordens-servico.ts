@@ -58,6 +58,8 @@ export type OrdemServico = {
   mensagemAprovacao?: string;
   concluidaEm?: string;
   entregueEm?: string;
+  valorAdiantado?: number;
+  formaPagamentoAdiantamento?: OrdemServicoFormaPagamento;
   formaPagamento?: OrdemServicoFormaPagamento;
   valorRecebido?: number;
   troco?: number;
@@ -101,6 +103,8 @@ export type OrdemServicoInput = {
   aprovadoEm?: string;
   canalAprovacao?: OrdemServicoCanalAprovacao;
   mensagemAprovacao?: string;
+  valorAdiantado?: number;
+  formaPagamentoAdiantamento?: OrdemServicoFormaPagamento;
   formaPagamento?: OrdemServicoFormaPagamento;
   valorRecebido?: number;
 };

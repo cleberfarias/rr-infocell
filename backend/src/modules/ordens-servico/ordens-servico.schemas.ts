@@ -49,6 +49,8 @@ export const ordemServicoInputSchema = z.object({
   aprovadoEm: optionalDateText,
   canalAprovacao: z.enum(["balcao", "whatsapp", "telefone"]).optional(),
   mensagemAprovacao: optionalText,
+  valorAdiantado: money,
+  formaPagamentoAdiantamento: z.enum(["pix", "cartao", "dinheiro"]).optional(),
   formaPagamento: z.enum(["pix", "cartao", "dinheiro"]).optional(),
   valorRecebido: money,
 });
