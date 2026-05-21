@@ -1598,6 +1598,7 @@ const OrdemDetalhe = () => {
                       Unitário
                     </th>
                     <th className="px-4 py-3 text-right font-medium">Total</th>
+                    <th className="px-4 py-3" />
                   </tr>
                 </thead>
                 <tbody>
@@ -1605,7 +1606,7 @@ const OrdemDetalhe = () => {
                     <tr>
                       <td
                         className="px-4 py-5 text-center text-muted-foreground"
-                        colSpan={4}
+                        colSpan={5}
                       >
                         Nenhuma peça vinculada a esta OS.
                       </td>
@@ -1630,6 +1631,25 @@ const OrdemDetalhe = () => {
                         </td>
                         <td className="px-4 py-3 text-right font-mono font-semibold">
                           {formatBRL(peca.valorTotal)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            type="button"
+                            className="text-muted-foreground hover:text-destructive transition-colors"
+                            disabled={updatePecasMutation.isPending}
+                            onClick={() => {
+                              const novaLista = ordem.pecasUsadas
+                                .filter((p) => p.produtoId !== peca.produtoId)
+                                .map((p) => ({
+                                  produtoId: p.produtoId,
+                                  quantidade: p.quantidade,
+                                  valorUnitario: p.valorUnitario,
+                                }));
+                              updatePecasMutation.mutate(novaLista);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </td>
                       </tr>
                     ))
