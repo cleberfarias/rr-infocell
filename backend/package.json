@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "dev:emulator": "tsx --env-file=.env.emulator watch src/server.ts",
     "auth:set-role": "tsx src/scripts/set-user-role.ts",
     "script:normalizar-telefones": "tsx src/scripts/normalizar-telefones.ts",
     "script:limpar-conversas": "tsx src/scripts/limpar-conversas-invalidas.ts",

@@ -39,3 +39,6 @@ backend/whatsapp-auth/
 .playwright-mcp/
 .tmp/screens/
 backend/src/scripts/limpar-tudo.ts
+
+# Dados exportados do Firestore para o emulador local
+emulator-data/
