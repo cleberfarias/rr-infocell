@@ -143,7 +143,9 @@ const OrdemDetalhe = () => {
   useEffect(() => {
     if (ordem) {
       setDescontoTexto(ordem.desconto ? String(ordem.desconto) : "");
-      setAdiantamentoTexto(ordem.valorAdiantado ? String(ordem.valorAdiantado) : "");
+      setAdiantamentoTexto(
+        ordem.valorAdiantado ? String(ordem.valorAdiantado) : "",
+      );
       const fp = ordem.formaPagamentoAdiantamento;
       setFormaPagamentoAdiantamento(
         fp === "pix" || fp === "cartao" || fp === "dinheiro" ? fp : "",
@@ -331,7 +333,9 @@ const OrdemDetalhe = () => {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Nao foi possivel atualizar o adiantamento.",
+        error instanceof Error
+          ? error.message
+          : "Nao foi possivel atualizar o adiantamento.",
       );
     },
   });
@@ -519,7 +523,7 @@ const OrdemDetalhe = () => {
   }) => {
     const tipoSenhaLabel: Record<string, string> = {
       sem_senha: "Sem senha",
-      numerica: "Senha numérica",
+      numerica: "Senha com números/letras",
       padrao: "Padrão/desenho",
       nao_informou: "Cliente não informou",
     };
@@ -954,7 +958,8 @@ const OrdemDetalhe = () => {
           </span>
           {ordem.valorAdiantado && ordem.valorAdiantado > 0 && (
             <span>
-              Adiantado ({(ordem.formaPagamentoAdiantamento ?? "").toUpperCase() || "—"}):{" "}
+              Adiantado (
+              {(ordem.formaPagamentoAdiantamento ?? "").toUpperCase() || "—"}):{" "}
               <strong>{formatBRL(ordem.valorAdiantado)}</strong>
             </span>
           )}
@@ -962,7 +967,9 @@ const OrdemDetalhe = () => {
             <span style={{ fontWeight: 700, color: "#16a34a" }}>
               Saldo devedor:{" "}
               <strong>
-                {formatBRL(Math.max(0, ordem.valorTotal - ordem.valorAdiantado))}
+                {formatBRL(
+                  Math.max(0, ordem.valorTotal - ordem.valorAdiantado),
+                )}
               </strong>
             </span>
           )}
@@ -1502,7 +1509,11 @@ const OrdemDetalhe = () => {
                         )}
                         onClick={() => setFormaPagamentoAdiantamento(fp)}
                       >
-                        {fp === "pix" ? "PIX" : fp === "cartao" ? "Cartão" : "Dinheiro"}
+                        {fp === "pix"
+                          ? "PIX"
+                          : fp === "cartao"
+                            ? "Cartão"
+                            : "Dinheiro"}
                       </button>
                     ))}
                   </div>

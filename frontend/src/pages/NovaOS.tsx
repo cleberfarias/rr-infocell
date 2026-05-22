@@ -602,8 +602,7 @@ const NovaOS = () => {
     form.clienteId && form.aparelhoId && form.defeitoRelatado.trim(),
   );
   const canCreateCadastroRapido = Boolean(
-    (form.clienteId ||
-      quickCliente.nome.trim()) &&
+    (form.clienteId || quickCliente.nome.trim()) &&
     quickAparelho.marca.trim() &&
     quickAparelho.modelo.trim(),
   );
@@ -682,8 +681,10 @@ const NovaOS = () => {
                                       : "opacity-0",
                                   )}
                                 />
-                              {cliente.nome}
-                              {cliente.telefone ? ` — ${cliente.telefone}` : ""}
+                                {cliente.nome}
+                                {cliente.telefone
+                                  ? ` — ${cliente.telefone}`
+                                  : ""}
                               </CommandItem>
                             ))}
                           </CommandGroup>
@@ -811,7 +812,7 @@ const NovaOS = () => {
                             );
                             updQuick("clienteTelefone", "");
                           }}
-                            placeholder="Telefone/WhatsApp opcional"
+                          placeholder="Telefone/WhatsApp opcional"
                           inputMode="numeric"
                           className={
                             quickErrors.clienteTelefone
@@ -1052,7 +1053,7 @@ const NovaOS = () => {
                   ).map((tipo) => {
                     const labels: Record<TipoSenhaAparelho, string> = {
                       sem_senha: "Sem senha",
-                      numerica: "Numérica",
+                      numerica: "Números/letras",
                       padrao: "Padrão/desenho",
                       nao_informou: "Não informou",
                     };
@@ -1083,9 +1084,8 @@ const NovaOS = () => {
                       onChange={(e) =>
                         updateForm("senhaAparelho", e.target.value)
                       }
-                      placeholder="Senha numérica do aparelho"
+                      placeholder="Senha com números e/ou letras"
                       autoComplete="off"
-                      inputMode="numeric"
                     />
                   </FormField>
                 )}
@@ -1301,7 +1301,10 @@ const NovaOS = () => {
                   <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                     Adiantamento (opcional)
                   </p>
-                  <FormField id="nova-os-adiantado" label="Valor recebido na entrada">
+                  <FormField
+                    id="nova-os-adiantado"
+                    label="Valor recebido na entrada"
+                  >
                     <MoneyInput
                       id="nova-os-adiantado"
                       value={form.valorAdiantado}
@@ -1309,7 +1312,10 @@ const NovaOS = () => {
                     />
                   </FormField>
                   {parseCurrency(form.valorAdiantado) > 0 && (
-                    <FormField id="nova-os-forma-adiantamento" label="Forma de pagamento">
+                    <FormField
+                      id="nova-os-forma-adiantamento"
+                      label="Forma de pagamento"
+                    >
                       <div className="flex gap-2">
                         {(["pix", "cartao", "dinheiro"] as const).map((fp) => (
                           <button
@@ -1321,9 +1327,15 @@ const NovaOS = () => {
                                 ? "border-primary bg-primary/10 text-primary"
                                 : "border-border bg-secondary/40 text-muted-foreground hover:text-foreground",
                             )}
-                            onClick={() => updateForm("formaPagamentoAdiantamento", fp)}
+                            onClick={() =>
+                              updateForm("formaPagamentoAdiantamento", fp)
+                            }
                           >
-                            {fp === "pix" ? "PIX" : fp === "cartao" ? "Cartão" : "Dinheiro"}
+                            {fp === "pix"
+                              ? "PIX"
+                              : fp === "cartao"
+                                ? "Cartão"
+                                : "Dinheiro"}
                           </button>
                         ))}
                       </div>

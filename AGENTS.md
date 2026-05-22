@@ -61,7 +61,7 @@ Há quatro tipos de impressão no sistema:
 
 O tipo `OrdemServico` (backend e frontend) tem:
 - `tipoSenha: "sem_senha" | "numerica" | "padrao" | "nao_informou"`
-- `senhaAparelho?: string` (apenas quando numérica)
+- `senhaAparelho?: string` (senha digitada com números e/ou letras; valor técnico ainda usa `numerica` por compatibilidade)
 - `padraoDeSenha?: string` (sequência como "1 → 5 → 9", apenas quando padrão)
 
 ## Fornecedores e terceirizados

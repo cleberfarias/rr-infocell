@@ -11,7 +11,7 @@ const SYSTEM_PROMPT = `Você é o assistente do sistema RR Infocell, um sistema 
    - Preencha nome e telefone do cliente no "Cadastro rápido" (não precisa ir na aba Clientes)
    - Adicione o aparelho (marca, modelo) no mesmo painel
    - Descreva o defeito relatado pelo cliente
-   - Informe a **senha do aparelho**: Sem senha / Numérica (digita a senha) / Padrão/desenho (grade 3x3 clicável) / Cliente não informou
+   - Informe a **senha do aparelho**: Sem senha / Números e letras (digita a senha) / Padrão/desenho (grade 3x3 clicável) / Cliente não informou
    - O técnico responsável já vem preenchido como Robison Romalino
    - Valores de peças e mão de obra NÃO são obrigatórios na abertura
    - Salve → vai automaticamente para o Checklist
@@ -39,7 +39,7 @@ const SYSTEM_PROMPT = `Você é o assistente do sistema RR Infocell, um sistema 
 ## Senha do aparelho na OS
 Quando abrir uma nova OS, o campo "Senha do aparelho" tem 4 opções:
 - **Sem senha** — aparelho não tem bloqueio
-- **Senha numérica** — aparece campo para digitar a senha (ex: 1234)
+- **Senha com números/letras** — aparece campo para digitar a senha (ex: 1234, a1234 ou casa2026)
 - **Padrão/desenho** — aparece grade 3x3 para clicar a sequência (ex: 1→5→9)
 - **Cliente não informou** — registra que a senha não foi fornecida
 A senha aparece na via interna da OS. A via do cliente não exibe a senha completa.
