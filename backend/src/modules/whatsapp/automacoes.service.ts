@@ -1,6 +1,8 @@
 import { env } from "../../config/env.js";
 import { db } from "../../firebase/admin.js";
 import { normalizarTelefone } from "../../shared/normalizar-telefone.js";
+import { aparelhosService } from "../aparelhos/aparelhos.service.js";
+import type { Aparelho } from "../aparelhos/aparelhos.types.js";
 import type { Checklist } from "../checklists/checklists.types.js";
 import { createClientesRepository } from "../clientes/clientes.repository.js";
 import { createOrdensServicoRepository } from "../ordens-servico/ordens-servico.repository.js";
@@ -72,12 +74,32 @@ function mensagemProntoRetirada(os: OrdemServico) {
   return linhas.join("\n");
 }
 
-function mensagemAbertura(os: OrdemServico) {
-  return [
-    `*RR Infocell - OS #${os.numero} aberta*`,
-    "Recebemos seu aparelho.",
-    "Vamos iniciar a analise tecnica e avisaremos por aqui quando houver atualizacao.",
-  ].join("\n");
+function formatAparelho(aparelho?: Aparelho | null) {
+  if (!aparelho) return null;
+
+  const modelo = [aparelho.marca, aparelho.modelo].filter(Boolean).join(" ").trim();
+  const detalhes = [
+    aparelho.cor,
+    aparelho.imeiSerial ? `IMEI/Serial: ${aparelho.imeiSerial}` : null,
+  ]
+    .filter(Boolean)
+    .join(" - ");
+  const descricao = [modelo, detalhes].filter(Boolean).join(" - ");
+
+  return descricao || null;
+}
+
+function mensagemAbertura(os: OrdemServico, aparelho?: Aparelho | null) {
+  const linhas = [`*RR Infocell - OS #${os.numero} aberta*`, "Recebemos seu aparelho."];
+  const aparelhoDescricao = formatAparelho(aparelho);
+
+  if (aparelhoDescricao) {
+    linhas.push(`Aparelho: ${aparelhoDescricao}`);
+  }
+
+  linhas.push("Vamos iniciar a analise tecnica e avisaremos por aqui quando houver atualizacao.");
+
+  return linhas.join("\n");
 }
 
 function mensagemOrcamentoPendente(os: OrdemServico) {
@@ -140,7 +162,8 @@ class AutomacoesAtendimentoService {
 
   async aoCriarOrdem(os: OrdemServico) {
     if (env.NODE_ENV === "test") return;
-    const enviada = await this.enviarAutomacaoOrdem(os, mensagemAbertura(os), "status");
+    const aparelho = await aparelhosService.getById(os.aparelhoId).catch(() => null);
+    const enviada = await this.enviarAutomacaoOrdem(os, mensagemAbertura(os, aparelho), "status");
     if (enviada) {
       await this.marcarAutomacaoOrdem(os.id, { "automacoes.aberturaEnviadaEm": now() });
     }
