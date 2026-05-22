@@ -160,7 +160,11 @@ class AutomacoesAtendimentoService {
       }
     }
 
-    if (next.status === "entregue" || next.status === "sem_conserto" || next.status === "cancelado") {
+    if (
+      next.status === "entregue" ||
+      next.status === "sem_conserto" ||
+      next.status === "cancelado"
+    ) {
       await this.finalizarConversa(next);
     }
   }

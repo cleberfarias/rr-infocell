@@ -103,7 +103,8 @@ const buildOrdem = (
         : current?.concluidaEm,
     entregueEm: deliveredNow ? timestamp : current?.entregueEm,
     valorAdiantado: input.valorAdiantado ?? current?.valorAdiantado,
-    formaPagamentoAdiantamento: input.formaPagamentoAdiantamento ?? current?.formaPagamentoAdiantamento,
+    formaPagamentoAdiantamento:
+      input.formaPagamentoAdiantamento ?? current?.formaPagamentoAdiantamento,
     formaPagamento: input.formaPagamento ?? current?.formaPagamento,
     valorRecebido,
     troco,
