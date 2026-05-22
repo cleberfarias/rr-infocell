@@ -316,10 +316,8 @@ const Financeiro = () => {
     receitaTotal > 0 ? (financeiro.lucroLiquido / receitaTotal) * 100 : 0;
   const linhas = [
     { label: "Receita com serviços (mão de obra)", valor: financeiro.receitaServicos, tipo: "in" as const },
-    { label: "Lucro em serviços", valor: financeiro.lucroEmServicos, tipo: "in" as const, note: "100% lucro" },
     { label: "Receita com produtos/peças", valor: financeiro.receitaProdutos, tipo: "in" as const },
-    { label: "(-) Custo de peças", valor: -financeiro.custoPecas, tipo: "out" as const },
-    { label: "Lucro em produtos/peças", valor: financeiro.lucroEmProdutos, tipo: financeiro.lucroEmProdutos >= 0 ? "in" as const : "out" as const },
+    { label: "(-) Custo de peças (CMV)", valor: -financeiro.custoPecas, tipo: "out" as const },
     { label: "= Lucro bruto", valor: financeiro.lucroBruto, tipo: "sum" as const },
     { label: "(-) Despesas fixas", valor: -financeiro.despesasFixas, tipo: "out" as const },
     { label: "= Lucro líquido total", valor: financeiro.lucroLiquido, tipo: "sum" as const },

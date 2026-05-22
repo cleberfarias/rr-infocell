@@ -548,8 +548,7 @@ const PDV = () => {
   const reciboVenda = vendaFinalizada;
   const reciboTerceirizado = terceirizadoFinalizado;
 
-  const buildCupomHtml = () => {
-    const venda = vendaFinalizada;
+  const buildCupomHtml = (venda: Venda) => {
     if (!venda) return "";
 
     const cols = larguraCupom === "58mm" ? 32 : 42;
@@ -807,7 +806,8 @@ ${troco}
   }
 
   const handleImprimirCupom = () => {
-    const html = buildCupomHtml();
+    if (!vendaFinalizada) return;
+    const html = buildCupomHtml(vendaFinalizada);
     if (!html) return;
     const win = window.open("", "_blank", "width=400,height=700");
     if (!win) return;
@@ -2196,9 +2196,11 @@ ${troco}
                   <th className="px-4 py-3 text-left font-medium">Cliente</th>
                   <th className="px-4 py-3 text-left font-medium">Data</th>
                   <th className="px-4 py-3 text-left font-medium">Forma</th>
+                  <th className="px-4 py-3 text-right font-medium">Desconto</th>
                   <th className="px-4 py-3 text-right font-medium">Total</th>
                   <th className="px-4 py-3 text-right font-medium">Recebido</th>
                   <th className="px-4 py-3 text-right font-medium">Troco</th>
+                  <th className="px-4 py-3 text-right font-medium"></th>
                 </tr>
               </thead>
               <tbody>
@@ -2206,7 +2208,7 @@ ${troco}
                   <tr>
                     <td
                       className="px-4 py-8 text-center text-muted-foreground"
-                      colSpan={7}
+                      colSpan={9}
                     >
                       Nenhum pagamento finalizado ainda.
                     </td>
@@ -2242,6 +2244,11 @@ ${troco}
                         <td className="px-4 py-3 uppercase">
                           {venda.formaPagamento}
                         </td>
+                        <td className="px-4 py-3 text-right font-mono text-amber-400">
+                          {(venda.desconto ?? 0) > 0
+                            ? `- ${formatBRL(venda.desconto!)}`
+                            : "-"}
+                        </td>
                         <td className="px-4 py-3 text-right font-mono">
                           {formatBRL(venda.valorTotal)}
                         </td>
@@ -2250,6 +2257,21 @@ ${troco}
                         </td>
                         <td className="px-4 py-3 text-right font-mono">
                           {formatBRL(venda.troco)}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            title="Reimprimir cupom"
+                            className="rounded p-1 text-muted-foreground hover:text-foreground"
+                            onClick={() => {
+                              const html = buildCupomHtml(venda);
+                              const win = window.open("", "_blank", "width=400,height=700");
+                              if (!win) return;
+                              win.document.write(html);
+                              win.document.close();
+                            }}
+                          >
+                            <Printer className="h-4 w-4" />
+                          </button>
                         </td>
                       </tr>
                     );
