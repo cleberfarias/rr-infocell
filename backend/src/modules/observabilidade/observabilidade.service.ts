@@ -47,7 +47,8 @@ class ObservabilidadeService {
   }
 
   registrarRequest(request: Request, response: Response, duracaoMs: number) {
-    const nivel: LogLevel = response.statusCode >= 500 ? "error" : response.statusCode >= 400 ? "warn" : "info";
+    const nivel: LogLevel =
+      response.statusCode >= 500 ? "error" : response.statusCode >= 400 ? "warn" : "info";
     this.registrar({
       tipo: "request",
       nivel,
