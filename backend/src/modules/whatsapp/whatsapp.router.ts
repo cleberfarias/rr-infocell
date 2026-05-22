@@ -30,18 +30,23 @@ function tipoMidiaPorMime(
 }
 
 whatsappRoutes.get("/status", (_req, res) => {
+  conexaoService.garantirInicializacao();
   res.json(conexaoService.getStatus());
 });
 
-whatsappRoutes.get("/qrcode", (_req, res) => {
-  const qr = conexaoService.getQR();
-  if (!qr) {
-    res
-      .status(404)
-      .json({ error: "QR code nao disponivel. WhatsApp ja conectado ou ainda iniciando." });
-    return;
+whatsappRoutes.get("/qrcode", async (_req, res, next) => {
+  try {
+    const qr = await conexaoService.solicitarQR();
+    if (!qr) {
+      res
+        .status(404)
+        .json({ error: "QR code nao disponivel. WhatsApp ja conectado ou ainda iniciando." });
+      return;
+    }
+    res.json({ qr });
+  } catch (err) {
+    next(err);
   }
-  res.json({ qr });
 });
 
 whatsappRoutes.get("/conversas", async (_req, res, next) => {

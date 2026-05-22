@@ -9,6 +9,8 @@ import makeWASocket, {
   type WASocket,
 } from "@whiskeysockets/baileys";
 import { Boom } from "@hapi/boom";
+import { rm } from "node:fs/promises";
+import path from "node:path";
 import { toDataURL } from "qrcode";
 import { env } from "../../config/env.js";
 import { normalizarTelefone } from "../../shared/normalizar-telefone.js";
@@ -71,6 +73,7 @@ class ConexaoService {
   private qrBase64: string | null = null;
   private authDir = env.WHATSAPP_AUTH_DIR;
   private iniciadoEm = Date.now();
+  private inicializacao: Promise<void> | null = null;
   private diagnostico: DiagnosticoWhatsApp = {
     conectadoComo: null,
     ultimoEventoEm: null,
@@ -106,6 +109,33 @@ class ConexaoService {
 
   async inicializar() {
     if (this.socket) return;
+    if (this.inicializacao) return this.inicializacao;
+
+    this.inicializacao = this.criarSocket().finally(() => {
+      this.inicializacao = null;
+    });
+
+    return this.inicializacao;
+  }
+
+  garantirInicializacao() {
+    if (this.socket || this.inicializacao) return;
+
+    this.inicializar().catch((err) => {
+      console.error("[WhatsApp] Falha ao inicializar:", err);
+    });
+  }
+
+  async solicitarQR() {
+    if (!this.socket && !this.inicializacao) {
+      await this.inicializar();
+    }
+
+    return this.qrBase64;
+  }
+
+  private async criarSocket() {
+    this.qrBase64 = null;
 
     this.iniciadoEm = Date.now();
     const { version } = await fetchLatestBaileysVersion();
@@ -147,12 +177,19 @@ class ConexaoService {
 
         this.socket = null;
         this.status = "desconectado";
+        this.qrBase64 = null;
 
         if (reconectar) {
           console.log("[WhatsApp] Reconectando...");
-          setTimeout(() => this.inicializar(), 3000);
+          this.agendarInicializacao(3000);
         } else {
           console.log("[WhatsApp] Deslogado. Escaneie o QR novamente.");
+          try {
+            await this.limparCredenciais();
+          } catch (err) {
+            console.error("[WhatsApp] Falha ao limpar credenciais:", err);
+          }
+          this.agendarInicializacao(1000);
         }
       }
     });
@@ -250,6 +287,25 @@ class ConexaoService {
         }
       }
     });
+  }
+
+  private agendarInicializacao(delayMs: number) {
+    setTimeout(() => {
+      this.inicializar().catch((err) => {
+        console.error("[WhatsApp] Falha ao reinicializar:", err);
+      });
+    }, delayMs);
+  }
+
+  private async limparCredenciais() {
+    const authDirResolvido = path.resolve(this.authDir);
+    const raiz = path.parse(authDirResolvido).root;
+
+    if (authDirResolvido === raiz) {
+      throw new Error("WHATSAPP_AUTH_DIR invalido para limpeza.");
+    }
+
+    await rm(authDirResolvido, { recursive: true, force: true });
   }
 
   getSocket(): WASocket | null {

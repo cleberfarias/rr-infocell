@@ -18,6 +18,8 @@ const envSchema = z.object({
   ATENDIMENTO_LEMBRETE_RETIRADA_DIAS: z.coerce.number().positive().default(2),
   ATENDIMENTO_AUTOARQUIVAR_DIAS: z.coerce.number().positive().default(7),
   WHATSAPP_AUTH_DIR: z.string().default("./whatsapp-auth"),
+  OBSERVABILIDADE_ALLOWED_EMAILS: z.string().default("cleber.super@rrinfocell.com.br"),
+  OBSERVABILIDADE_ALLOWED_UIDS: z.string().optional(),
 });
 
 export const env = envSchema.parse(process.env);

@@ -1,6 +1,7 @@
 import { Component, type ReactNode } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { reportFrontendError } from "@/services/observabilidade";
 
 interface Props {
   children: ReactNode;
@@ -24,6 +25,11 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: { componentStack: string }) {
     console.error("[ErrorBoundary]", error, info.componentStack);
+    void reportFrontendError({
+      mensagem: error.message,
+      stack: error.stack,
+      componentStack: info.componentStack,
+    });
   }
 
   render() {

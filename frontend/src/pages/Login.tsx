@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
+import { isOwnerLogin, OWNER_LOGIN } from "@/lib/owner";
 import {
   ShieldCheck,
   Wrench,
@@ -66,7 +67,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { isDevelopmentMode, login } = useAuth();
   const [role, setRole] = useState<Role>("admin");
-  const [email, setEmail] = useState(roles.admin.email);
+  const [email, setEmail] = useState(OWNER_LOGIN);
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -85,7 +86,7 @@ const Login = () => {
     setIsSubmitting(true);
 
     try {
-      const nextPath = await login({ email, password, role });
+      const nextPath = await login({ email, password, role: isOwnerLogin(email) ? "admin" : role });
       navigate(nextPath);
     } catch {
       setError(
@@ -223,10 +224,10 @@ const Login = () => {
 
           <form onSubmit={handle} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="email">Login</Label>
               <Input
                 id="email"
-                type="email"
+                type="text"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
               />

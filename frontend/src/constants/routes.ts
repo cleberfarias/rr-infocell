@@ -21,5 +21,6 @@ export const ROUTES = {
   despesas: "/app/despesas",
   atendimento: "/app/atendimento",
   usuarios: "/app/usuarios",
+  observabilidade: "/app/observabilidade",
   treinamento: "/app/treinamento",
 } as const;

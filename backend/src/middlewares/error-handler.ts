@@ -2,8 +2,11 @@ import type { ErrorRequestHandler } from "express";
 
 import { AppError } from "../shared/errors.js";
 import { httpStatus } from "../shared/http-status.js";
+import { observabilidadeService } from "../modules/observabilidade/observabilidade.service.js";
 
-export const errorHandler: ErrorRequestHandler = (error, _request, response, _next) => {
+export const errorHandler: ErrorRequestHandler = (error, request, response, _next) => {
+  observabilidadeService.registrarErroBackend(error, request);
+
   if (error instanceof AppError) {
     return response.status(error.statusCode).json({
       error: {

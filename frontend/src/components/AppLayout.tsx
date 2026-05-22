@@ -17,6 +17,7 @@ import {
   BookOpen,
   Keyboard,
   X,
+  Bug,
 } from "lucide-react";
 import { MdDashboard, MdHandyman, MdInventory2, MdPointOfSale, MdAccountBalance, MdChecklist, MdPhoneAndroid } from "react-icons/md";
 import { FaWhatsapp } from "react-icons/fa";
@@ -33,6 +34,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
+import { canAccessObservabilidade } from "@/lib/observabilidade";
 import { canAccess, roleLabels, roleHome } from "@/lib/roles";
 import { listOrdensServico } from "@/services/ordens-servico";
 import { listProdutos } from "@/services/produtos";
@@ -51,6 +53,7 @@ const allNav = [
   { to: "/app/clientes", label: "Clientes", icon: Users, key: "clientes" },
   { to: "/app/aparelhos", label: "Aparelhos", icon: MdPhoneAndroid, key: "aparelhos" },
   { to: "/app/usuarios", label: "Usuários", icon: UserCog, key: "usuarios" },
+  { to: "/app/observabilidade", label: "Observabilidade", icon: Bug, key: "observabilidade" },
   { to: "/app/atendimento", label: "Atendimento", icon: FaWhatsapp, key: "atendimento" },
   { to: "/app/treinamento", label: "Treinamento", icon: BookOpen, key: "treinamento" },
 ];
@@ -69,6 +72,7 @@ const navOrder: Record<string, number> = {
   financeiro: 10,
   despesas: 11,
   usuarios: 12,
+  observabilidade: 13,
 };
 
 export const AppLayout = () => {
@@ -78,9 +82,11 @@ export const AppLayout = () => {
   const {
     displayName: nome,
     isAuthenticated,
+    isDevelopmentMode,
     isLoading,
     logout,
     role,
+    user,
   } = useAuth();
 
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -167,13 +173,20 @@ export const AppLayout = () => {
     return <Navigate to="/" replace state={{ from: location.pathname }} />;
   }
 
+  const podeObservabilidade = canAccessObservabilidade(user, isDevelopmentMode);
+
   // Bloqueio de rota: se o perfil não tem acesso, manda pra home dele
   if (!canAccess(role, location.pathname)) {
     return <Navigate to={roleHome[role]} replace />;
   }
 
+  if (location.pathname.startsWith("/app/observabilidade") && !podeObservabilidade) {
+    return <Navigate to={roleHome[role]} replace />;
+  }
+
   const nav = allNav
     .filter((n) => canAccess(role, n.to) && !n.hidden)
+    .filter((n) => n.key !== "observabilidade" || podeObservabilidade)
     .sort((a, b) => navOrder[a.key] - navOrder[b.key]);
   const current = allNav.filter((n) => canAccess(role, n.to)).find((n) =>
     n.to === "/app"

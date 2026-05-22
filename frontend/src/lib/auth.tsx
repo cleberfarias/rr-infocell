@@ -22,6 +22,7 @@ import {
   setRole as persistRole,
   type Role,
 } from "@/lib/roles";
+import { isOwnerLogin, resolveLoginEmail, setOwnerSession } from "@/lib/owner";
 
 type LoginInput = {
   email: string;
@@ -90,17 +91,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = useCallback(
     async ({ email, password, role: selectedRole }: LoginInput) => {
+      const ownerLogin = isOwnerLogin(email);
+      const loginEmail = resolveLoginEmail(email);
+      const nextSelectedRole = ownerLogin ? "admin" : selectedRole;
+
       if (isDevelopmentMode || !firebaseAuth) {
-        persistRole(selectedRole);
-        setRoleState(selectedRole);
-        setDisplayName(roleNames[selectedRole]);
+        persistRole(nextSelectedRole);
+        setOwnerSession(ownerLogin);
+        setRoleState(nextSelectedRole);
+        setDisplayName(ownerLogin ? "cleber.super" : roleNames[nextSelectedRole]);
         setUser(null);
-        return roleHome[selectedRole];
+        return roleHome[nextSelectedRole];
       }
 
       const credential = await signInWithEmailAndPassword(
         firebaseAuth,
-        email,
+        loginEmail,
         password,
       );
       const token = await credential.user.getIdTokenResult(true); // força refresh do token
@@ -116,6 +122,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const nextRole = claimRole;
 
       persistRole(nextRole);
+      setOwnerSession(ownerLogin);
       setUser(credential.user);
       setRoleState(nextRole);
       setDisplayName(
@@ -135,6 +142,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     clearRole();
+    setOwnerSession(false);
     setUser(null);
     setRoleState("admin");
     setDisplayName(roleNames.admin);

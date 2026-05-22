@@ -13,6 +13,7 @@ import { marcasRoutes } from "./modules/marcas/marcas.routes.js";
 import { fornecedoresRoutes } from "./modules/fornecedores/fornecedores.routes.js";
 import { terceirizadosRoutes } from "./modules/terceirizados/terceirizados.routes.js";
 import { movimentacoesEstoqueRoutes } from "./modules/movimentacoes-estoque/movimentacoes-estoque.routes.js";
+import { observabilidadeRoutes } from "./modules/observabilidade/observabilidade.routes.js";
 import { orcamentosRoutes } from "./modules/orcamentos/orcamentos.routes.js";
 import { ordemEventosRoutes } from "./modules/ordem-eventos/ordem-eventos.routes.js";
 import { ordensServicoRoutes } from "./modules/ordens-servico/ordens-servico.routes.js";
@@ -47,6 +48,7 @@ routes.use(
   usuariosTecnicosRoutes,
 );
 routes.use("/usuarios", requireRole("admin"), usuariosRoutes);
+routes.use("/observabilidade", requireRole("admin", "atendente", "tecnico"), observabilidadeRoutes);
 routes.use("/whatsapp", requireRole("admin", "atendente", "tecnico"), whatsappRoutes);
 routes.use("/categorias", requireRole("admin", "atendente", "tecnico"), categoriasRoutes);
 routes.use("/marcas", requireRole("admin", "atendente", "tecnico"), marcasRoutes);

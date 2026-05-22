@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { LogOut, Menu, Plus, Users, UserCog, Receipt, X } from "lucide-react";
+import { Bug, LogOut, Menu, Plus, Users, UserCog, Receipt, X } from "lucide-react";
 import { MdDashboard, MdHandyman, MdInventory2, MdPointOfSale, MdAccountBalance, MdChecklist, MdPhoneAndroid } from "react-icons/md";
 import { FaWhatsapp } from "react-icons/fa";
 import { HiWrenchScrewdriver } from "react-icons/hi2";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
+import { canAccessObservabilidade } from "@/lib/observabilidade";
 import { canAccess, roleLabels } from "@/lib/roles";
 import { Logo } from "@/components/Logo";
 
@@ -34,6 +35,7 @@ const allNav: NavItem[] = [
   { to: "/app/aparelhos", label: "Aparelhos", icon: MdPhoneAndroid, key: "aparelhos" },
   { to: "/app/atendimento", label: "Atendimento", icon: FaWhatsapp, key: "atendimento" },
   { to: "/app/usuarios", label: "Usuários", icon: UserCog, key: "usuarios" },
+  { to: "/app/observabilidade", label: "Observabilidade", icon: Bug, key: "observabilidade" },
 ];
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -50,6 +52,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   aparelhos: MdPhoneAndroid,
   atendimento: FaWhatsapp,
   usuarios: UserCog,
+  observabilidade: Bug,
 };
 
 const bottomNav = [
@@ -65,11 +68,14 @@ interface MobileNavProps {
 
 export const MobileNav = ({ badges = {} }: MobileNavProps) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const { displayName: nome, role, logout } = useAuth();
+  const { displayName: nome, isDevelopmentMode, role, logout, user } = useAuth();
   const navigate = useNavigate();
   const inicial = nome.trim().charAt(0).toUpperCase();
+  const podeObservabilidade = canAccessObservabilidade(user, isDevelopmentMode);
 
-  const filteredNav = allNav.filter((n) => canAccess(role, n.to));
+  const filteredNav = allNav
+    .filter((n) => canAccess(role, n.to))
+    .filter((n) => n.key !== "observabilidade" || podeObservabilidade);
 
   const sair = async () => {
     setDrawerOpen(false);
