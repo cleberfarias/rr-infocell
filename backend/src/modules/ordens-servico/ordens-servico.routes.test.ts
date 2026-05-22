@@ -211,6 +211,56 @@ describe("ordens-servico routes", () => {
     expect(movimentacoesResponse.body.data[0].ordemServicoId).toBe(ordem.id);
   });
 
+  it("returns stock when removing peca usada from ordem", async () => {
+    const produtoResponse = await request(app).post("/api/produtos").send({
+      sku: "OS-FLX-REMOVE",
+      nome: "Flex removivel para OS",
+      categoria: "peca",
+      estoqueAtual: 4,
+      estoqueMinimo: 1,
+      custo: 20,
+      precoVenda: 50,
+    });
+    const produto = produtoResponse.body.data;
+    const createResponse = await request(app)
+      .post("/api/ordens-servico")
+      .send({
+        clienteId: "cli_marcos_almeida",
+        aparelhoId: "apa_iphone_11_marcos",
+        defeitoRelatado: "Teste de remocao de peca",
+        status: "em_manutencao",
+        pecasUsadas: [
+          {
+            produtoId: produto.id,
+            quantidade: 2,
+          },
+        ],
+      });
+    const ordem = createResponse.body.data;
+
+    const removeResponse = await request(app).put(`/api/ordens-servico/${ordem.id}`).send({
+      clienteId: ordem.clienteId,
+      aparelhoId: ordem.aparelhoId,
+      defeitoRelatado: ordem.defeitoRelatado,
+      status: ordem.status,
+      pecasUsadas: [],
+    });
+
+    expect(removeResponse.status).toBe(200);
+    expect(removeResponse.body.data.pecasUsadas).toHaveLength(0);
+    expect(removeResponse.body.data.valorPecas).toBe(0);
+
+    const produtoAfterResponse = await request(app).get(`/api/produtos/${produto.id}`);
+    expect(produtoAfterResponse.body.data.estoqueAtual).toBe(4);
+
+    const movimentacoesResponse = await request(app).get(
+      `/api/movimentacoes-estoque?produtoId=${produto.id}`,
+    );
+    expect(
+      movimentacoesResponse.body.data.some((mov: { tipo: string }) => mov.tipo === "entrada"),
+    ).toBe(true);
+  });
+
   it("registers payment when delivering ordem", async () => {
     const createResponse = await request(app).post("/api/ordens-servico").send({
       clienteId: "cli_marcos_almeida",

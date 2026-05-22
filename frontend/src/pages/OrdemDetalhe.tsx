@@ -68,6 +68,7 @@ import {
   deleteOrdemServico,
   getOrdemServico,
   updateOrdemServico,
+  type OrdemServicoPeca,
   type OrdemServicoPecaInput,
 } from "@/services/ordens-servico";
 import { listProdutos } from "@/services/produtos";
@@ -91,6 +92,8 @@ const OrdemDetalhe = () => {
   const [previewOsViaInterna, setPreviewOsViaInterna] = useState(false);
   const [previewGarantiaOpen, setPreviewGarantiaOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [pecaDeleteTarget, setPecaDeleteTarget] =
+    useState<OrdemServicoPeca | null>(null);
   const [editTermoOpen, setEditTermoOpen] = useState(false);
   const [garantiaDiasTexto, setGarantiaDiasTexto] = useState("");
   const [garantiaObservacoesTexto, setGarantiaObservacoesTexto] = useState("");
@@ -427,6 +430,7 @@ const OrdemDetalhe = () => {
       setPecaProdutoId("");
       setPecaQuantidade("1");
       setPecaError(null);
+      setPecaDeleteTarget(null);
     },
     onError: (error) => {
       setPecaError(
@@ -482,6 +486,20 @@ const OrdemDetalhe = () => {
         ];
 
     updatePecasMutation.mutate(pecasUsadas);
+  };
+
+  const handleRemovePeca = () => {
+    if (!ordem || !pecaDeleteTarget) return;
+
+    const novaLista = ordem.pecasUsadas
+      .filter((p) => p.produtoId !== pecaDeleteTarget.produtoId)
+      .map((p) => ({
+        produtoId: p.produtoId,
+        quantidade: p.quantidade,
+        valorUnitario: p.valorUnitario,
+      }));
+
+    updatePecasMutation.mutate(novaLista);
   };
 
   if (isLoading) {
@@ -1073,6 +1091,53 @@ const OrdemDetalhe = () => {
         </DialogContent>
       </Dialog>
 
+      <Dialog
+        open={Boolean(pecaDeleteTarget)}
+        onOpenChange={(open) => {
+          if (!open) setPecaDeleteTarget(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Remover peça da OS</DialogTitle>
+            <DialogDescription>
+              A peça será removida desta ordem de serviço e a quantidade será
+              devolvida ao estoque.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-1">
+            <p className="text-sm text-muted-foreground">
+              Remover{" "}
+              <span className="font-semibold text-foreground">
+                {pecaDeleteTarget?.nome}
+              </span>{" "}
+              da OS-{ordem.numero}?
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setPecaDeleteTarget(null)}
+                disabled={updatePecasMutation.isPending}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleRemovePeca}
+                disabled={updatePecasMutation.isPending}
+              >
+                {updatePecasMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+                Remover peça
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <PrintPreviewDialog
         open={previewOsOpen}
         onOpenChange={setPreviewOsOpen}
@@ -1648,16 +1713,8 @@ const OrdemDetalhe = () => {
                             type="button"
                             className="text-muted-foreground hover:text-destructive transition-colors"
                             disabled={updatePecasMutation.isPending}
-                            onClick={() => {
-                              const novaLista = ordem.pecasUsadas
-                                .filter((p) => p.produtoId !== peca.produtoId)
-                                .map((p) => ({
-                                  produtoId: p.produtoId,
-                                  quantidade: p.quantidade,
-                                  valorUnitario: p.valorUnitario,
-                                }));
-                              updatePecasMutation.mutate(novaLista);
-                            }}
+                            onClick={() => setPecaDeleteTarget(peca)}
+                            title="Remover peça da OS"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>

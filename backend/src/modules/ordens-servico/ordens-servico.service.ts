@@ -154,7 +154,9 @@ export class OrdensServicoService {
   }
 
   private async ensurePositiveDeltasStock(input: OrdemServicoInput, current?: OrdemServico) {
-    const deltas = this.calculatePecasDeltas(input.pecasUsadas ?? [], current);
+    const deltas = this.calculatePecasDeltas(input.pecasUsadas ?? [], current).filter(
+      (delta) => delta.quantidade > 0,
+    );
 
     await Promise.all(
       deltas.map(async (delta) => {
@@ -175,19 +177,26 @@ export class OrdensServicoService {
     const deltas = this.calculatePecasDeltas(ordem.pecasUsadas, current);
 
     for (const delta of deltas) {
+      const quantidade = Math.abs(delta.quantidade);
+      const isEntrada = delta.quantidade < 0;
+
       await movimentacoesEstoqueService.create({
         produtoId: delta.produtoId,
-        tipo: "saida",
-        quantidade: delta.quantidade,
-        motivo: `Baixa automatica OS-${ordem.numero}`,
+        tipo: isEntrada ? "entrada" : "saida",
+        quantidade,
+        motivo: isEntrada
+          ? `Devolucao automatica OS-${ordem.numero}`
+          : `Baixa automatica OS-${ordem.numero}`,
         origem: "ordem_servico",
         ordemServicoId: ordem.id,
       });
       await this.registrarEvento(
         ordem.id,
         "peca",
-        "Peca adicionada",
-        `${delta.quantidade} un. adicionada(s) e baixada(s) do estoque.`,
+        isEntrada ? "Peca removida" : "Peca adicionada",
+        isEntrada
+          ? `${quantidade} un. removida(s) da OS e devolvida(s) ao estoque.`
+          : `${quantidade} un. adicionada(s) e baixada(s) do estoque.`,
         ordem.tecnicoResponsavel,
       );
     }
@@ -256,19 +265,23 @@ export class OrdensServicoService {
     nextPecas: { produtoId: string; quantidade: number }[],
     current?: OrdemServico,
   ) {
-    return nextPecas
-      .map((peca) => {
-        const currentQuantidade =
-          current?.pecasUsadas.find((currentPeca) => currentPeca.produtoId === peca.produtoId)
-            ?.quantidade ?? 0;
-        const quantidade = peca.quantidade - currentQuantidade;
+    const produtoIds = new Set([
+      ...nextPecas.map((peca) => peca.produtoId),
+      ...(current?.pecasUsadas ?? []).map((peca) => peca.produtoId),
+    ]);
 
+    return Array.from(produtoIds)
+      .map((produtoId) => {
+        const nextQuantidade =
+          nextPecas.find((peca) => peca.produtoId === produtoId)?.quantidade ?? 0;
+        const currentQuantidade =
+          current?.pecasUsadas.find((peca) => peca.produtoId === produtoId)?.quantidade ?? 0;
         return {
-          produtoId: peca.produtoId,
-          quantidade,
+          produtoId,
+          quantidade: nextQuantidade - currentQuantidade,
         };
       })
-      .filter((delta) => delta.quantidade > 0);
+      .filter((delta) => delta.quantidade !== 0);
   }
 }
 
