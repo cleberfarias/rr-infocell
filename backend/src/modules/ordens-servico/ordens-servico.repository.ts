@@ -74,9 +74,13 @@ const buildOrdem = (
     diagnostico: input.diagnostico,
     tipoSenha: input.tipoSenha ?? current?.tipoSenha,
     senhaAparelho:
-      input.tipoSenha === "numerica" ? (input.senhaAparelho ?? current?.senhaAparelho) : undefined,
+      (input.tipoSenha ?? current?.tipoSenha) === "numerica"
+        ? (input.senhaAparelho ?? current?.senhaAparelho)
+        : undefined,
     padraoDeSenha:
-      input.tipoSenha === "padrao" ? (input.padraoDeSenha ?? current?.padraoDeSenha) : undefined,
+      (input.tipoSenha ?? current?.tipoSenha) === "padrao"
+        ? (input.padraoDeSenha ?? current?.padraoDeSenha)
+        : undefined,
     status,
     prioridade,
     tecnicoResponsavel: input.tecnicoResponsavel,

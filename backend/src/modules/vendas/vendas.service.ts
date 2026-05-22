@@ -201,6 +201,9 @@ export class VendasService {
       checklistId: ordem.checklistId,
       defeitoRelatado: ordem.defeitoRelatado,
       diagnostico: ordem.diagnostico,
+      tipoSenha: ordem.tipoSenha,
+      senhaAparelho: ordem.senhaAparelho,
+      padraoDeSenha: ordem.padraoDeSenha,
       tecnicoResponsavel: ordem.tecnicoResponsavel,
       pecasUsadas:
         ordem.pecasUsadas.length > 0
