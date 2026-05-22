@@ -51,7 +51,7 @@ const activeStatuses = [
 const finalStatuses: string[] = ["pronto_para_retirada", "entregue"];
 
 const isOverdue = (ordem: OrdemServico) => {
-  if (!ordem.previsaoEntregaEm || ["entregue", "cancelado"].includes(ordem.status)) {
+  if (!ordem.previsaoEntregaEm || ["entregue", "sem_conserto", "cancelado"].includes(ordem.status)) {
     return false;
   }
 
@@ -116,7 +116,7 @@ const Dashboard = () => {
   );
 
   const relatorio = useMemo(() => {
-    const abertas = ordens.filter((ordem) => ordem.status !== "entregue" && ordem.status !== "cancelado");
+    const abertas = ordens.filter((ordem) => !["entregue", "sem_conserto", "cancelado"].includes(ordem.status));
     const emManutencao = ordens.filter((ordem) => activeStatuses.includes(ordem.status));
     const finalizadas = ordens.filter((ordem) => finalStatuses.includes(ordem.status));
     const atrasadas = ordens.filter(isOverdue);

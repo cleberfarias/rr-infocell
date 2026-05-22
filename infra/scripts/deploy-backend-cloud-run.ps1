@@ -18,4 +18,6 @@ gcloud run deploy $Service `
   --source $backendPath `
   --allow-unauthenticated `
   --set-env-vars $envVars `
+  --min-instances 1 `
+  --max-instances 1 `
   --quiet

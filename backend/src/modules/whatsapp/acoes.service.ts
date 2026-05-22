@@ -19,6 +19,7 @@ const statusLabel: Record<string, string> = {
   em_manutencao: "Em manutencao 🔧",
   pronto_para_retirada: "Pronto para retirada ✅",
   entregue: "Entregue 📦",
+  sem_conserto: "Sem conserto",
   cancelado: "Cancelado ❌",
 };
 

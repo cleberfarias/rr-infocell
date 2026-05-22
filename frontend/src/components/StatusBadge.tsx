@@ -9,6 +9,7 @@ type StatusKey =
   | "pronto_para_retirada"
   | "finalizado"
   | "entregue"
+  | "sem_conserto"
   | "cancelado"
   | "atrasado"
   | "aprovado"
@@ -51,6 +52,10 @@ const map: Record<StatusKey, { label: string; className: string; pulse?: boolean
   entregue: {
     label: "Entregue",
     className: "bg-emerald-500/20 text-emerald-700 border-emerald-600/40",
+  },
+  sem_conserto: {
+    label: "Sem conserto",
+    className: "bg-zinc-500/10 text-zinc-500 border-zinc-500/30",
   },
   cancelado: {
     label: "Cancelado",

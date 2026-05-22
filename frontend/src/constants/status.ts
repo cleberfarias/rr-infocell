@@ -8,6 +8,7 @@ export const OS_STATUS_LABELS: Record<OrdemServicoStatus, string> = {
   em_manutencao: "Em manutenção",
   pronto_para_retirada: "Pronto para retirada",
   entregue: "Entregue",
+  sem_conserto: "Sem conserto",
   cancelado: "Cancelado",
 };
 
@@ -20,6 +21,7 @@ export const OS_STATUS_OPTIONS: Array<{ value: OrdemServicoStatus | "todos"; lab
   { value: "em_manutencao", label: "Em manutenção" },
   { value: "pronto_para_retirada", label: "Pronto para retirada" },
   { value: "entregue", label: "Entregue" },
+  { value: "sem_conserto", label: "Sem conserto" },
   { value: "cancelado", label: "Cancelado" },
 ];
 

@@ -75,7 +75,7 @@ export class OrdensServicoService {
     if (isTerminalStatus(current.status)) {
       throw new AppError(
         "ordem_servico_locked",
-        "Ordem de servico entregue ou cancelada nao pode ser editada.",
+        "Ordem de servico entregue, sem conserto ou cancelada nao pode ser editada.",
         httpStatus.badRequest,
       );
     }

@@ -85,6 +85,14 @@ const emptyNovoProduto = {
 const parseMoney = (value: string | number | undefined) =>
   Number(String(value ?? "").replace(",", ".")) || 0;
 
+const parseStock = (value: string | number | undefined) =>
+  Math.max(0, Number.parseInt(String(value ?? "0"), 10) || 0);
+
+const isInvalidStock = (value: string | number | undefined) => {
+  const parsed = Number.parseInt(String(value ?? "0"), 10);
+  return Number.isNaN(parsed) || parsed < 0;
+};
+
 const Estoque = () => {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
@@ -246,8 +254,8 @@ const Estoque = () => {
         modelo: editProduto.modelo || undefined,
         custo: parseMoney(editProduto.custo),
         precoVenda: parseMoney(editProduto.precoVenda),
-        estoqueAtual: editProduto.estoqueAtual ?? 0,
-        estoqueMinimo: Number(editProduto.estoqueMinimo) || 0,
+        estoqueAtual: parseStock(editProduto.estoqueAtual),
+        estoqueMinimo: parseStock(editProduto.estoqueMinimo),
         observacoes: editProduto.observacoes || undefined,
         ativo: editProduto.ativo ?? true,
       });
@@ -294,8 +302,8 @@ const Estoque = () => {
         modelo: produto.modelo,
         custo: produto.custo,
         precoVenda: produto.precoVenda,
-        estoqueAtual: produto.estoqueAtual,
-        estoqueMinimo: produto.estoqueMinimo,
+        estoqueAtual: parseStock(produto.estoqueAtual),
+        estoqueMinimo: parseStock(produto.estoqueMinimo),
         observacoes: produto.observacoes,
         ativo: !produto.ativo,
       });
@@ -440,6 +448,10 @@ const Estoque = () => {
     const e: Record<string, string> = {};
     if (!editProduto.sku?.trim()) e.sku = "SKU é obrigatório.";
     if (!editProduto.nome?.trim()) e.nome = "Nome é obrigatório.";
+    if (isInvalidStock(editProduto.estoqueAtual))
+      e.estoqueAtual = "Deve ser 0 ou mais.";
+    if (isInvalidStock(editProduto.estoqueMinimo))
+      e.estoqueMinimo = "Deve ser 0 ou mais.";
     return e;
   };
 
@@ -1102,16 +1114,42 @@ const Estoque = () => {
                   />
                 </FormField>
               </div>
-              <FormField id="ee-minimo" label="Estoque mínimo">
-                <Input
+              <div className="grid grid-cols-2 gap-3">
+                <FormField
+                  id="ee-quantidade"
+                  label="Quantidade atual"
+                  error={editFormErrors.estoqueAtual}
+                >
+                  <Input
+                    id="ee-quantidade"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={editProduto.estoqueAtual ?? 0}
+                    onChange={(e) => updEdit("estoqueAtual", e.target.value)}
+                    className={
+                      editFormErrors.estoqueAtual ? "border-destructive" : ""
+                    }
+                  />
+                </FormField>
+                <FormField
                   id="ee-minimo"
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={editProduto.estoqueMinimo ?? 0}
-                  onChange={(e) => updEdit("estoqueMinimo", e.target.value)}
-                />
-              </FormField>
+                  label="Estoque mínimo"
+                  error={editFormErrors.estoqueMinimo}
+                >
+                  <Input
+                    id="ee-minimo"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={editProduto.estoqueMinimo ?? 0}
+                    onChange={(e) => updEdit("estoqueMinimo", e.target.value)}
+                    className={
+                      editFormErrors.estoqueMinimo ? "border-destructive" : ""
+                    }
+                  />
+                </FormField>
+              </div>
               <FormField id="ee-obs" label="Observações">
                 <Textarea
                   id="ee-obs"

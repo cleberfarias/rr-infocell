@@ -36,6 +36,7 @@ const statusLabels: Record<string, string> = {
   em_manutencao: "Em manutenção",
   pronto_para_retirada: "Pronto p/ retirada",
   entregue: "Entregue",
+  sem_conserto: "Sem conserto",
   cancelado: "Cancelado",
 };
 
