@@ -1,6 +1,7 @@
 import { db } from "../../firebase/admin.js";
-import { createOrdensServicoRepository } from "../ordens-servico/ordens-servico.repository.js";
+import { createAparelhosRepository } from "../aparelhos/aparelhos.repository.js";
 import { createClientesRepository } from "../clientes/clientes.repository.js";
+import { createOrdensServicoRepository } from "../ordens-servico/ordens-servico.repository.js";
 import type { OrdemServicoFormaPagamento } from "../ordens-servico/ordens-servico.types.js";
 import { normalizarTelefone } from "../../shared/normalizar-telefone.js";
 import { env } from "../../config/env.js";
@@ -9,6 +10,7 @@ import { mensagemService } from "./mensagem.service.js";
 
 const ordensRepo = createOrdensServicoRepository(db);
 const clientesRepo = createClientesRepository(db);
+const aparelhosRepo = createAparelhosRepository(db);
 const colConversas = "whatsapp_conversas";
 
 const statusLabel: Record<string, string> = {
@@ -28,6 +30,7 @@ async function getClienteContato(
 ): Promise<{ telefone: string; nome: string } | null> {
   const cliente = await clientesRepo.findById(clienteId);
   if (!cliente?.telefone) return null;
+  if (cliente.receberMensagemAutomatica === false) return null;
   return { telefone: normalizarTelefone(cliente.telefone), nome: cliente.nome };
 }
 
@@ -37,11 +40,14 @@ class AcoesService {
     if (!os) throw new Error("OS nao encontrada.");
 
     const contato = await getClienteContato(os.clienteId);
-    if (!contato) throw new Error("Cliente sem telefone cadastrado.");
+    if (!contato) throw new Error("Cliente sem telefone cadastrado ou com mensagens desativadas.");
+
+    const aparelho = await aparelhosRepo.findById(os.aparelhoId);
+    const nomeAparelho = aparelho ? `${aparelho.marca} ${aparelho.modelo}` : os.aparelhoId;
 
     const texto = [
       `*RR Infocell — Orcamento OS #${os.numero}*`,
-      `Aparelho: ${os.aparelhoId}`,
+      `Aparelho: ${nomeAparelho}`,
       `Defeito: ${os.defeitoRelatado}`,
       os.diagnostico ? `Diagnostico: ${os.diagnostico}` : null,
       `Valor total: R$ ${os.valorTotal.toFixed(2).replace(".", ",")}`,
@@ -80,7 +86,7 @@ class AcoesService {
     if (!os) throw new Error("OS nao encontrada.");
 
     const contato = await getClienteContato(os.clienteId);
-    if (!contato) throw new Error("Cliente sem telefone cadastrado.");
+    if (!contato) throw new Error("Cliente sem telefone cadastrado ou com mensagens desativadas.");
 
     await ordensRepo.update(osId, { ...os, status: "pronto_para_retirada" });
 
@@ -115,7 +121,7 @@ class AcoesService {
     if (!os) throw new Error("OS nao encontrada.");
 
     const contato = await getClienteContato(os.clienteId);
-    if (!contato) throw new Error("Cliente sem telefone cadastrado.");
+    if (!contato) throw new Error("Cliente sem telefone cadastrado ou com mensagens desativadas.");
 
     await ordensRepo.update(osId, {
       ...os,
@@ -148,7 +154,7 @@ class AcoesService {
     if (!os) throw new Error("OS nao encontrada.");
 
     const contato = await getClienteContato(os.clienteId);
-    if (!contato) throw new Error("Cliente sem telefone cadastrado.");
+    if (!contato) throw new Error("Cliente sem telefone cadastrado ou com mensagens desativadas.");
 
     const linhas = [
       `*RR Infocell — Status da OS #${os.numero}*`,
