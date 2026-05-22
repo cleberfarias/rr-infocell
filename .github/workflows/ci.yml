@@ -118,6 +118,8 @@ jobs:
             --set-env-vars "ATENDIMENTO_LEMBRETE_ORCAMENTO_HORAS=24" \
             --set-env-vars "ATENDIMENTO_LEMBRETE_RETIRADA_DIAS=2" \
             --set-env-vars "ATENDIMENTO_AUTOARQUIVAR_DIAS=7" \
+            --min-instances 1 \
+            --max-instances 1 \
             --quiet
 
       - name: Show Cloud Run URL

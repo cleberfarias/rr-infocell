@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   createCliente,
@@ -44,6 +45,7 @@ const emptyForm: ClienteInput = {
   email: "",
   endereco: "",
   observacoes: "",
+  receberMensagemAutomatica: true,
 };
 
 const Clientes = () => {
@@ -155,12 +157,13 @@ const Clientes = () => {
       email: cliente.email ?? "",
       endereco: cliente.endereco ?? "",
       observacoes: cliente.observacoes ?? "",
+      receberMensagemAutomatica: cliente.receberMensagemAutomatica !== false,
     });
     setFormError(null);
     setDialogOpen(true);
   };
 
-  const updateForm = (field: keyof ClienteInput, value: string) => {
+  const updateForm = (field: keyof ClienteInput, value: string | boolean) => {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
@@ -258,7 +261,7 @@ const Clientes = () => {
             const clienteAparelhos = aparelhosByCliente.get(cliente.id) ?? [];
             const clienteOrdens = ordensByCliente.get(cliente.id) ?? [];
             const abertas = clienteOrdens.filter(
-              (ordem) => !["entregue", "cancelado"].includes(ordem.status),
+              (ordem) => !["entregue", "sem_conserto", "cancelado"].includes(ordem.status),
             ).length;
             const totalGasto = clienteOrdens
               .filter((ordem) => ordem.status === "entregue")

@@ -83,6 +83,7 @@ const STATUS_KANBAN_LABELS: Record<OrdemServicoStatus, string> = {
   em_manutencao: "Em manutenção",
   pronto_para_retirada: "Pronto",
   entregue: "Entregue",
+  sem_conserto: "Sem conserto",
   cancelado: "Cancelado",
 };
 
@@ -94,25 +95,27 @@ const STATUS_KANBAN_COLORS: Record<OrdemServicoStatus, string> = {
   em_manutencao: "border-t-primary",
   pronto_para_retirada: "border-t-emerald-500",
   entregue: "border-t-success",
+  sem_conserto: "border-t-zinc-500",
   cancelado: "border-t-destructive",
 };
 
 const STATUS_NEXT: Partial<Record<OrdemServicoStatus, OrdemServicoStatus[]>> = {
-  recebido: ["em_analise", "cancelado"],
+  recebido: ["em_analise", "sem_conserto", "cancelado"],
   em_analise: [
     "aguardando_aprovacao",
     "aguardando_peca",
     "em_manutencao",
+    "sem_conserto",
     "cancelado",
   ],
-  aguardando_aprovacao: ["em_manutencao", "cancelado"],
-  aguardando_peca: ["em_manutencao", "cancelado"],
-  em_manutencao: ["pronto_para_retirada", "cancelado"],
+  aguardando_aprovacao: ["em_manutencao", "sem_conserto", "cancelado"],
+  aguardando_peca: ["em_manutencao", "sem_conserto", "cancelado"],
+  em_manutencao: ["pronto_para_retirada", "sem_conserto", "cancelado"],
   pronto_para_retirada: ["entregue"],
 };
 
 const formatPrazo = (valor?: string, status?: string) => {
-  if (!valor || ["entregue", "cancelado"].includes(status ?? ""))
+  if (!valor || ["entregue", "sem_conserto", "cancelado"].includes(status ?? ""))
     return { label: "-", classe: "" };
   const prazo = new Date(valor);
   prazo.setHours(0, 0, 0, 0);
@@ -277,7 +280,7 @@ const Ordens = () => {
           if (
             !dataPrazo ||
             dataPrazo >= today ||
-            ["entregue", "cancelado"].includes(ordem.status)
+            ["entregue", "sem_conserto", "cancelado"].includes(ordem.status)
           )
             return false;
         }

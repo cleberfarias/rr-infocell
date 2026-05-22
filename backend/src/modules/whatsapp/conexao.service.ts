@@ -10,6 +10,7 @@ import makeWASocket, {
 } from "@whiskeysockets/baileys";
 import { Boom } from "@hapi/boom";
 import { toDataURL } from "qrcode";
+import { env } from "../../config/env.js";
 import { normalizarTelefone } from "../../shared/normalizar-telefone.js";
 import { mensagemService } from "./mensagem.service.js";
 
@@ -68,7 +69,7 @@ class ConexaoService {
   private socket: WASocket | null = null;
   private status: ConexaoStatus = "desconectado";
   private qrBase64: string | null = null;
-  private authDir = "./whatsapp-auth";
+  private authDir = env.WHATSAPP_AUTH_DIR;
   private iniciadoEm = Date.now();
   private diagnostico: DiagnosticoWhatsApp = {
     conectadoComo: null,

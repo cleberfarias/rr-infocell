@@ -12,7 +12,7 @@ const now = () => new Date().toISOString();
 const ordensServicoCollection = "ordensServico";
 const countersCollection = "counters";
 const counterDocument = "ordensServico";
-const terminalStatuses: OrdemServicoStatus[] = ["entregue", "cancelado"];
+const terminalStatuses: OrdemServicoStatus[] = ["entregue", "sem_conserto", "cancelado"];
 const withoutUndefined = <T extends Record<string, unknown>>(data: T) =>
   Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as T;
 
@@ -103,7 +103,8 @@ const buildOrdem = (
         : current?.concluidaEm,
     entregueEm: deliveredNow ? timestamp : current?.entregueEm,
     valorAdiantado: input.valorAdiantado ?? current?.valorAdiantado,
-    formaPagamentoAdiantamento: input.formaPagamentoAdiantamento ?? current?.formaPagamentoAdiantamento,
+    formaPagamentoAdiantamento:
+      input.formaPagamentoAdiantamento ?? current?.formaPagamentoAdiantamento,
     formaPagamento: input.formaPagamento ?? current?.formaPagamento,
     valorRecebido,
     troco,

@@ -17,6 +17,7 @@ const envSchema = z.object({
   ATENDIMENTO_LEMBRETE_ORCAMENTO_HORAS: z.coerce.number().positive().default(24),
   ATENDIMENTO_LEMBRETE_RETIRADA_DIAS: z.coerce.number().positive().default(2),
   ATENDIMENTO_AUTOARQUIVAR_DIAS: z.coerce.number().positive().default(7),
+  WHATSAPP_AUTH_DIR: z.string().default("./whatsapp-auth"),
 });
 
 export const env = envSchema.parse(process.env);

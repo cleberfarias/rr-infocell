@@ -105,14 +105,14 @@ export const AppLayout = () => {
     const prontas = ordens.filter((o) => o.status === "pronto_para_retirada");
     const aguardando = ordens.filter((o) => o.status === "aguardando_aprovacao");
     const atrasadas = ordens.filter((o) => {
-      if (["entregue", "cancelado"].includes(o.status)) return false;
+      if (["entregue", "sem_conserto", "cancelado"].includes(o.status)) return false;
       const prazo = o.prazoPrometidoEm ?? o.previsaoEntregaEm;
       if (!prazo) return false;
       const data = new Date(prazo);
       data.setHours(0, 0, 0, 0);
       return data < today;
     });
-    const ativas = ordens.filter((o) => !["entregue", "cancelado"].includes(o.status));
+    const ativas = ordens.filter((o) => !["entregue", "sem_conserto", "cancelado"].includes(o.status));
     const emManutencao = ordens.filter((o) => ["em_manutencao", "aguardando_peca"].includes(o.status));
     const baixoEstoque = produtos.filter((p) => p.estoqueAtual <= p.estoqueMinimo).length;
     return {

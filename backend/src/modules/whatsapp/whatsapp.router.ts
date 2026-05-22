@@ -11,6 +11,11 @@ export const whatsappRoutes = Router();
 
 const LIMITE_MIDIA_BYTES = 16 * 1024 * 1024;
 
+whatsappRoutes.use((_req, res, next) => {
+  res.setHeader("Cache-Control", "no-store");
+  next();
+});
+
 function tipoMidiaPorMime(
   mimeType: string,
 ): Exclude<

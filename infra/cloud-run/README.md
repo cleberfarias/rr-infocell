@@ -41,6 +41,8 @@ gcloud run deploy rr-infocell-api \
   --region southamerica-east1 \
   --source backend \
   --allow-unauthenticated \
+  --min-instances 1 \
+  --max-instances 1 \
   --set-env-vars NODE_ENV=production,FIREBASE_PROJECT_ID=rr-infocell,CORS_ORIGIN=https://URL_DO_FRONTEND
 ```
 
@@ -67,7 +69,7 @@ https://rr-infocell-api-91248386036.southamerica-east1.run.app
 
 ## Pontos de atencao
 
-- WhatsApp/Baileys pode perder sessao se a instancia escalar para zero ou se o filesystem efemero for descartado.
-- Para usar WhatsApp em producao com estabilidade, considerar `min-instances=1` ou persistir a sessao fora do filesystem local.
-- `min-instances=1` reduz cold start, mas aumenta custo.
+- WhatsApp/Baileys mantem o socket conectado em memoria. Por isso o servico deve rodar com `--min-instances 1` e `--max-instances 1`; assim todos os navegadores, mesmo em maquinas diferentes com o mesmo login, chegam na mesma instancia conectada.
+- O filesystem do Cloud Run ainda e efemero entre novos deploys/recriacoes. Se a revisao for recriada, pode ser necessario escanear o QR novamente.
+- `min-instances=1` reduz cold start e estabiliza o WhatsApp, mas aumenta custo.
 - Configurar alertas de billing antes do primeiro uso real.

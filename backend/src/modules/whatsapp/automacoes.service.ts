@@ -38,6 +38,12 @@ const statusMensagens: Partial<Record<OrdemServicoStatus, (os: OrdemServico) => 
       "O servico foi iniciado e seu aparelho esta em manutencao.",
     ].join("\n"),
   pronto_para_retirada: (os) => mensagemProntoRetirada(os),
+  sem_conserto: (os) =>
+    [
+      `*RR Infocell - OS #${os.numero}*`,
+      "Apos a analise tecnica, nao foi possivel realizar o conserto do aparelho.",
+      "Seu aparelho esta disponivel para retirada. Se tiver duvidas, responda esta mensagem.",
+    ].join("\n"),
 };
 
 function formatBRL(value: number) {
@@ -154,7 +160,11 @@ class AutomacoesAtendimentoService {
       }
     }
 
-    if (next.status === "entregue" || next.status === "cancelado") {
+    if (
+      next.status === "entregue" ||
+      next.status === "sem_conserto" ||
+      next.status === "cancelado"
+    ) {
       await this.finalizarConversa(next);
     }
   }

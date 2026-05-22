@@ -81,7 +81,7 @@ export const MobileNav = ({ badges = {} }: MobileNavProps) => {
       {/* Bottom navigation bar */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-stretch border-t border-border bg-background/95 backdrop-blur md:hidden">
         {bottomNav.filter((n) => canAccess(role, n.to)).map(({ to, label, key, end }) => {
-          const Icon = iconMap[key] ?? LayoutDashboard;
+          const Icon = iconMap[key] ?? MdDashboard;
           const badge = badges[key];
           return (
             <NavLink
@@ -144,7 +144,7 @@ export const MobileNav = ({ badges = {} }: MobileNavProps) => {
               Operação · {roleLabels[role]}
             </p>
             {filteredNav.map(({ to, label, key, end }) => {
-              const Icon = iconMap[key] ?? LayoutDashboard;
+              const Icon = iconMap[key] ?? MdDashboard;
               const badge = badges[key];
               return (
                 <NavLink

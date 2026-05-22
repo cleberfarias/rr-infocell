@@ -7,6 +7,7 @@ export const ordemServicoStatus = [
   "em_manutencao",
   "pronto_para_retirada",
   "entregue",
+  "sem_conserto",
   "cancelado",
 ] as const;
 

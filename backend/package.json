@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "dev:emulator": "tsx --env-file=.env.emulator watch src/server.ts",
+    "dev:emulator": "node --env-file=.env.emulator --watch --import=tsx/esm src/server.ts",
+    "dev:full": "concurrently --names \"back,front\" --prefix-colors \"cyan,magenta\" \"npm run dev:emulator\" \"npm run dev --prefix ../frontend\"",
     "auth:set-role": "tsx src/scripts/set-user-role.ts",
     "script:normalizar-telefones": "tsx src/scripts/normalizar-telefones.ts",
     "script:limpar-conversas": "tsx src/scripts/limpar-conversas-invalidas.ts",
@@ -36,6 +37,7 @@
     "@types/node": "^22.16.5",
     "@types/qrcode": "^1.5.6",
     "@types/supertest": "^6.0.2",
+    "concurrently": "^9.2.1",
     "eslint": "^9.32.0",
     "globals": "^15.15.0",
     "prettier": "^3.4.2",
