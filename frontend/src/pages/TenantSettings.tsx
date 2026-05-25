@@ -2,12 +2,8 @@ import { CheckCircle2, CircleSlash, Palette, ShieldCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { canUseModule, moduleKeys, planModules, type ModuleKey } from "@/config/planModules";
-import {
-  getCurrentTenant,
-  getCurrentTenantPlan,
-  getTenantBranding,
-} from "@/lib/tenant";
+import { moduleKeys, planModules, type ModuleKey } from "@/config/planModules";
+import { useTenant } from "@/contexts/TenantContext";
 
 const moduleLabels: Record<ModuleKey, string> = {
   dashboard: "Dashboard",
@@ -49,11 +45,9 @@ const InfoItem = ({ label, value }: { label: string; value: string }) => (
 );
 
 export default function TenantSettings() {
-  const tenant = getCurrentTenant();
-  const plan = getCurrentTenantPlan();
-  const branding = getTenantBranding();
+  const { tenant, plan, branding, canUseModule } = useTenant();
   const enabledModules = moduleKeys.filter((moduleKey) =>
-    canUseModule(moduleKey, plan),
+    canUseModule(moduleKey),
   );
 
   return (
@@ -139,7 +133,7 @@ export default function TenantSettings() {
 
         <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
           {moduleKeys.map((moduleKey) => {
-            const enabled = canUseModule(moduleKey, plan);
+            const enabled = canUseModule(moduleKey);
 
             return (
               <div
