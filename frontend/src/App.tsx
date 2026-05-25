@@ -25,6 +25,7 @@ import Usuarios from "./pages/Usuarios";
 import Atendimento from "./pages/Atendimento";
 import Treinamento from "./pages/Treinamento";
 import Observabilidade from "./pages/Observabilidade";
+import TenantSettings from "./pages/TenantSettings";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,7 @@ const App = () => (
               <Route path="atendimento" element={<Atendimento />} />
               <Route path="observabilidade" element={<Observabilidade />} />
               <Route path="treinamento" element={<Treinamento />} />
+              <Route path="configuracoes" element={<TenantSettings />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

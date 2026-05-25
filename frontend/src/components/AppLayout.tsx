@@ -19,6 +19,7 @@ import {
   Keyboard,
   X,
   Bug,
+  Settings,
 } from "lucide-react";
 import { MdDashboard, MdHandyman, MdInventory2, MdPointOfSale, MdAccountBalance, MdChecklist, MdPhoneAndroid } from "react-icons/md";
 import { FaWhatsapp } from "react-icons/fa";
@@ -36,7 +37,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { canAccessObservabilidade } from "@/lib/observabilidade";
-import { canAccess, roleLabels, roleHome } from "@/lib/roles";
+import { canAccess, roleLabels, roleHome, type Role } from "@/lib/roles";
 import { listOrdensServico } from "@/services/ordens-servico";
 import { listProdutos } from "@/services/produtos";
 import { tenantConfig } from "@/config/tenantConfig";
@@ -49,6 +50,7 @@ type NavItem = {
   key: string;
   hidden?: boolean;
   moduleKey?: ModuleKey;
+  roles?: Role[];
 };
 
 const allNav: NavItem[] = [
@@ -68,6 +70,7 @@ const allNav: NavItem[] = [
   { to: "/app/observabilidade", label: "Observabilidade", icon: Bug, key: "observabilidade" },
   { to: "/app/atendimento", label: "Atendimento", icon: FaWhatsapp, key: "atendimento" },
   { to: "/app/treinamento", label: "Treinamento", icon: BookOpen, key: "treinamento" },
+  { to: "/app/configuracoes", label: "Configurações da Empresa", icon: Settings, key: "configuracoes", roles: ["admin"] },
 ];
 
 const canShowNavItemForPlan = (moduleKey?: ModuleKey) => {
@@ -89,6 +92,7 @@ const navOrder: Record<string, number> = {
   despesas: 11,
   usuarios: 12,
   observabilidade: 13,
+  configuracoes: 14,
 };
 
 export const AppLayout = () => {
@@ -202,6 +206,7 @@ export const AppLayout = () => {
 
   const nav = allNav
     .filter((n) => canAccess(role, n.to) && !n.hidden)
+    .filter((n) => !n.roles || n.roles.includes(role))
     .filter((n) => canShowNavItemForPlan(n.moduleKey))
     .filter((n) => n.key !== "observabilidade" || podeObservabilidade)
     .sort((a, b) => navOrder[a.key] - navOrder[b.key]);
