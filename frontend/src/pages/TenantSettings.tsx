@@ -2,8 +2,12 @@ import { CheckCircle2, CircleSlash, Palette, ShieldCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { tenantConfig } from "@/config/tenantConfig";
 import { canUseModule, moduleKeys, planModules, type ModuleKey } from "@/config/planModules";
+import {
+  getCurrentTenant,
+  getCurrentTenantPlan,
+  getTenantBranding,
+} from "@/lib/tenant";
 
 const moduleLabels: Record<ModuleKey, string> = {
   dashboard: "Dashboard",
@@ -45,8 +49,11 @@ const InfoItem = ({ label, value }: { label: string; value: string }) => (
 );
 
 export default function TenantSettings() {
+  const tenant = getCurrentTenant();
+  const plan = getCurrentTenantPlan();
+  const branding = getTenantBranding();
   const enabledModules = moduleKeys.filter((moduleKey) =>
-    canUseModule(moduleKey, tenantConfig.plan),
+    canUseModule(moduleKey, plan),
   );
 
   return (
@@ -64,7 +71,7 @@ export default function TenantSettings() {
           </p>
         </div>
         <Badge className="w-fit border-primary/40 bg-primary/10 text-primary">
-          Plano {tenantConfig.plan}
+          Plano {plan}
         </Badge>
       </div>
 
@@ -76,29 +83,29 @@ export default function TenantSettings() {
           </div>
           <div className="mt-6 flex items-center justify-center rounded-md border border-border bg-background/40 p-6">
             <img
-              src={tenantConfig.logo}
-              alt={`${tenantConfig.tenantName} logo`}
+              src={branding.logo}
+              alt={`${tenant.tenantName} logo`}
               className="h-28 w-auto object-contain"
             />
           </div>
           <div className="mt-5 space-y-2">
             <h2 className="font-display text-xl font-semibold">
-              {tenantConfig.tenantName}
+              {tenant.tenantName}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Produto base: {tenantConfig.productName}
+              Produto base: {tenant.productName}
             </p>
           </div>
         </Card>
 
         <Card className="surface-panel p-5">
           <div className="grid gap-3 md:grid-cols-2">
-            <InfoItem label="Product name" value={tenantConfig.productName} />
-            <InfoItem label="System name" value={tenantConfig.systemName} />
-            <InfoItem label="Tenant name" value={tenantConfig.tenantName} />
-            <InfoItem label="Plan" value={tenantConfig.plan} />
-            <InfoItem label="White label" value={booleanLabel(tenantConfig.whiteLabel)} />
-            <InfoItem label="Show powered by" value={booleanLabel(tenantConfig.showPoweredBy)} />
+            <InfoItem label="Product name" value={tenant.productName} />
+            <InfoItem label="System name" value={tenant.systemName} />
+            <InfoItem label="Tenant name" value={tenant.tenantName} />
+            <InfoItem label="Plan" value={tenant.plan} />
+            <InfoItem label="White label" value={booleanLabel(branding.whiteLabel)} />
+            <InfoItem label="Show powered by" value={booleanLabel(branding.showPoweredBy)} />
           </div>
         </Card>
       </div>
@@ -109,8 +116,8 @@ export default function TenantSettings() {
           Cores do tenant
         </div>
         <div className="grid gap-3 md:grid-cols-2">
-          <ColorPreview label="Primary color" value={tenantConfig.primaryColor} />
-          <ColorPreview label="Secondary color" value={tenantConfig.secondaryColor} />
+          <ColorPreview label="Primary color" value={branding.primaryColor} />
+          <ColorPreview label="Secondary color" value={branding.secondaryColor} />
         </div>
       </Card>
 
@@ -122,7 +129,7 @@ export default function TenantSettings() {
             </h2>
             <p className="text-sm text-muted-foreground">
               {enabledModules.length} de {moduleKeys.length} modulos disponiveis
-              no plano {tenantConfig.plan}.
+              no plano {plan}.
             </p>
           </div>
           <Badge variant="outline" className="w-fit">
@@ -132,7 +139,7 @@ export default function TenantSettings() {
 
         <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
           {moduleKeys.map((moduleKey) => {
-            const enabled = canUseModule(moduleKey, tenantConfig.plan);
+            const enabled = canUseModule(moduleKey, plan);
 
             return (
               <div
