@@ -8,10 +8,8 @@ import type {
   TenantPlan,
 } from "@/types/tenant";
 
-const CURRENT_TENANT_ID: TenantId = "rr-infocell";
-
 export const getCurrentTenant = (): TenantConfig => ({
-  id: CURRENT_TENANT_ID,
+  id: tenantConfig.tenantId as TenantId,
   productName: tenantConfig.productName,
   systemName: tenantConfig.systemName,
   tenantName: tenantConfig.tenantName,

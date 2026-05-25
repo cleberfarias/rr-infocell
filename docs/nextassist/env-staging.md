@@ -4,7 +4,9 @@
 
 Este documento descreve as variaveis de exemplo para preparar o frontend do NextAssist em ambiente staging.
 
-As variaveis ainda nao devem ser conectadas ao sistema como fonte de comportamento dinamico. Nesta fase, elas apenas documentam a configuracao esperada para uma futura execucao controlada em staging.
+As variaveis abaixo podem ser lidas pelo frontend para configurar valores estaticos e seguros de tenant/staging. Todas possuem fallback para a configuracao atual da RR Infocell, entao o sistema continua funcionando sem `.env.staging`.
+
+Isso ainda nao representa multiempresa real. Backend, banco, services e queries ainda nao usam `tenantId`.
 
 ## Arquivo de exemplo
 
@@ -14,11 +16,11 @@ Arquivo criado:
 
 Esse arquivo nao contem secrets reais.
 
-## Variaveis propostas
+## Variaveis suportadas
 
 | Variavel | Exemplo | Finalidade |
 | --- | --- | --- |
-| `VITE_APP_ENV` | `staging` | Identificar ambiente de execucao. |
+| `VITE_APP_ENV` | `staging` | Identificar ambiente de execucao no frontend. |
 | `VITE_API_BASE_URL` | `https://staging-api.example.com/api` | URL futura da API staging. |
 | `VITE_AUTH_DEV_MODE` | `false` | Evitar modo dev em staging validavel. |
 | `VITE_TENANT_ID` | `rr-infocell` | Tenant padrao inicial para testes. |
@@ -27,6 +29,24 @@ Esse arquivo nao contem secrets reais.
 | `VITE_ENABLE_TENANT_CONTEXT` | `true` | Sinalizar uso esperado da camada de tenant. |
 
 Variaveis Firebase tambem permanecem como placeholders, seguindo o padrao de `frontend/.env.example`.
+
+## Fallbacks atuais
+
+Se as variaveis nao existirem, o frontend usa valores seguros:
+
+| Campo | Fallback |
+| --- | --- |
+| `appEnv` | `production` |
+| `tenantId` | `rr-infocell` |
+| `productName` | `NextAssist` |
+| `systemName` | `RR Infocell` |
+| `tenantName` | `RR Infocell` |
+| `plan` | `premium` |
+| `whiteLabel` | `true` |
+| `showPoweredBy` | `true` |
+| `enableTenantContext` | `true` |
+
+Se `VITE_DEFAULT_PLAN` receber um valor invalido, o fallback continua sendo `premium`.
 
 ## Regras de seguranca
 
@@ -50,4 +70,12 @@ Em fases futuras, essas variaveis poderao orientar:
 - validacao de TenantContext;
 - isolamento de dados em banco staging.
 
-Por enquanto, elas nao alteram comportamento do sistema.
+Por enquanto, elas nao alteram regras de negocio, nao salvam dados, nao buscam tenant por API e nao aplicam isolamento real.
+
+## Limites atuais
+
+- Backend ainda nao resolve tenant.
+- Banco ainda nao possui `tenantId` persistido.
+- Services ainda nao filtram por tenant.
+- Queries e relatorios ainda nao usam tenant dinamico.
+- A RR Infocell continua sendo o tenant piloto com plano `premium`.
