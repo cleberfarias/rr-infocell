@@ -1,7 +1,10 @@
+import { tenantConfig } from "@/config/tenantConfig";
+
 export const designSystem = {
   brand: {
-    name: "RR Infocell",
-    product: "Sistema de Gestão",
+    name: tenantConfig.tenantName,
+    product: tenantConfig.productName,
+    systemName: tenantConfig.systemName,
     tone: "operacional, técnico e direto",
   },
   colors: {
@@ -9,6 +12,8 @@ export const designSystem = {
     foreground: "hsl(var(--foreground))",
     primary: "hsl(var(--primary))",
     secondary: "hsl(var(--secondary))",
+    primaryColor: tenantConfig.primaryColor,
+    secondaryColor: tenantConfig.secondaryColor,
     success: "hsl(var(--success))",
     warning: "hsl(var(--warning))",
     destructive: "hsl(var(--destructive))",

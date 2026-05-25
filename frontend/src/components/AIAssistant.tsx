@@ -10,6 +10,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { perguntarAI } from "@/services/ajuda";
+import { tenantConfig } from "@/config/tenantConfig";
 
 type Message = {
   id: string;
@@ -69,8 +70,7 @@ const quickGuides = [
 const INITIAL_MESSAGE: Message = {
   id: "init",
   role: "assistant",
-  content:
-    "Olá! Sou o assistente do RR Infocell. Posso te ajudar a entender como usar qualquer parte do sistema.\n\nUse os guias rápidos abaixo ou escreva sua dúvida.",
+  content: `Olá! Sou o assistente do ${tenantConfig.tenantName}. Posso te ajudar a entender como usar qualquer parte do sistema.\n\nUse os guias rápidos abaixo ou escreva sua dúvida.`,
 };
 
 export const AIAssistant = () => {
@@ -150,7 +150,7 @@ export const AIAssistant = () => {
               </div>
               <div>
                 <SheetTitle className="text-left text-base">
-                  Assistente RR Infocell
+                  Assistente {tenantConfig.tenantName}
                 </SheetTitle>
                 <p className="text-xs text-muted-foreground">
                   Tire dúvidas sobre como usar o sistema

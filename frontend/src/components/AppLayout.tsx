@@ -38,6 +38,7 @@ import { canAccessObservabilidade } from "@/lib/observabilidade";
 import { canAccess, roleLabels, roleHome } from "@/lib/roles";
 import { listOrdensServico } from "@/services/ordens-servico";
 import { listProdutos } from "@/services/produtos";
+import { tenantConfig } from "@/config/tenantConfig";
 
 const allNav = [
   { to: "/app", label: "Dashboard", icon: MdDashboard, key: "", hidden: false },
@@ -302,12 +303,12 @@ export const AppLayout = () => {
           <div className="flex items-center gap-3 md:hidden">
             <Logo className="h-12" />
             <span className="font-display text-sm font-semibold">
-              {current?.label ?? "RR Infocell"}
+              {current?.label ?? tenantConfig.tenantName}
             </span>
           </div>
           <div className="hidden md:flex flex-col">
             <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
-              RR Infocell • {roleLabels[role]}
+              {tenantConfig.tenantName} • {roleLabels[role]}
             </p>
             <h1 className="font-display text-lg font-semibold leading-none">
               {current?.label ?? "Painel"}
