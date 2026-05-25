@@ -1052,7 +1052,7 @@ const NovaOS = () => {
                   ).map((tipo) => {
                     const labels: Record<TipoSenhaAparelho, string> = {
                       sem_senha: "Sem senha",
-                      numerica: "Numérica",
+                      numerica: "Senha digitada",
                       padrao: "Padrão/desenho",
                       nao_informou: "Não informou",
                     };
@@ -1083,9 +1083,9 @@ const NovaOS = () => {
                       onChange={(e) =>
                         updateForm("senhaAparelho", e.target.value)
                       }
-                      placeholder="Senha numérica do aparelho"
+                      placeholder="Senha, PIN ou letras do aparelho"
                       autoComplete="off"
-                      inputMode="numeric"
+                      inputMode="text"
                     />
                   </FormField>
                 )}

@@ -519,7 +519,7 @@ const OrdemDetalhe = () => {
   }) => {
     const tipoSenhaLabel: Record<string, string> = {
       sem_senha: "Sem senha",
-      numerica: "Senha numérica",
+      numerica: "Senha digitada",
       padrao: "Padrão/desenho",
       nao_informou: "Cliente não informou",
     };

@@ -175,6 +175,11 @@ const PDV = () => {
     [aparelhosQuery.data],
   );
 
+  const ordemById = useMemo(
+    () => new Map((ordensQuery.data ?? []).map((o) => [o.id, o])),
+    [ordensQuery.data],
+  );
+
   const produtosVenda = useMemo(
     () =>
       (produtosQuery.data ?? []).filter(
@@ -548,6 +553,25 @@ const PDV = () => {
   const reciboVenda = vendaFinalizada;
   const reciboTerceirizado = terceirizadoFinalizado;
 
+  const getServicoCupom = (venda: Venda) => {
+    if (venda.tipo !== "ordem_servico" || venda.valorMaoObra <= 0) {
+      return null;
+    }
+
+    const ordem = venda.ordemServicoId
+      ? ordemById.get(venda.ordemServicoId)
+      : undefined;
+    const nome =
+      ordem?.diagnostico?.trim() ||
+      ordem?.defeitoRelatado?.trim() ||
+      "Servico tecnico";
+
+    return {
+      nome: nome.toUpperCase(),
+      valor: venda.valorMaoObra,
+    };
+  };
+
   const buildCupomHtml = (venda: Venda) => {
     if (!venda) return "";
 
@@ -575,6 +599,7 @@ const PDV = () => {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       });
+    const servicoCupom = getServicoCupom(venda);
 
     let itensHtml = "";
     if (venda.itens.length > 0) {
@@ -592,11 +617,19 @@ const PDV = () => {
 <div>${nome}${item.imei ? " - " + item.imei : ""}</div>
 <div>${qtdLine}</div>`;
       }
+      if (servicoCupom) {
+        const totalStr = fBRL(servicoCupom.valor);
+        itensHtml += `
+<div>SERVICO</div>
+<div>${servicoCupom.nome}</div>
+<div>${rAlign("               1   UN  " + totalStr, totalStr)}</div>`;
+      }
     } else {
-      const totalStr = fBRL(venda.valorTotal);
+      const totalStr = fBRL(servicoCupom?.valor ?? venda.valorTotal);
       itensHtml = `
-<div>SERVICOS</div>
-<div>${rAlign("               1   UN  " + fBRL(venda.valorTotal), totalStr)}</div>`;
+<div>SERVICO</div>
+<div>${servicoCupom?.nome ?? "SERVICO TECNICO"}</div>
+<div>${rAlign("               1   UN  " + totalStr, totalStr)}</div>`;
     }
 
     const subtotal = fBRL(venda.valorTotal);
@@ -681,6 +714,7 @@ ${troco}
     ).toUpperCase();
     const atendente = EMPRESA.tecnicoPadrao.toUpperCase();
     const formaPgto = (venda.formaPagamento ?? "dinheiro").toUpperCase();
+    const servicoCupom = getServicoCupom(venda);
     const fBRL = (v: number) =>
       v.toLocaleString("pt-BR", {
         minimumFractionDigits: 2,
@@ -735,28 +769,43 @@ ${troco}
         </div>
         <div>{sep}</div>
         {venda.itens.length > 0 ? (
-          venda.itens.map((item) => (
-            <div key={`${item.produtoId}-${item.imei ?? item.nome}`}>
-              <div>{item.sku ?? ""}</div>
-              <div>
-                {item.nome.toUpperCase()}
-                {item.imei ? " - " + item.imei : ""}
+          <>
+            {venda.itens.map((item) => (
+              <div key={`${item.produtoId}-${item.imei ?? item.nome}`}>
+                <div>{item.sku ?? ""}</div>
+                <div>
+                  {item.nome.toUpperCase()}
+                  {item.imei ? " - " + item.imei : ""}
+                </div>
+                <div>
+                  {rAlign(
+                    `               ${item.quantidade}   UN  ${fBRL(item.valorUnitario)}`,
+                    fBRL(item.valorTotal),
+                  )}
+                </div>
               </div>
+            ))}
+            {servicoCupom && (
               <div>
-                {rAlign(
-                  `               ${item.quantidade}   UN  ${fBRL(item.valorUnitario)}`,
-                  fBRL(item.valorTotal),
-                )}
+                <div>SERVICO</div>
+                <div>{servicoCupom.nome}</div>
+                <div>
+                  {rAlign(
+                    `               1   UN  ${fBRL(servicoCupom.valor)}`,
+                    fBRL(servicoCupom.valor),
+                  )}
+                </div>
               </div>
-            </div>
-          ))
+            )}
+          </>
         ) : (
           <div>
-            <div>SERVICOS</div>
+            <div>SERVICO</div>
+            <div>{servicoCupom?.nome ?? "SERVICO TECNICO"}</div>
             <div>
               {rAlign(
-                `               1   UN  ${fBRL(venda.valorTotal)}`,
-                fBRL(venda.valorTotal),
+                `               1   UN  ${fBRL(servicoCupom?.valor ?? venda.valorTotal)}`,
+                fBRL(servicoCupom?.valor ?? venda.valorTotal),
               )}
             </div>
           </div>

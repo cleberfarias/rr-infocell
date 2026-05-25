@@ -755,7 +755,7 @@ const Manutencao = () => {
                       ).map((tipo) => {
                         const labels: Record<TipoSenhaAparelho, string> = {
                           sem_senha: "Sem senha",
-                          numerica: "Numérica",
+                          numerica: "Senha digitada",
                           padrao: "Padrão/desenho",
                           nao_informou: "Não informou",
                         };
@@ -778,8 +778,8 @@ const Manutencao = () => {
                     {form.tipoSenha === "numerica" && (
                       <Input
                         className="mt-2"
-                        inputMode="numeric"
-                        placeholder="Digite a senha numérica"
+                        inputMode="text"
+                        placeholder="Digite a senha, PIN ou letras"
                         value={form.senhaAparelho}
                         onChange={(e) =>
                           updateForm("senhaAparelho", e.target.value)
