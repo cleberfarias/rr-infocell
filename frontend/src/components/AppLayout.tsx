@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import type { ComponentType } from "react";
 import { NavLink, Outlet, useLocation, Navigate, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -39,25 +40,39 @@ import { canAccess, roleLabels, roleHome } from "@/lib/roles";
 import { listOrdensServico } from "@/services/ordens-servico";
 import { listProdutos } from "@/services/produtos";
 import { tenantConfig } from "@/config/tenantConfig";
+import { canUseModule, type ModuleKey } from "@/config/planModules";
 
-const allNav = [
-  { to: "/app", label: "Dashboard", icon: MdDashboard, key: "", hidden: false },
+type NavItem = {
+  to: string;
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+  key: string;
+  hidden?: boolean;
+  moduleKey?: ModuleKey;
+};
+
+const allNav: NavItem[] = [
+  { to: "/app", label: "Dashboard", icon: MdDashboard, key: "", hidden: false, moduleKey: "dashboard" },
   { to: "/app/movimentacoes", label: "Movimentações de Estoque", icon: TbReceipt, key: "movimentacoes", hidden: true },
-  { to: "/app/ordens", label: "Ordens de Serviço", icon: HiWrenchScrewdriver, key: "ordens" },
+  { to: "/app/ordens", label: "Ordens de Serviço", icon: HiWrenchScrewdriver, key: "ordens", moduleKey: "ordensServico" },
   { to: "/app/checklist", label: "Checklist", icon: MdChecklist, key: "checklist" },
   { to: "/app/manutencao", label: "Manutenção", icon: MdHandyman, key: "manutencao" },
   { to: "/app/orcamento", label: "Orçamentos", icon: TbFileCheck, key: "orcamento" },
-  { to: "/app/estoque", label: "Estoque", icon: MdInventory2, key: "estoque" },
+  { to: "/app/estoque", label: "Estoque", icon: MdInventory2, key: "estoque", moduleKey: "estoque" },
   { to: "/app/pdv", label: "PDV / Caixa", icon: MdPointOfSale, key: "pdv" },
-  { to: "/app/financeiro", label: "Financeiro", icon: MdAccountBalance, key: "financeiro" },
+  { to: "/app/financeiro", label: "Financeiro", icon: MdAccountBalance, key: "financeiro", moduleKey: "financeiro" },
   { to: "/app/despesas", label: "Despesas", icon: Receipt, key: "despesas" },
-  { to: "/app/clientes", label: "Clientes", icon: Users, key: "clientes" },
+  { to: "/app/clientes", label: "Clientes", icon: Users, key: "clientes", moduleKey: "clientes" },
   { to: "/app/aparelhos", label: "Aparelhos", icon: MdPhoneAndroid, key: "aparelhos" },
-  { to: "/app/usuarios", label: "Usuários", icon: UserCog, key: "usuarios" },
+  { to: "/app/usuarios", label: "Usuários", icon: UserCog, key: "usuarios", moduleKey: "multiUsuarios" },
   { to: "/app/observabilidade", label: "Observabilidade", icon: Bug, key: "observabilidade" },
   { to: "/app/atendimento", label: "Atendimento", icon: FaWhatsapp, key: "atendimento" },
   { to: "/app/treinamento", label: "Treinamento", icon: BookOpen, key: "treinamento" },
 ];
+
+const canShowNavItemForPlan = (moduleKey?: ModuleKey) => {
+  return !moduleKey || canUseModule(moduleKey, tenantConfig.plan);
+};
 
 const navOrder: Record<string, number> = {
   "": 0,
@@ -187,6 +202,7 @@ export const AppLayout = () => {
 
   const nav = allNav
     .filter((n) => canAccess(role, n.to) && !n.hidden)
+    .filter((n) => canShowNavItemForPlan(n.moduleKey))
     .filter((n) => n.key !== "observabilidade" || podeObservabilidade)
     .sort((a, b) => navOrder[a.key] - navOrder[b.key]);
   const current = allNav.filter((n) => canAccess(role, n.to)).find((n) =>
