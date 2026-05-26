@@ -313,3 +313,21 @@ Schema Zod, logica de saldo/estoque, `ordens-servico`, produtos, vendas e financ
 **Referencia de validacao:** `docs/nextassist/validacao-backend-tenant-movimentacoes-estoque.md`
 
 **Proxima fase sugerida:** Fase 8.7.3 — ordens de servico (entidade critica, acoplada com baixa de estoque, eventos e financeiro).
+
+---
+
+## 17. Atualizacao — Fase 8.7.3 (26/05/2026)
+
+**Entidade: `ordens-servico`** — entidade critica. `tenantId` injetado no repository, apos `buildOrdem()`, sem alterar a funcao de negocio.
+
+Estrategia: injetar `DEFAULT_TENANT_ID` apos a chamada a `buildOrdem()` no repository. A funcao `buildOrdem()` contem toda a logica de negocio (status, calculos, garantia, senha, pecas) e nao foi modificada. O `update()` usa `current.tenantId ?? DEFAULT_TENANT_ID` para preservar o tenant em OS ja existentes e migrar OS antigas ao serem editadas.
+
+Arquivos alterados:
+- `backend/src/modules/ordens-servico/ordens-servico.types.ts` — campo `tenantId?: string` adicionado ao tipo `OrdemServico`
+- `backend/src/modules/ordens-servico/ordens-servico.repository.ts` — import de `DEFAULT_TENANT_ID`; `create()` injeta `tenantId` nos dois pontos (transaction.set e return); `update()` preserva `current.tenantId ?? DEFAULT_TENANT_ID`; `fromDocument()` le `tenantId` do Firestore
+
+`buildOrdem()`, `applyPecasDeltas()`, schema Zod, service, listagem e financeiro intocados.
+
+**Referencia de validacao:** `docs/nextassist/validacao-backend-tenant-ordens-servico.md`
+
+**Proxima fase sugerida:** Fase 8.7.4 — vendas/PDV.

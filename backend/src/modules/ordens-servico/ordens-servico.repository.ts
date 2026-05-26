@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
 import type {
   OrdemServico,
   OrdemServicoInput,
@@ -225,7 +226,7 @@ export class MemoryOrdensServicoRepository implements OrdensServicoRepository {
   }
 
   async create(input: OrdemServicoInput) {
-    const ordem = buildOrdem(input, this.nextNumero);
+    const ordem = { ...buildOrdem(input, this.nextNumero), tenantId: DEFAULT_TENANT_ID };
     this.nextNumero += 1;
 
     this.ordens.set(ordem.id, ordem);
@@ -240,7 +241,8 @@ export class MemoryOrdensServicoRepository implements OrdensServicoRepository {
       return null;
     }
 
-    const ordem = buildOrdem(input, current.numero, current);
+    const tenantId = current.tenantId ?? DEFAULT_TENANT_ID;
+    const ordem = { ...buildOrdem(input, current.numero, current), tenantId };
     this.ordens.set(id, ordem);
 
     return ordem;
@@ -307,10 +309,10 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
       const ordemRef = this.firestore.collection(ordensServicoCollection).doc();
       const ordem = buildOrdem(input, current);
 
-      transaction.set(ordemRef, withoutUndefined({ ...ordem, id: ordemRef.id }));
+      transaction.set(ordemRef, withoutUndefined({ ...ordem, id: ordemRef.id, tenantId: DEFAULT_TENANT_ID }));
       transaction.set(counterRef, { nextNumero: current + 1 }, { merge: true });
 
-      return { ...ordem, id: ordemRef.id };
+      return { ...ordem, id: ordemRef.id, tenantId: DEFAULT_TENANT_ID };
     });
   }
 
@@ -321,7 +323,8 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
       return null;
     }
 
-    const ordem = buildOrdem(input, current.numero, current);
+    const tenantId = current.tenantId ?? DEFAULT_TENANT_ID;
+    const ordem = { ...buildOrdem(input, current.numero, current), tenantId };
 
     await this.firestore.collection(ordensServicoCollection).doc(id).set(withoutUndefined(ordem));
 
@@ -394,6 +397,7 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
         data.automacoes && typeof data.automacoes === "object"
           ? (data.automacoes as OrdemServico["automacoes"])
           : undefined,
+      tenantId: data.tenantId ? String(data.tenantId) : undefined,
       createdAt: String(data.createdAt ?? ""),
       updatedAt: String(data.updatedAt ?? ""),
     };

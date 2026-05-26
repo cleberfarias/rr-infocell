@@ -57,6 +57,7 @@ export type OrdemServico = {
   troco?: number;
   pagoEm?: string;
   automacoes?: OrdemServicoAutomacoes;
+  tenantId?: string;
   createdAt: string;
   updatedAt: string;
 };
