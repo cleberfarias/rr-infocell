@@ -24,8 +24,13 @@ marcasRoutes.get("/", async (_req, res, next) => {
   try {
     try {
       const db = getFirestore();
-      const snap = await db.collection(COLLECTION).orderBy("nome").get();
-      const custom = snap.docs.map((doc) => ({ id: doc.id, ...doc.data(), padrao: false }));
+      const snap = await db
+        .collection(COLLECTION)
+        .where("tenantId", "==", DEFAULT_TENANT_ID)
+        .get();
+      const custom = snap.docs
+        .map((doc) => ({ id: doc.id, ...(doc.data() as { nome: string; tenantId?: string }), padrao: false }))
+        .sort((a, b) => a.nome.localeCompare(b.nome));
       return res.json({ data: [...MARCAS_PADRAO, ...custom] });
     } catch {
       // Firestore indisponível — retorna apenas defaults

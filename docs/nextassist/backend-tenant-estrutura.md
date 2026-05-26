@@ -350,3 +350,21 @@ Logica de calculo, baixa de estoque, vinculo com OS, evento de venda, schema Zod
 **Referencia de validacao:** `docs/nextassist/validacao-backend-tenant-vendas.md`
 
 **Proxima fase sugerida:** Fase 8.7.5 — validacao critica consolidada (OS + estoque + vendas).
+
+---
+
+## 19. Atualizacao — Fase 8.8.1 (26/05/2026)
+
+**Primeira listagem com filtro real por tenantId: `marcas`.**
+
+Alteracao em `backend/src/modules/marcas/marcas.routes.ts`:
+- GET /marcas agora usa `.where("tenantId", "==", DEFAULT_TENANT_ID)` para retornar apenas marcas do tenant atual
+- Ordenacao movida para o cliente (`.sort()`) para evitar dependencia de indice composto no Firestore
+- `MARCAS_PADRAO` (hardcoded) continuam sempre incluidas
+- Marcas customizadas criadas antes da Fase 8.2 (sem `tenantId`) ficam ocultas — comportamento esperado
+
+**Impacto em dados existentes:** marcas antigas sem `tenantId` deixam de aparecer na listagem. Migracao de dados antigos deve ser avaliada em fase separada.
+
+**Referencia de validacao:** `docs/nextassist/validacao-backend-filtro-tenant-marcas.md`
+
+**Proxima fase sugerida:** Fase 8.8.2 — filtro por tenantId em categorias.
