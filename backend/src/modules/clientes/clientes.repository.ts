@@ -110,7 +110,10 @@ export class FirestoreClientesRepository implements ClientesRepository {
   constructor(private readonly firestore: Firestore) {}
 
   async list(search = "") {
-    const snapshot = await this.firestore.collection(clientesCollection).get();
+    const snapshot = await this.firestore
+      .collection(clientesCollection)
+      .where("tenantId", "==", DEFAULT_TENANT_ID)
+      .get();
     const clientes = snapshot.docs
       .map((document) => this.fromDocument(document.id, document.data()))
       .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));

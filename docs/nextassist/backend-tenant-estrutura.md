@@ -384,3 +384,20 @@ Mesmo padrao da Fase 8.8.1 (marcas). Alteracao em `backend/src/modules/categoria
 **Referencia de validacao:** `docs/nextassist/validacao-backend-filtro-tenant-categorias.md`
 
 **Proxima fase sugerida:** Fase 8.8.3 — filtro por tenantId em clientes.
+
+---
+
+## 21. Atualizacao — Fase 8.8.3 (26/05/2026)
+
+**Filtro por tenantId em `clientes`.**
+
+Alteracao em `FirestoreClientesRepository.list()`:
+- Query Firestore agora usa `.where("tenantId", "==", DEFAULT_TENANT_ID)` antes do `.get()`
+- Ordenacao por nome e busca textual continuam no cliente (sem mudanca)
+- Sem indice composto necessario (nao ha `.orderBy()` na query Firestore)
+- Clientes antigos sem `tenantId` ficam ocultos; voltam ao editar (update ja aplica `current.tenantId ?? DEFAULT_TENANT_ID`)
+- `findById()`, `update()`, `delete()`, `findByTelefone()` intocados
+
+**Referencia de validacao:** `docs/nextassist/validacao-backend-filtro-tenant-clientes.md`
+
+**Proxima fase sugerida:** Fase 8.8.4 — filtro por tenantId em produtos.
