@@ -1,4 +1,5 @@
 import { apiRequest } from "./api";
+import { getTenantScopedPayload } from "@/lib/tenantPayload";
 export const despesaCategorias = [
   "aluguel",
   "agua",
@@ -86,7 +87,7 @@ export const listDespesas = async (
 export const createDespesa = async (input: DespesaInput) => {
   const response = await apiRequest<ApiResponse<Despesa>>("/despesas", {
     method: "POST",
-    body: JSON.stringify(input),
+    body: JSON.stringify(getTenantScopedPayload(input)),
   });
 
   return response.data;
@@ -95,7 +96,7 @@ export const createDespesa = async (input: DespesaInput) => {
 export const updateDespesa = async (id: string, input: DespesaInput) => {
   const response = await apiRequest<ApiResponse<Despesa>>(`/despesas/${id}`, {
     method: "PUT",
-    body: JSON.stringify(input),
+    body: JSON.stringify(getTenantScopedPayload(input)),
   });
 
   return response.data;

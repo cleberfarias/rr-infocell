@@ -55,16 +55,29 @@ Fluxos nao alterados:
 - `listProdutos` — listagem sem filtro por tenantId
 - `deleteProduto` — exclusao sem validacao de tenantId
 
+#### Despesas (`frontend/src/services/despesas.ts`)
+
+Identificada na Fase 7.5.1 como o ponto financeiro de entrada mais seguro: nao vincula OS, produto ou estoque diretamente.
+
+Fluxos alterados:
+
+- `createDespesa` — payload de criacao inclui `tenantId`
+- `updateDespesa` — payload de edicao inclui `tenantId`
+
+Fluxos nao alterados:
+
+- `listDespesas` — listagem sem filtro por tenantId
+- `deleteDespesa` — exclusao sem validacao de tenantId
+
 ### Entidades sem tenantId aplicado
 
-Todos os demais services permanecem sem tenantId:
+Os demais services permanecem sem tenantId:
 
-- `ordens-servico.ts` (OS)
-- `movimentacoes-estoque.ts`
-- `contas.ts` (financeiro)
-- `despesas.ts`
-- `orcamentos.ts`
-- `vendas.ts` (PDV)
+- `ordens-servico.ts` (OS) — sensivel; aciona baixa de estoque no backend
+- `movimentacoes-estoque.ts` — sensivel; movimentacoes automaticas via OS
+- `contas.ts` (contas financeiras) — pendente fase 7.5.4
+- `orcamentos.ts` — vincula OS, cliente e produtos
+- `vendas.ts` (PDV) — vincula OS, produto e cliente ao mesmo tempo
 - `whatsapp.ts`
 - `usuarios.ts`
 - `checklists.ts`
@@ -73,6 +86,12 @@ Todos os demais services permanecem sem tenantId:
 - `marcas.ts`
 - `fornecedores.ts`
 - `ordem-eventos.ts`
+
+## Observacao sobre despesas e financeiro
+
+`Despesa` nao vincula OS, produto nem estoque. Adicionar `tenantId` ao payload de criacao/edicao e puramente aditivo: o backend vai ignorar o campo ate estar preparado para valida-lo. Nenhuma regra de calculo financeiro foi alterada.
+
+OS, estoque, movimentacoes, vendas/PDV, orcamento, impressao e relatorios financeiros permanecem sem alteracao.
 
 ## Observacao sobre produtos e estoque
 
