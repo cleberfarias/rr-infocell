@@ -116,11 +116,29 @@ Fluxos nao alterados:
 - [ ] Verificar se o evento aparece normalmente na timeline da OS
 - [ ] Verificar se OS principal continua funcionando sem alteracoes
 
+#### Movimentacoes de Estoque (`frontend/src/services/movimentacoes-estoque.ts`)
+
+Apenas movimentacoes manuais criadas pelo frontend (entrada, saida, ajuste). As movimentacoes automaticas geradas internamente pelo backend ao salvar OS com pecas (`origem: "ordem_servico"`) nao passam por este service e nao foram alteradas.
+
+Fluxos alterados:
+
+- `createMovimentacaoEstoque` — payload de criacao manual inclui `tenantId`
+
+Fluxos nao alterados:
+
+- `listMovimentacoesEstoque` — listagem sem filtro por tenantId
+
+### Checklist de validacao manual para movimentacoes de estoque
+
+- [ ] Criar movimentacao manual de entrada — verificar se nao retorna 400/422
+- [ ] Criar movimentacao manual de saida — verificar se nao retorna 400/422
+- [ ] Verificar se o saldo do produto continua com o mesmo comportamento anterior
+- [ ] Criar OS com pecas — verificar se baixa automatica de estoque continua funcionando
+
 ### Entidades sem tenantId aplicado
 
 Os demais services permanecem sem tenantId:
 
-- `movimentacoes-estoque.ts` — movimentacoes automaticas via OS controladas pelo backend
 - `orcamentos.ts` — vincula OS, cliente e produtos
 - `vendas.ts` (PDV) — vincula OS, produto e cliente ao mesmo tempo
 - `whatsapp.ts`

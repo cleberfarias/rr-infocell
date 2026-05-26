@@ -1,4 +1,5 @@
 import { apiRequest } from "./api";
+import { getTenantScopedPayload } from "@/lib/tenantPayload";
 export type MovimentacaoEstoqueTipo = "entrada" | "saida" | "ajuste";
 
 export type MovimentacaoEstoqueOrigem = "manual" | "ordem_servico";
@@ -69,7 +70,7 @@ export const createMovimentacaoEstoque = async (
     "/movimentacoes-estoque",
     {
       method: "POST",
-      body: JSON.stringify(input),
+      body: JSON.stringify(getTenantScopedPayload(input)),
     },
   );
 
