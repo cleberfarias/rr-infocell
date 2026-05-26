@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { getFirestore } from "firebase-admin/firestore";
 
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
+
 export const categoriasRoutes = Router();
 
 const COLLECTION = "categorias";
@@ -41,7 +43,7 @@ categoriasRoutes.post("/", async (req, res, next) => {
     const db = getFirestore();
     const ref = await db
       .collection(COLLECTION)
-      .add({ nome: nome.trim(), criadoEm: new Date().toISOString() });
+      .add({ nome: nome.trim(), criadoEm: new Date().toISOString(), tenantId: DEFAULT_TENANT_ID });
     res.status(201).json({ data: { id: ref.id, nome: nome.trim(), padrao: false } });
   } catch (error) {
     next(error);

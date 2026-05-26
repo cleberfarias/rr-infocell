@@ -202,3 +202,20 @@ O tenant e resolvido diretamente de `DEFAULT_TENANT_ID` (constante) — sem depe
 **Referencia de validacao:** `docs/nextassist/validacao-backend-tenant-marcas.md`
 
 **Proxima fase sugerida:** Fase 8.3 — apos confirmar `tenantId` visivel no Firestore, aplicar o mesmo padrao em categorias ou clientes.
+
+---
+
+## 11. Atualizacao — Fase 8.3 (26/05/2026)
+
+**Entidade escolhida: `categorias`**
+
+Mesmo padrao da Fase 8.2 (marcas). Alteracao em `backend/src/modules/categorias/categorias.routes.ts`:
+- POST /categorias agora persiste `tenantId: "rr-infocell"` no Firestore via `DEFAULT_TENANT_ID`
+- GET /categorias nao foi alterado — retorna CATEGORIAS_PADRAO hardcoded + registros Firestore sem filtro
+- DELETE /categorias nao foi alterado
+
+**Observacao:** categorias padrao hardcoded (`peca`, `produto`, `acessorio`...) nao possuem `tenantId` — sao constantes TypeScript, nao documentos Firestore.
+
+**Referencia de validacao:** `docs/nextassist/validacao-backend-tenant-categorias.md`
+
+**Proxima fase sugerida:** Fase 8.4 — `clientes`, primeira entidade com schema Zod + repository separado.
