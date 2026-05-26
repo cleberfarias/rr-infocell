@@ -447,4 +447,32 @@ Alteracao em GET /contas (`backend/src/modules/contas/contas.routes.ts`):
 
 **Referencia de validacao:** `docs/nextassist/validacao-backend-filtro-tenant-despesas-contas.md`
 
-**Proxima fase sugerida:** Fase 8.8.6+ — avaliar filtro por tenantId em OS, movimentacoes de estoque e vendas (alto risco — avaliar criterios antes de avancar).
+**Proxima fase sugerida:** Fase 8.8.5.1 — validacao intermediaria de todas as listagens filtradas.
+
+---
+
+## 24. Atualizacao — Fase 8.8.5.1 (26/05/2026)
+
+**Validacao intermediaria consolidada das listagens ja filtradas por tenantId.**
+
+Fase de documentacao e checklist — nenhum codigo alterado.
+
+Antes de avancar para OS, movimentacoes e vendas (alto risco), esta fase valida em staging que todas as entidades ja filtradas (marcas, categorias, clientes, produtos, despesas, contas) continuam funcionando corretamente e que os endpoints criticos nao foram afetados.
+
+**Estado consolidado dos filtros apos esta fase:**
+
+| Entidade | Filtro ativo? |
+| --- | --- |
+| marcas | Sim (Fase 8.8.1) |
+| categorias | Sim (Fase 8.8.2) |
+| clientes | Sim (Fase 8.8.3) |
+| produtos | Sim (Fase 8.8.4) |
+| despesas | Sim (Fase 8.8.5) |
+| contas | Sim (Fase 8.8.5) |
+| movimentacoes-estoque | Nao — Fase 8.8.6 |
+| ordens-servico | Nao — Fase 8.8.7 |
+| vendas | Nao — Fase 8.8.8 |
+
+**Referencia de validacao:** `docs/nextassist/validacao-intermediaria-listagens-filtradas.md`
+
+**Proxima fase sugerida:** Fase 8.8.6 — filtro por tenantId na listagem de movimentacoes de estoque (risco medio; leitura apenas, sem transacao de estoque).
