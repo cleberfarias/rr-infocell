@@ -221,8 +221,29 @@ curl -s "http://localhost:3333/api/ordens-servico?limit=5" | jq '.data | length'
 **Objetivo:** persistir `tenantId` em vendas/PDV.
 
 **Criterio de entrada para Fase 8.7.4:**
-- [ ] Validacao manual desta fase aprovada (tenantId visivel no Firestore em ordensServico)
-- [ ] OS com peca continua gerando baixa automatica de estoque
-- [ ] Movimentacao automatica tambem tem tenantId
-- [ ] GET /ordens-servico continua funcionando
-- [ ] Impressao e orcamento sem alteracao de comportamento
+- [x] Validacao manual desta fase aprovada (tenantId visivel no Firestore em ordensServico)
+- [x] OS com peca continua gerando baixa automatica de estoque
+- [x] Movimentacao automatica tambem tem tenantId
+- [x] GET /ordens-servico continua funcionando
+- [x] Impressao e orcamento sem alteracao de comportamento
+
+---
+
+## 6. Resultado da validacao — 26/05/2026
+
+| Cenario | Status | Observacao |
+| --- | --- | --- |
+| OS sem peca — POST 201 | OK | |
+| OS sem peca — `tenantId: "rr-infocell"` na response | OK | OS numero 66 |
+| OS editada — PUT 200 | OK | |
+| OS editada — `tenantId` preservado | OK | status em_analise, diagnostico atualizado |
+| OS com peca — POST 201 | OK | |
+| OS com peca — `tenantId: "rr-infocell"` | OK | OS numero 67 |
+| OS com peca — estoque reduzido (1 → 0) | OK | FRONTAL IPHONE 16 |
+| Movimentacao automatica — `tenantId: "rr-infocell"` | OK | `origem: "ordem_servico"` |
+| Listagem GET /ordens-servico — HTTP 200 | OK | 5 OS, 2 novas com tenantId, 3 antigas sem |
+| Registros antigos sem tenantId continuam visiveis | OK | |
+| Nenhum 400/422/500 | OK | |
+
+**Aprovada em:** 26/05/2026
+**Ambiente:** staging local (node dist/server.js porta 3335, Firestore staging)
