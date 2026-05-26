@@ -1,4 +1,5 @@
 import { apiRequest } from "./api";
+import { getTenantScopedPayload } from "@/lib/tenantPayload";
 export type OrdemEventoTipo =
   | "comentario"
   | "diagnostico"
@@ -61,7 +62,7 @@ export const createOrdemEvento = async (input: OrdemEventoInput) => {
     "/ordem-eventos",
     {
       method: "POST",
-      body: JSON.stringify(input),
+      body: JSON.stringify(getTenantScopedPayload(input)),
     },
   );
 

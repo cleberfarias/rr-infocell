@@ -98,6 +98,24 @@ Fluxos nao alterados:
 - `getOrdemServico` — busca individual sem filtro
 - `deleteOrdemServico` — exclusao sem validacao de tenantId
 
+#### Eventos da OS (`frontend/src/services/ordem-eventos.ts`)
+
+Eventos sao registros de timeline/historico da OS (comentarios, status, diagnostico, orcamento, pecas, garantia, entrega). Nao alteram OS principal, estoque, financeiro ou regras de calculo.
+
+Fluxos alterados:
+
+- `createOrdemEvento` — payload de criacao inclui `tenantId`
+
+Fluxos nao alterados:
+
+- `listOrdemEventos` — listagem sem filtro por tenantId
+
+### Checklist de validacao manual para eventos da OS
+
+- [ ] Criar comentario/evento em uma OS existente — verificar se nao retorna 400/422
+- [ ] Verificar se o evento aparece normalmente na timeline da OS
+- [ ] Verificar se OS principal continua funcionando sem alteracoes
+
 ### Entidades sem tenantId aplicado
 
 Os demais services permanecem sem tenantId:
@@ -105,7 +123,6 @@ Os demais services permanecem sem tenantId:
 - `movimentacoes-estoque.ts` — movimentacoes automaticas via OS controladas pelo backend
 - `orcamentos.ts` — vincula OS, cliente e produtos
 - `vendas.ts` (PDV) — vincula OS, produto e cliente ao mesmo tempo
-- `ordem-eventos.ts` — timeline da OS
 - `whatsapp.ts`
 - `usuarios.ts`
 - `checklists.ts`
