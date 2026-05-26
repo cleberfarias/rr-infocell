@@ -496,3 +496,23 @@ Alteracao em `FirestoreMovimentacoesEstoqueRepository.list()` (`backend/src/modu
 **Referencia de validacao:** `docs/nextassist/validacao-backend-filtro-tenant-movimentacoes-estoque.md`
 
 **Proxima fase sugerida:** Fase 8.8.7 — filtro por tenantId na listagem de ordens de servico (alto risco — avaliar criterios de entrada antes de avancar).
+
+---
+
+## 26. Atualizacao — Fase 8.8.7 (26/05/2026)
+
+**Filtro por tenantId em `ordens-servico`.**
+
+Alteracao em `FirestoreOrdensServicoRepository.list()` (`backend/src/modules/ordens-servico/ordens-servico.repository.ts`):
+- Query inicializa com `.where("tenantId", "==", DEFAULT_TENANT_ID)` antes dos filtros condicionais opcionais (`status`, `prioridade`, `clienteId`, `aparelhoId`)
+- Todos os filtros usam igualdade (`==`) — sem risco de indice composto
+- Ordenacao por numero decrescente continua no cliente (`.sort()`) — sem mudanca
+- `filterOrdensServico()` intocada
+- OS antigas sem `tenantId` ficam ocultas; voltam ao editar (`update()` ja aplica `current.tenantId ?? DEFAULT_TENANT_ID`)
+- `DEFAULT_TENANT_ID` ja estava importado neste arquivo (Fase 8.7.3)
+- `findById()`, `create()`, `update()`, `delete()`, `buildOrdem()`, `applyPecasDeltas()` — todos intocados
+- Impressao, orcamento, vendas, estoque, produtos, clientes — intocados
+
+**Referencia de validacao:** `docs/nextassist/validacao-backend-filtro-tenant-ordens-servico.md`
+
+**Proxima fase sugerida:** Fase 8.8.8 — filtro por tenantId na listagem de vendas (alto risco — `findById()` deve permanecer sem filtro).

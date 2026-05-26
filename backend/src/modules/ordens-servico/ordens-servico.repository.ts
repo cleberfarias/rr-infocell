@@ -265,7 +265,9 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
       aparelhoId?: string;
     } = {},
   ) {
-    let query: FirebaseFirestore.Query = this.firestore.collection(ordensServicoCollection);
+    let query: FirebaseFirestore.Query = this.firestore
+      .collection(ordensServicoCollection)
+      .where("tenantId", "==", DEFAULT_TENANT_ID);
 
     if (filters.status) {
       query = query.where("status", "==", filters.status);
