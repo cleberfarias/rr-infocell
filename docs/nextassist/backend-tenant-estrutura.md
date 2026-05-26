@@ -275,3 +275,22 @@ Logica de estoque (`estoqueAtual`, baixa automatica, movimentacoes) intocada. Sc
 **Referencia de validacao:** `docs/nextassist/validacao-backend-tenant-despesas-contas.md`
 
 **Proxima fase sugerida:** Fase 8.7 — `ordens-servico`, entidade critica com baixa de estoque.
+
+---
+
+## 15. Atualizacao — Fase 8.7.1 (26/05/2026)
+
+**Entidade: `ordem-eventos`** — primeira entidade do fluxo critico de OS, escolhida por ser a de menor risco (timeline/eventos nao disparam baixa de estoque nem afetam financeiro).
+
+Estrategia adotada: injetar `DEFAULT_TENANT_ID` no service, nao no repository. Motivo: `service.create()` constroi explicitamente o objeto passado ao repository, sendo o ponto mais claro e seguro de injecao.
+
+Arquivos alterados:
+- `backend/src/modules/ordem-eventos/ordem-eventos.types.ts` — campo `tenantId?: string` adicionado ao tipo `OrdemEvento`
+- `backend/src/modules/ordem-eventos/ordem-eventos.service.ts` — import de `DEFAULT_TENANT_ID`; campo `tenantId: DEFAULT_TENANT_ID` adicionado ao objeto passado a `repository.create()`
+- `backend/src/modules/ordem-eventos/ordem-eventos.repository.ts` — `fromDocument()` le `tenantId` do Firestore
+
+Schema Zod, `ordensServicoService`, listagem GET /ordem-eventos (sem filtro), baixa de estoque e financeiro intocados.
+
+**Referencia de validacao:** `docs/nextassist/validacao-backend-tenant-ordem-eventos.md`
+
+**Proxima fase sugerida:** Fase 8.7.2 — movimentacoes manuais de estoque.

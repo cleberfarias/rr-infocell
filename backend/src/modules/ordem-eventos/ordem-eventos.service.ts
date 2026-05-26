@@ -1,4 +1,5 @@
 import { db } from "../../firebase/admin.js";
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
 import { ordensServicoService } from "../ordens-servico/ordens-servico.service.js";
 import {
   createOrdemEventosRepository,
@@ -26,6 +27,7 @@ export class OrdemEventosService {
       titulo: input.titulo,
       descricao: input.descricao,
       criadoPor: input.criadoPor,
+      tenantId: DEFAULT_TENANT_ID,
       createdAt: now(),
     });
   }

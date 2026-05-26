@@ -16,6 +16,7 @@ export type OrdemEvento = {
   titulo: string;
   descricao?: string;
   criadoPor?: string;
+  tenantId?: string;
   createdAt: string;
 };
 
