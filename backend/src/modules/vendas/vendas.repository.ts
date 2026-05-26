@@ -137,6 +137,7 @@ export class FirestoreVendasRepository implements VendasRepository {
       valorRecebido: Number(data.valorRecebido ?? 0),
       troco: Number(data.troco ?? 0),
       status: String(data.status ?? "finalizada") as VendaStatus,
+      tenantId: data.tenantId ? String(data.tenantId) : undefined,
       createdAt: String(data.createdAt ?? ""),
     };
   }

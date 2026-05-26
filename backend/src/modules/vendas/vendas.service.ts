@@ -1,5 +1,6 @@
 import { db } from "../../firebase/admin.js";
 import { AppError } from "../../shared/errors.js";
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
 import { httpStatus } from "../../shared/http-status.js";
 import { ordemEventosService } from "../ordem-eventos/ordem-eventos.service.js";
 import { ordensServicoService } from "../ordens-servico/ordens-servico.service.js";
@@ -86,6 +87,7 @@ export class VendasService {
       valorRecebido: input.valorRecebido,
       troco: Math.max(0, input.valorRecebido - saldo),
       status: "finalizada",
+      tenantId: DEFAULT_TENANT_ID,
       createdAt: delivered.pagoEm ?? now(),
     });
 
@@ -190,6 +192,7 @@ export class VendasService {
       valorRecebido: input.valorRecebido,
       troco: Math.max(0, input.valorRecebido - valorTotal),
       status: "finalizada",
+      tenantId: DEFAULT_TENANT_ID,
       createdAt: now(),
     });
   }

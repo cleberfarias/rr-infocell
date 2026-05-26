@@ -331,3 +331,22 @@ Arquivos alterados:
 **Referencia de validacao:** `docs/nextassist/validacao-backend-tenant-ordens-servico.md`
 
 **Proxima fase sugerida:** Fase 8.7.4 — vendas/PDV.
+
+---
+
+## 18. Atualizacao — Fase 8.7.4 (26/05/2026)
+
+**Entidade: `vendas`** — append-only, sem `update()`. Dois fluxos de criacao: venda vinculada a OS e venda direta.
+
+Estrategia: injetar `DEFAULT_TENANT_ID` nos dois `repository.create()` no service. Nao ha `update()` para preservar, pois vendas nao sao editadas.
+
+Arquivos alterados:
+- `backend/src/modules/vendas/vendas.types.ts` — campo `tenantId?: string` adicionado ao tipo `Venda`
+- `backend/src/modules/vendas/vendas.service.ts` — import de `DEFAULT_TENANT_ID`; `tenantId: DEFAULT_TENANT_ID` nos dois `repository.create()` (venda via OS e venda direta)
+- `backend/src/modules/vendas/vendas.repository.ts` — `fromDocument()` le `tenantId` do Firestore
+
+Logica de calculo, baixa de estoque, vinculo com OS, evento de venda, schema Zod e financeiro intocados.
+
+**Referencia de validacao:** `docs/nextassist/validacao-backend-tenant-vendas.md`
+
+**Proxima fase sugerida:** Fase 8.7.5 — validacao critica consolidada (OS + estoque + vendas).
