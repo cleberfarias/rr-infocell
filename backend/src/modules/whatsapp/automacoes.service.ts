@@ -1,6 +1,7 @@
 import { env } from "../../config/env.js";
 import { db } from "../../firebase/admin.js";
 import { normalizarTelefone } from "../../shared/normalizar-telefone.js";
+import { createAparelhosRepository } from "../aparelhos/aparelhos.repository.js";
 import type { Checklist } from "../checklists/checklists.types.js";
 import { createClientesRepository } from "../clientes/clientes.repository.js";
 import { createOrdensServicoRepository } from "../ordens-servico/ordens-servico.repository.js";
@@ -9,6 +10,7 @@ import { conexaoService } from "./conexao.service.js";
 import { mensagemService } from "./mensagem.service.js";
 
 const clientesRepo = createClientesRepository(db);
+const aparelhosRepo = createAparelhosRepository(db);
 const ordensRepo = createOrdensServicoRepository(db);
 const colConversas = "whatsapp_conversas";
 const colOrdens = "ordensServico";
@@ -19,28 +21,40 @@ const addHours = (date: string, hours: number) =>
 const addDays = (date: string, days: number) =>
   new Date(new Date(date).getTime() + days * 24 * 60 * 60 * 1000);
 
-const statusMensagens: Partial<Record<OrdemServicoStatus, (os: OrdemServico) => string>> = {
-  em_analise: (os) =>
+type MensagemOrdemContext = {
+  aparelhoNome: string;
+};
+
+const linhaAparelho = (context: MensagemOrdemContext) => `Aparelho: ${context.aparelhoNome}`;
+
+const statusMensagens: Partial<
+  Record<OrdemServicoStatus, (os: OrdemServico, context: MensagemOrdemContext) => string>
+> = {
+  em_analise: (os, context) =>
     [
       `*RR Infocell - OS #${os.numero}*`,
+      linhaAparelho(context),
       "Seu aparelho entrou em analise tecnica.",
       "Assim que tivermos o diagnostico, avisaremos por aqui.",
     ].join("\n"),
-  aguardando_peca: (os) =>
+  aguardando_peca: (os, context) =>
     [
       `*RR Infocell - OS #${os.numero}*`,
+      linhaAparelho(context),
       "Seu atendimento esta aguardando peca.",
       "Vamos avisar assim que a manutencao puder continuar.",
     ].join("\n"),
-  em_manutencao: (os) =>
+  em_manutencao: (os, context) =>
     [
       `*RR Infocell - OS #${os.numero}*`,
+      linhaAparelho(context),
       "O servico foi iniciado e seu aparelho esta em manutencao.",
     ].join("\n"),
-  pronto_para_retirada: (os) => mensagemProntoRetirada(os),
-  sem_conserto: (os) =>
+  pronto_para_retirada: (os, context) => mensagemProntoRetirada(os, context),
+  sem_conserto: (os, context) =>
     [
       `*RR Infocell - OS #${os.numero}*`,
+      linhaAparelho(context),
       "Apos a analise tecnica, nao foi possivel realizar o conserto do aparelho.",
       "Seu aparelho esta disponivel para retirada. Se tiver duvidas, responda esta mensagem.",
     ].join("\n"),
@@ -50,10 +64,11 @@ function formatBRL(value: number) {
   return value.toLocaleString("pt-BR", { currency: "BRL", style: "currency" });
 }
 
-function mensagemProntoRetirada(os: OrdemServico) {
+function mensagemProntoRetirada(os: OrdemServico, context: MensagemOrdemContext) {
   const linhas = [
     `*RR Infocell - Aparelho pronto!*`,
     `OS #${os.numero}`,
+    linhaAparelho(context),
     `Seu aparelho ja pode ser retirado.`,
     `Valor total: ${formatBRL(os.valorTotal)}`,
   ];
@@ -72,27 +87,30 @@ function mensagemProntoRetirada(os: OrdemServico) {
   return linhas.join("\n");
 }
 
-function mensagemAbertura(os: OrdemServico) {
+function mensagemAbertura(os: OrdemServico, context: MensagemOrdemContext) {
   return [
     `*RR Infocell - OS #${os.numero} aberta*`,
+    linhaAparelho(context),
     "Recebemos seu aparelho.",
     "Vamos iniciar a analise tecnica e avisaremos por aqui quando houver atualizacao.",
   ].join("\n");
 }
 
-function mensagemOrcamentoPendente(os: OrdemServico) {
+function mensagemOrcamentoPendente(os: OrdemServico, context: MensagemOrdemContext) {
   return [
     `*RR Infocell - Orcamento pendente*`,
     `A OS #${os.numero} ainda aguarda sua aprovacao.`,
+    linhaAparelho(context),
     "Para autorizar responda: SIM",
     "Para recusar responda: NAO",
   ].join("\n");
 }
 
-function mensagemRetiradaPendente(os: OrdemServico) {
+function mensagemRetiradaPendente(os: OrdemServico, context: MensagemOrdemContext) {
   return [
     `*RR Infocell - Retirada pendente*`,
     `Sua OS #${os.numero} esta pronta para retirada.`,
+    linhaAparelho(context),
     `Valor total: ${formatBRL(os.valorTotal)}`,
     env.ATENDIMENTO_PIX_CHAVE
       ? `Chave PIX: ${env.ATENDIMENTO_PIX_CHAVE}`
@@ -100,10 +118,11 @@ function mensagemRetiradaPendente(os: OrdemServico) {
   ].join("\n");
 }
 
-function mensagemChecklist(os: OrdemServico, checklist: Checklist) {
+function mensagemChecklist(os: OrdemServico, checklist: Checklist, context: MensagemOrdemContext) {
   const itensComDefeito = checklist.itens.filter((item) => item.status === "com_defeito");
   const linhas = [
     `*RR Infocell - Checklist da OS #${os.numero}*`,
+    linhaAparelho(context),
     `Checklist de ${checklist.tipo === "saida" ? "saida" : "entrada"} registrado${checklist.criadoPor ? ` por ${checklist.criadoPor}` : ""}.`,
     itensComDefeito.length > 0
       ? `Itens com defeito: ${itensComDefeito.map((item) => item.nome).join(", ")}.`
@@ -140,7 +159,8 @@ class AutomacoesAtendimentoService {
 
   async aoCriarOrdem(os: OrdemServico) {
     if (env.NODE_ENV === "test") return;
-    const enviada = await this.enviarAutomacaoOrdem(os, mensagemAbertura(os), "status");
+    const context = await this.getMensagemContext(os);
+    const enviada = await this.enviarAutomacaoOrdem(os, mensagemAbertura(os, context), "status");
     if (enviada) {
       await this.marcarAutomacaoOrdem(os.id, { "automacoes.aberturaEnviadaEm": now() });
     }
@@ -150,7 +170,9 @@ class AutomacoesAtendimentoService {
     if (env.NODE_ENV === "test") return;
     if (current.status === next.status) return;
 
-    const textoStatus = statusMensagens[next.status]?.(next);
+    const mensagemStatus = statusMensagens[next.status];
+    const context = await this.getMensagemContext(next);
+    const textoStatus = mensagemStatus?.(next, context);
     if (textoStatus && !next.automacoes?.statusNotificados?.[next.status]) {
       const enviada = await this.enviarAutomacaoOrdem(next, textoStatus, "status");
       if (enviada) {
@@ -175,7 +197,8 @@ class AutomacoesAtendimentoService {
     const os = await ordensRepo.findById(checklist.ordemServicoId);
     if (!os) return;
 
-    await this.enviarAutomacaoOrdem(os, mensagemChecklist(os, checklist), "status");
+    const context = await this.getMensagemContext(os);
+    await this.enviarAutomacaoOrdem(os, mensagemChecklist(os, checklist, context), "status");
   }
 
   async processarPendencias() {
@@ -202,9 +225,10 @@ class AutomacoesAtendimentoService {
       const base = os.updatedAt || os.createdAt;
       if (addHours(base, env.ATENDIMENTO_LEMBRETE_ORCAMENTO_HORAS) > limite) continue;
 
+      const context = await this.getMensagemContext(os);
       const enviada = await this.enviarAutomacaoOrdem(
         os,
-        mensagemOrcamentoPendente(os),
+        mensagemOrcamentoPendente(os, context),
         "orcamento",
       );
       if (enviada) {
@@ -222,7 +246,12 @@ class AutomacoesAtendimentoService {
       const base = os.concluidaEm || os.updatedAt || os.createdAt;
       if (addDays(base, env.ATENDIMENTO_LEMBRETE_RETIRADA_DIAS) > limite) continue;
 
-      const enviada = await this.enviarAutomacaoOrdem(os, mensagemRetiradaPendente(os), "status");
+      const context = await this.getMensagemContext(os);
+      const enviada = await this.enviarAutomacaoOrdem(
+        os,
+        mensagemRetiradaPendente(os, context),
+        "status",
+      );
       if (enviada) {
         await this.marcarAutomacaoOrdem(os.id, { "automacoes.lembreteRetiradaEnviadoEm": now() });
       }
@@ -285,6 +314,13 @@ class AutomacoesAtendimentoService {
       console.warn("[WhatsApp] Automacao nao enviada:", err instanceof Error ? err.message : err);
       return false;
     }
+  }
+
+  private async getMensagemContext(os: OrdemServico): Promise<MensagemOrdemContext> {
+    const aparelho = await aparelhosRepo.findById(os.aparelhoId);
+    const aparelhoNome = aparelho ? `${aparelho.marca} ${aparelho.modelo}`.trim() : os.aparelhoId;
+
+    return { aparelhoNome };
   }
 
   private async finalizarConversa(os: OrdemServico) {
