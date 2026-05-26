@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
 import type { Cliente, ClienteInput } from "./clientes.types.js";
 
 const now = () => new Date().toISOString();
@@ -156,6 +157,7 @@ export class FirestoreClientesRepository implements ClientesRepository {
     const cliente: Cliente = {
       id: document.id,
       ...input,
+      tenantId: DEFAULT_TENANT_ID,
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -175,6 +177,7 @@ export class FirestoreClientesRepository implements ClientesRepository {
     const cliente: Cliente = {
       ...current,
       ...input,
+      tenantId: current.tenantId ?? DEFAULT_TENANT_ID,
       updatedAt: now(),
     };
 
@@ -208,6 +211,7 @@ export class FirestoreClientesRepository implements ClientesRepository {
         data.receberMensagemAutomatica !== undefined
           ? Boolean(data.receberMensagemAutomatica)
           : undefined,
+      tenantId: data.tenantId ? String(data.tenantId) : undefined,
       createdAt: String(data.createdAt ?? ""),
       updatedAt: String(data.updatedAt ?? ""),
     };

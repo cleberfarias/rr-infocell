@@ -219,3 +219,23 @@ Mesmo padrao da Fase 8.2 (marcas). Alteracao em `backend/src/modules/categorias/
 **Referencia de validacao:** `docs/nextassist/validacao-backend-tenant-categorias.md`
 
 **Proxima fase sugerida:** Fase 8.4 — `clientes`, primeira entidade com schema Zod + repository separado.
+
+---
+
+## 12. Atualizacao — Fase 8.4 (26/05/2026)
+
+**Entidade: `clientes`** — primeira entidade operacional com repository completo.
+
+Estrategia adotada: injetar `DEFAULT_TENANT_ID` diretamente no repository, sem alterar o schema Zod. O Zod continua descartando o `tenantId` do frontend (strip mode), garantindo que o backend controla o valor.
+
+Arquivos alterados:
+- `backend/src/modules/clientes/clientes.types.ts` — campo `tenantId?: string` adicionado ao tipo `Cliente`
+- `backend/src/modules/clientes/clientes.repository.ts` — import de `DEFAULT_TENANT_ID`; `create()` persiste tenantId; `update()` preserva `current.tenantId ?? DEFAULT_TENANT_ID`; `fromDocument()` le tenantId do Firestore
+
+Schema Zod (`clientes.schemas.ts`) e service (`clientes.service.ts`) nao foram alterados.
+
+O `update()` faz migracao gradual: clientes editados apos esta fase recebem `tenantId` automaticamente se ainda nao tiverem.
+
+**Referencia de validacao:** `docs/nextassist/validacao-backend-tenant-clientes.md`
+
+**Proxima fase sugerida:** Fase 8.5 — `despesas` ou `contas`, seguindo o mesmo padrao.
