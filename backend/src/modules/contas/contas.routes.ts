@@ -10,8 +10,10 @@ contasRoutes.get("/", async (_req, res, next) => {
   try {
     try {
       const db = getFirestore();
-      const snap = await db.collection(COLLECTION).orderBy("nome").get();
-      const data = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const snap = await db.collection(COLLECTION).where("tenantId", "==", DEFAULT_TENANT_ID).get();
+      const data = snap.docs
+        .map((doc) => ({ id: doc.id, ...(doc.data() as { nome?: string; tenantId?: string }) }))
+        .sort((a, b) => String(a.nome ?? "").localeCompare(String(b.nome ?? ""), "pt-BR"));
       return res.json({ data });
     } catch {
       return res.json({ data: [] });

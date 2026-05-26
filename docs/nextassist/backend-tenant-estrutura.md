@@ -422,4 +422,29 @@ Alteracao em `FirestoreProdutosRepository.list()` (`backend/src/modules/produtos
 
 **Proxima fase sugerida:** Fase 8.8.5 — filtro por tenantId em despesas e contas.
 
-**Proxima fase sugerida:** Fase 8.8.4 — filtro por tenantId em produtos.
+---
+
+## 23. Atualizacao — Fase 8.8.5 (26/05/2026)
+
+**Filtro por tenantId em `despesas` e `contas`.**
+
+### Despesas
+
+Alteracao em `FirestoreDespesasRepository.list()` (`backend/src/modules/despesas/despesas.repository.ts`):
+- Query Firestore agora usa `.where("tenantId", "==", DEFAULT_TENANT_ID)` antes do `.get()`
+- Ordenacao por vencimento e filtros por categoria/pago/search continuam no cliente via `filterDespesas()` (sem mudanca)
+- Sem indice composto necessario (nao ha `.orderBy()` na query Firestore)
+- Despesas antigas sem `tenantId` ficam ocultas; voltam ao editar (`update()` ja aplica `current.tenantId ?? DEFAULT_TENANT_ID`)
+- `findById()`, `create()`, `update()`, `delete()`, logica financeira — intocados
+
+### Contas
+
+Alteracao em GET /contas (`backend/src/modules/contas/contas.routes.ts`):
+- Query Firestore agora usa `.where("tenantId", "==", DEFAULT_TENANT_ID)` em vez de `.orderBy("nome")`
+- Ordenacao por nome movida para o cliente (`.sort()`) — evita dependencia de indice composto
+- Contas antigas sem `tenantId` ficam ocultas; PUT /contas/:id usa `ref.update()` parcial e **nao** injeta `tenantId` — contas antigas requerem migracao manual no Firestore, se necessario
+- POST, PUT, DELETE — intocados
+
+**Referencia de validacao:** `docs/nextassist/validacao-backend-filtro-tenant-despesas-contas.md`
+
+**Proxima fase sugerida:** Fase 8.8.6+ — avaliar filtro por tenantId em OS, movimentacoes de estoque e vendas (alto risco — avaliar criterios antes de avancar).

@@ -166,7 +166,10 @@ export class FirestoreDespesasRepository implements DespesasRepository {
       pago?: boolean | "";
     } = {},
   ) {
-    const snapshot = await this.firestore.collection(despesasCollection).get();
+    const snapshot = await this.firestore
+      .collection(despesasCollection)
+      .where("tenantId", "==", DEFAULT_TENANT_ID)
+      .get();
     const despesas = snapshot.docs
       .map((document) => this.fromDocument(document.id, document.data()))
       .sort((a, b) => a.vencimento.localeCompare(b.vencimento, "pt-BR"));
