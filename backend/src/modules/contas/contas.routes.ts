@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { getFirestore } from "firebase-admin/firestore";
 
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
+
 export const contasRoutes = Router();
 const COLLECTION = "contas";
 
@@ -33,6 +35,7 @@ contasRoutes.post("/", async (req, res, next) => {
       saldo: saldo ?? 0,
       ativa: true,
       criadoEm: new Date().toISOString(),
+      tenantId: DEFAULT_TENANT_ID,
     });
     const doc = await ref.get();
     res.status(201).json({ data: { id: ref.id, ...doc.data() } });

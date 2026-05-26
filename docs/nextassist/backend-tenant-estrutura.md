@@ -255,3 +255,23 @@ Logica de estoque (`estoqueAtual`, baixa automatica, movimentacoes) intocada. Sc
 **Referencia de validacao:** `docs/nextassist/validacao-backend-tenant-produtos.md`
 
 **Proxima fase sugerida:** Fase 8.6 — `despesas` ou `contas`.
+
+---
+
+## 14. Atualizacao — Fase 8.6 (26/05/2026)
+
+**Entidades: `despesas` e `contas`**
+
+**Despesas** — padrao com repository separado (igual a clientes/produtos), mas com `buildDespesa()` helper de negocio intocado:
+- `despesas.types.ts`: campo `tenantId?: string` adicionado ao tipo `Despesa`
+- `despesas.repository.ts`: `create()` injeta `tenantId` apos `buildDespesa()`; `update()` preserva `current.tenantId ?? DEFAULT_TENANT_ID`; `fromDocument()` le tenantId
+
+**Contas** — padrao inline (igual a marcas/categorias):
+- `contas.routes.ts`: POST persiste `tenantId: DEFAULT_TENANT_ID` no `.add()`
+- PUT usa `ref.update()` parcial — tenantId criado no POST nao e sobrescrito
+
+`buildDespesa()`, schemas Zod, services e calculos financeiros intocados.
+
+**Referencia de validacao:** `docs/nextassist/validacao-backend-tenant-despesas-contas.md`
+
+**Proxima fase sugerida:** Fase 8.7 — `ordens-servico`, entidade critica com baixa de estoque.

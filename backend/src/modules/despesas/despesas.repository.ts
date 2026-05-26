@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
 import type { Despesa, DespesaCategoria, DespesaInput } from "./despesas.types.js";
 
 const now = () => new Date().toISOString();
@@ -188,6 +189,7 @@ export class FirestoreDespesasRepository implements DespesasRepository {
     const despesa = {
       ...buildDespesa(input),
       id: document.id,
+      tenantId: DEFAULT_TENANT_ID,
     };
 
     await document.set(withoutUndefined(despesa));
@@ -202,7 +204,10 @@ export class FirestoreDespesasRepository implements DespesasRepository {
       return null;
     }
 
-    const despesa = buildDespesa(input, current);
+    const despesa = {
+      ...buildDespesa(input, current),
+      tenantId: current.tenantId ?? DEFAULT_TENANT_ID,
+    };
 
     await this.firestore.collection(despesasCollection).doc(id).set(withoutUndefined(despesa));
 
@@ -232,6 +237,7 @@ export class FirestoreDespesasRepository implements DespesasRepository {
       recorrente: data.recorrente === true,
       pago: data.pago === true,
       pagoEm: data.pagoEm ? String(data.pagoEm) : undefined,
+      tenantId: data.tenantId ? String(data.tenantId) : undefined,
       createdAt: String(data.createdAt ?? ""),
       updatedAt: String(data.updatedAt ?? ""),
     };
