@@ -83,14 +83,29 @@ Fluxos nao alterados:
 - `listContas` — listagem sem filtro por tenantId
 - `deleteConta` — exclusao sem validacao de tenantId
 
+#### Ordens de Servico (`frontend/src/services/ordens-servico.ts`)
+
+Entidade sensivel: ao criar ou editar uma OS com pecas, o backend aciona baixa de estoque internamente. Adicionar `tenantId` ao payload e puramente aditivo — o backend vai ignorar o campo ate ser preparado para valida-lo. A logica de baixa de estoque, calculo de valores e regras de status nao foram alteradas.
+
+Fluxos alterados:
+
+- `createOrdemServico` — payload de criacao inclui `tenantId`
+- `updateOrdemServico` — payload de edicao inclui `tenantId`
+
+Fluxos nao alterados:
+
+- `listOrdensServico` — listagem sem filtro por tenantId
+- `getOrdemServico` — busca individual sem filtro
+- `deleteOrdemServico` — exclusao sem validacao de tenantId
+
 ### Entidades sem tenantId aplicado
 
 Os demais services permanecem sem tenantId:
 
-- `ordens-servico.ts` (OS) — sensivel; aciona baixa de estoque no backend
-- `movimentacoes-estoque.ts` — sensivel; movimentacoes automaticas via OS
+- `movimentacoes-estoque.ts` — movimentacoes automaticas via OS controladas pelo backend
 - `orcamentos.ts` — vincula OS, cliente e produtos
 - `vendas.ts` (PDV) — vincula OS, produto e cliente ao mesmo tempo
+- `ordem-eventos.ts` — timeline da OS
 - `whatsapp.ts`
 - `usuarios.ts`
 - `checklists.ts`
@@ -98,13 +113,26 @@ Os demais services permanecem sem tenantId:
 - `categorias.ts`
 - `marcas.ts`
 - `fornecedores.ts`
-- `ordem-eventos.ts`
+
+## Observacao sobre OS e baixa de estoque
+
+Ao criar uma OS com `pecasUsadas`, o backend reduz o estoque dos produtos referenciados internamente. Essa logica e controlada exclusivamente pelo backend e nao passa pelo service `movimentacoes-estoque.ts` do frontend. Adicionar `tenantId` ao payload de OS nao altera esse fluxo.
+
+## Validacao manual recomendada para OS
+
+Antes de considerar esta fase valida em staging, executar:
+
+- [ ] Criar OS simples sem pecas — verificar se nao retorna 400/422
+- [ ] Criar OS com uma ou mais pecas — verificar se nao retorna 400/422
+- [ ] Editar OS existente — verificar se nao retorna 400/422
+- [ ] Verificar se baixa de estoque continua funcionando igual ao comportamento anterior
+- [ ] Verificar se historico de movimentacoes de estoque nao foi alterado
 
 ## Observacao sobre despesas e financeiro
 
 `Despesa` nao vincula OS, produto nem estoque. Adicionar `tenantId` ao payload de criacao/edicao e puramente aditivo: o backend vai ignorar o campo ate estar preparado para valida-lo. Nenhuma regra de calculo financeiro foi alterada.
 
-OS, estoque, movimentacoes, vendas/PDV, orcamento, impressao e relatorios financeiros permanecem sem alteracao.
+Vendas/PDV, orcamento, impressao e relatorios financeiros permanecem sem alteracao.
 
 ## Observacao sobre produtos e estoque
 
@@ -132,13 +160,15 @@ O frontend apenas prepara payloads. O backend e a unica barreira real de isolame
 | Backend nao valida `tenantId` nos payloads | Pendente — campo e ignorado hoje |
 | Listagens retornam dados sem filtro por tenant | Pendente — todos os `list*` sem filtro |
 | Deletes sem validacao de tenant | Pendente |
-| OS, estoque, financeiro, orcamento, PDV, WhatsApp sem tenant | Intencional nesta fase |
+| Baixa de estoque via OS nao distingue tenant | Pendente — depende de backend |
+| Vendas/PDV, orcamento, impressao e WhatsApp sem tenant | Intencional nesta fase |
 | Mistura de dados entre tenants em consultas | Risco real — depende de backend preparado |
 
 ## Proximos passos recomendados
 
-1. Preparar backend para aceitar e armazenar `tenantId` em clientes e produtos.
-2. Criar filtros de listagem por tenant no backend.
-3. Validar em staging com dois tenants distintos.
-4. Somente apos validacao em staging, expandir para OS e entidades criticas.
-5. Nunca aplicar filtros reais por tenant em producao sem backup e rollback planejados.
+1. Validar manualmente OS com e sem pecas em staging (ver checklist acima).
+2. Preparar backend para aceitar e armazenar `tenantId` nas entidades ja marcadas.
+3. Criar filtros de listagem por tenant no backend.
+4. Aplicar tenantId em `ordem-eventos.ts` e `movimentacoes-estoque.ts` (manual).
+5. Aplicar tenantId em `vendas.ts` somente apos OS e estoque alinhados.
+6. Nunca aplicar filtros reais por tenant em producao sem backup e rollback planejados.

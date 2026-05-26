@@ -1,4 +1,5 @@
 import { apiRequest } from "./api";
+import { getTenantScopedPayload } from "@/lib/tenantPayload";
 export const ordemServicoStatus = [
   "recebido",
   "em_analise",
@@ -173,7 +174,7 @@ export const createOrdemServico = async (input: OrdemServicoInput) => {
     "/ordens-servico",
     {
       method: "POST",
-      body: JSON.stringify(input),
+      body: JSON.stringify(getTenantScopedPayload(input)),
     },
   );
 
@@ -188,7 +189,7 @@ export const updateOrdemServico = async (
     `/ordens-servico/${id}`,
     {
       method: "PUT",
-      body: JSON.stringify(input),
+      body: JSON.stringify(getTenantScopedPayload(input)),
     },
   );
 
