@@ -315,10 +315,29 @@ Criterios de entrada para Fase 8.1:
 | Backend aceita tenantId sem erro | Sim — Zod strip mode descarta silenciosamente |
 | tenantId e persistido no Firestore | Nao — descartado no parse Zod |
 | Algum registro tem tenantId no banco | Nao |
-| Backend resolve tenant do usuario | Nao — nao existe middleware de tenant |
+| Backend resolve tenant do usuario | Nao — middleware criado mas nao registrado nas rotas ainda |
 | Queries filtram por tenantId | Nao — todas as listagens sao globais |
-| Sistema e multiempresa real | Nao — preparacao concluida no frontend, backend ainda nao implementado |
+| Sistema e multiempresa real | Nao — preparacao concluida no frontend, infraestrutura base criada no backend |
 
 **O frontend esta pronto. O backend precisa ser implementado do zero para multiempresa real.**
 
 A producao do RR Infocell continua protegida: nenhuma alteracao critica foi feita no backend, banco ou regras de negocio. A Fase 8 deve comecar no ambiente de staging com entidades de menor risco.
+
+---
+
+## 13. Atualizacao — Fase 8.1 (26/05/2026)
+
+A Fase 8.1 criou a infraestrutura conceitual de tenant no backend sem alterar nenhum modulo existente:
+
+| Arquivo criado | Conteudo |
+| --- | --- |
+| `backend/src/modules/tenants/tenant.types.ts` | Tipos `Tenant`, `TenantInput`, `TenantPlan`, `TenantStatus` |
+| `backend/src/modules/tenants/tenant.schemas.ts` | Schemas Zod: `tenantInputSchema`, `tenantSchema` |
+| `backend/src/modules/tenants/tenant.config.ts` | `DEFAULT_TENANT_ID = "rr-infocell"` e `defaultTenant` |
+| `backend/src/middlewares/tenant.ts` | `resolveTenant`, `getRequestTenantId`, `getDefaultTenantId` |
+
+O build do backend passa sem erros (`npm run build`).
+
+**Referencia completa:** `docs/nextassist/backend-tenant-estrutura.md`
+
+**Proxima fase sugerida:** Fase 8.2 — persistir `tenantId` em entidade simples (categorias ou marcas) no Firestore de staging.
