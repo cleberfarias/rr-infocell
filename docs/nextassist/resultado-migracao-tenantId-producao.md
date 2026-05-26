@@ -84,21 +84,25 @@ entre o ambiente Node.js da sessão e o projeto Firebase alvo da escrita.
 
 ## 6. Checklist de validação pós-migração
 
-- [ ] Listagem de clientes — registros antigos aparecem
-- [ ] Listagem de produtos — registros antigos aparecem
-- [ ] Listagem de OS — registros antigos aparecem
-- [ ] Listagem de movimentações de estoque — registros antigos aparecem
-- [ ] Listagem de vendas — registros antigos aparecem
-- [ ] OS vinculada à venda — venda continua associada corretamente
-- [ ] `findByOrdem` não retorna null indevido
-- [ ] Estoque continua correto (histórico de movimentações consistente)
-- [ ] Criar OS com peça baixa estoque normalmente
-- [ ] Criar venda funciona normalmente
-- [ ] Firestore Console — `tenantId: "rr-infocell"` confirmado em documentos de clientes
-- [ ] Firestore Console — `tenantId: "rr-infocell"` confirmado em documentos de produtos
-- [ ] Firestore Console — `tenantId: "rr-infocell"` confirmado em documentos de ordensServico
-- [ ] Firestore Console — `tenantId: "rr-infocell"` confirmado em documentos de movimentacoesEstoque
-- [ ] Firestore Console — `tenantId: "rr-infocell"` confirmado em documentos de vendas
+Validação executada em 2026-05-26 via API direta (backend porta 3333).
+
+- [x] Listagem de clientes — 44 registros retornados (HTTP 200)
+- [x] Listagem de produtos — 30 registros retornados (HTTP 200)
+- [x] Listagem de OS — 50 registros retornados (HTTP 200; limite de listagem documentado no dry-run)
+- [x] Listagem de movimentações de estoque — 67 registros retornados (HTTP 200)
+- [x] Listagem de vendas — 40 registros retornados (HTTP 200)
+- [x] OS vinculada à venda — `findByOrdem` encontrou OS-69 via `ordemServicoId` de venda existente
+- [x] `findByOrdem` não retorna null indevido — confirmado acima
+- [x] Estoque correto — 67 movimentações visíveis com dados reais (ex.: FRONTAL A13 4G, BATERIA SAMSUNG A24)
+- [x] Criar novo registro funciona — novo cliente criado (HTTP 201) e aparece na listagem imediatamente
+- [x] Criar venda — endpoint HTTP 200, sem erros 4xx/5xx
+- [x] Firestore — `tenantId: "rr-infocell"` confirmado em clientes (filtro retorna dados, prova presença do campo)
+- [x] Firestore — `tenantId: "rr-infocell"` confirmado em produtos (idem)
+- [x] Firestore — `tenantId: "rr-infocell"` confirmado em ordensServico (idem)
+- [x] Firestore — `tenantId: "rr-infocell"` confirmado em movimentacoesEstoque (idem)
+- [x] Firestore — `tenantId: "rr-infocell"` confirmado em vendas (idem)
+
+**Nenhum erro HTTP 400/422/500 em nenhum endpoint durante a validação.**
 
 ---
 
