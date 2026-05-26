@@ -145,6 +145,24 @@ O primeiro script a ser criado na Fase 8.9.1 deve:
 
 O dry-run e obrigatorio e deve ser aprovado antes de rodar o script real.
 
+### Como executar o dry-run (Fase 8.9.1)
+
+O script foi criado em `backend/src/scripts/audit-tenantId-dry-run.ts`. Para rodar:
+
+```bash
+cd backend
+npx tsx src/scripts/audit-tenantId-dry-run.ts
+```
+
+O script:
+- Conecta ao Firestore usando as credenciais do `.env`
+- Analisa as 9 collections principais
+- Mapeia relacoes OS → vendas → movimentacoes
+- **Nao escreve nada no banco**
+- Gera relatorio Markdown em `docs/nextassist/reports/audit-tenantId-dry-run-<timestamp>.md`
+
+Para interpretar o resultado, consulte `docs/nextassist/dry-run-tenantId-auditoria.md`.
+
 ---
 
 ## 7. Estrategia do script real
