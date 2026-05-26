@@ -368,3 +368,19 @@ Alteracao em `backend/src/modules/marcas/marcas.routes.ts`:
 **Referencia de validacao:** `docs/nextassist/validacao-backend-filtro-tenant-marcas.md`
 
 **Proxima fase sugerida:** Fase 8.8.2 — filtro por tenantId em categorias.
+
+---
+
+## 20. Atualizacao — Fase 8.8.2 (26/05/2026)
+
+**Filtro por tenantId em `categorias`.**
+
+Mesmo padrao da Fase 8.8.1 (marcas). Alteracao em `backend/src/modules/categorias/categorias.routes.ts`:
+- GET /categorias agora usa `.where("tenantId", "==", DEFAULT_TENANT_ID)` para categorias customizadas do Firestore
+- `CATEGORIAS_PADRAO` (7 constantes TypeScript) continuam sempre incluidas
+- Ordenacao movida para o cliente para evitar indice composto no Firestore
+- Categorias customizadas criadas antes da Fase 8.3 (sem `tenantId`) ficam ocultas
+
+**Referencia de validacao:** `docs/nextassist/validacao-backend-filtro-tenant-categorias.md`
+
+**Proxima fase sugerida:** Fase 8.8.3 — filtro por tenantId em clientes.

@@ -22,8 +22,13 @@ categoriasRoutes.get("/", async (_req, res, next) => {
   try {
     try {
       const db = getFirestore();
-      const snap = await db.collection(COLLECTION).orderBy("nome").get();
-      const customizadas = snap.docs.map((doc) => ({ id: doc.id, ...doc.data(), padrao: false }));
+      const snap = await db
+        .collection(COLLECTION)
+        .where("tenantId", "==", DEFAULT_TENANT_ID)
+        .get();
+      const customizadas = snap.docs
+        .map((doc) => ({ id: doc.id, ...(doc.data() as { nome: string; tenantId?: string }), padrao: false }))
+        .sort((a, b) => a.nome.localeCompare(b.nome));
       return res.json({ data: [...CATEGORIAS_PADRAO, ...customizadas] });
     } catch {
       return res.json({ data: CATEGORIAS_PADRAO });
