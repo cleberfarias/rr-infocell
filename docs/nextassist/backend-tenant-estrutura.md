@@ -176,8 +176,29 @@ Criterios de entrada para Fase 8.2:
 
 | Risco | Impacto | Quando resolve |
 | --- | --- | --- |
-| `defaultTenant` nao esta no banco | Campo `tenantId` resolvido e "rr-infocell" mas colecao `tenants` nao existe | Fase 8.2 — criar colecao tenants |
-| Middleware nao esta ativo nas rotas | `request.tenantId` nunca e populado enquanto `resolveTenant` nao for registrado | Fase 8.2 — ao adicionar tenantId em entidade simples |
+| `defaultTenant` nao esta no banco | Campo `tenantId` resolvido e "rr-infocell" mas colecao `tenants` nao existe | Fase 8.x |
+| Middleware nao esta ativo nas rotas | `request.tenantId` nunca e populado enquanto `resolveTenant` nao for registrado globalmente | Fase 8.x |
 | Queries sem filtro por tenant | Dados de todos os tenants retornados em qualquer listagem | Fase 8.3+ |
-| Registros sem tenantId no banco | Migracao futura necessaria para dados existentes | Fase 8.x — migracao controlada |
+| Registros sem tenantId no banco | Migracao futura necessaria para dados existentes criados antes da Fase 8.2 | Fase 8.x — migracao controlada |
 | Backend ainda confia no tenantId do frontend | O tenant deve ser resolvido do token, nao do payload | Resolvido quando `resolveTenant` for ativado nas rotas |
+
+---
+
+## 10. Atualizacao — Fase 8.2 (26/05/2026)
+
+**Entidade escolhida: `marcas`**
+
+Motivo da escolha: menor acoplamento entre todos os modulos — `marca` nos outros modulos e apenas um campo `string`, nao um lookup na colecao `marcas` do Firestore.
+
+Alteracao realizada em `backend/src/modules/marcas/marcas.routes.ts`:
+- POST /marcas agora persiste `tenantId: "rr-infocell"` no Firestore via `DEFAULT_TENANT_ID`
+- GET /marcas nao foi alterado — listagem permanece global
+- DELETE /marcas nao foi alterado
+
+O tenant e resolvido diretamente de `DEFAULT_TENANT_ID` (constante) — sem depender do middleware ou do payload do frontend.
+
+**Listagem ainda nao filtra por tenantId.** Marcas existentes sem o campo continuam funcionando normalmente.
+
+**Referencia de validacao:** `docs/nextassist/validacao-backend-tenant-marcas.md`
+
+**Proxima fase sugerida:** Fase 8.3 — apos confirmar `tenantId` visivel no Firestore, aplicar o mesmo padrao em categorias ou clientes.
