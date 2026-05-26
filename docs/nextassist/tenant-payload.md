@@ -10,6 +10,22 @@ Arquivo criado:
 
 O objetivo e deixar uma base tipada para uso futuro em staging, sem aplicar ainda em services reais e sem alterar comportamento atual da RR Infocell.
 
+## Exemplo isolado
+
+Arquivo de exemplo:
+
+- `frontend/src/lib/tenantPayload.example.ts`
+
+Esse arquivo demonstra o uso do helper em um payload de sandbox, sem integrar com telas, rotas, services, backend ou banco de dados.
+
+O ponto foi escolhido por ser seguro:
+
+- nao altera fluxo visual;
+- nao chama API;
+- nao salva dados;
+- nao toca services criticos;
+- nao envolve OS, estoque, financeiro, orcamento, PDV, impressao, WhatsApp, produtos ou clientes.
+
 ## Funcoes disponiveis
 
 O helper expoe:
@@ -60,7 +76,7 @@ O frontend pode ajudar a montar payloads, mas nao deve ser a unica barreira de i
 
 ## Exemplos conceituais de uso futuro
 
-Os exemplos abaixo sao apenas conceituais. Nao aplicar em services criticos sem fase especifica.
+Os exemplos abaixo sao apenas conceituais. Nao aplicar em services criticos sem fase especifica e sem staging completo.
 
 ### Create com tenant
 
@@ -96,6 +112,14 @@ Antes de usar em services reais:
 - criar testes de isolamento;
 - revisar OS, estoque, financeiro, orcamento, impressao e WhatsApp;
 - garantir que backend valida tenant independentemente do frontend.
+
+## O que ainda nao foi alterado
+
+- Nenhum service real usa `tenantPayload`.
+- Nenhum dado real recebe `tenantId`.
+- Backend e banco ainda nao validam `tenantId`.
+- Fluxos criticos continuam sem alteracao.
+- Isso ainda nao e multiempresa real.
 
 ## Uso recomendado
 
