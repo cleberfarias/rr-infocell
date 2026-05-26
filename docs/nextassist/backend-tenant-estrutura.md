@@ -239,3 +239,19 @@ O `update()` faz migracao gradual: clientes editados apos esta fase recebem `ten
 **Referencia de validacao:** `docs/nextassist/validacao-backend-tenant-clientes.md`
 
 **Proxima fase sugerida:** Fase 8.5 — `despesas` ou `contas`, seguindo o mesmo padrao.
+
+---
+
+## 13. Atualizacao — Fase 8.5 (26/05/2026)
+
+**Entidade: `produtos`** — mesma estrategia de clientes (injetar no repository, sem alterar schema Zod).
+
+Arquivos alterados:
+- `backend/src/modules/produtos/produtos.types.ts` — campo `tenantId?: string` adicionado ao tipo `Produto`
+- `backend/src/modules/produtos/produtos.repository.ts` — import de `DEFAULT_TENANT_ID`; `create()` persiste tenantId; `update()` preserva `current.tenantId ?? DEFAULT_TENANT_ID`; `fromDocument()` le tenantId do Firestore
+
+Logica de estoque (`estoqueAtual`, baixa automatica, movimentacoes) intocada. Schema Zod intocado.
+
+**Referencia de validacao:** `docs/nextassist/validacao-backend-tenant-produtos.md`
+
+**Proxima fase sugerida:** Fase 8.6 — `despesas` ou `contas`.

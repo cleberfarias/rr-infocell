@@ -33,6 +33,7 @@ export type Produto = {
   laudoEntrada?: string;
   custoRestauracao?: number;
   observacoes?: string;
+  tenantId?: string;
   createdAt: string;
   updatedAt: string;
 };

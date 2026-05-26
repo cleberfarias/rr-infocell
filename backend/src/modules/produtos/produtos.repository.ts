@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
 import type { Produto, ProdutoCategoria, ProdutoInput } from "./produtos.types.js";
 
 const now = () => new Date().toISOString();
@@ -181,6 +182,7 @@ export class FirestoreProdutosRepository implements ProdutosRepository {
       id: document.id,
       ...input,
       ativo: input.ativo ?? true,
+      tenantId: DEFAULT_TENANT_ID,
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -201,6 +203,7 @@ export class FirestoreProdutosRepository implements ProdutosRepository {
       ...current,
       ...input,
       ativo: input.ativo ?? current.ativo,
+      tenantId: current.tenantId ?? DEFAULT_TENANT_ID,
       updatedAt: now(),
     };
 
@@ -247,6 +250,7 @@ export class FirestoreProdutosRepository implements ProdutosRepository {
       custoRestauracao:
         data.custoRestauracao !== undefined ? Number(data.custoRestauracao) : undefined,
       observacoes: data.observacoes ? String(data.observacoes) : undefined,
+      tenantId: data.tenantId ? String(data.tenantId) : undefined,
       createdAt: String(data.createdAt ?? ""),
       updatedAt: String(data.updatedAt ?? ""),
     };
