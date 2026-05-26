@@ -1,6 +1,7 @@
 import { db } from "../../firebase/admin.js";
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
 import { produtosService, type ProdutosService } from "../produtos/produtos.service.js";
 import {
   createMovimentacoesEstoqueRepository,
@@ -58,6 +59,7 @@ export class MovimentacoesEstoqueService {
       origem: input.origem ?? "manual",
       ordemServicoId: input.ordemServicoId,
       criadoPor: input.criadoPor,
+      tenantId: DEFAULT_TENANT_ID,
       createdAt: now(),
     });
   }

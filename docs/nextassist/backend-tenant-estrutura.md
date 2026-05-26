@@ -294,3 +294,22 @@ Schema Zod, `ordensServicoService`, listagem GET /ordem-eventos (sem filtro), ba
 **Referencia de validacao:** `docs/nextassist/validacao-backend-tenant-ordem-eventos.md`
 
 **Proxima fase sugerida:** Fase 8.7.2 — movimentacoes manuais de estoque.
+
+---
+
+## 16. Atualizacao — Fase 8.7.2 (26/05/2026)
+
+**Entidade: `movimentacoes-estoque`** — todas as movimentacoes criadas via `service.create()` agora persistem `tenantId`.
+
+Estrategia adotada: injetar `DEFAULT_TENANT_ID` no `service.create()`. Este metodo e o unico ponto de criacao, usado tanto por movimentacoes manuais (POST /api/movimentacoes-estoque) quanto pela baixa automatica de OS (`applyPecasDeltas`). O campo `origem` distingue a fonte (`"manual"` vs `"ordem_servico"`), mas o `tenantId` e o mesmo `DEFAULT_TENANT_ID` para ambos.
+
+Arquivos alterados:
+- `backend/src/modules/movimentacoes-estoque/movimentacoes-estoque.types.ts` — campo `tenantId?: string` adicionado ao tipo `MovimentacaoEstoque`
+- `backend/src/modules/movimentacoes-estoque/movimentacoes-estoque.service.ts` — import de `DEFAULT_TENANT_ID`; campo `tenantId: DEFAULT_TENANT_ID` adicionado ao objeto passado a `repository.create()`
+- `backend/src/modules/movimentacoes-estoque/movimentacoes-estoque.repository.ts` — `fromDocument()` le `tenantId` do Firestore
+
+Schema Zod, logica de saldo/estoque, `ordens-servico`, produtos, vendas e financeiro intocados.
+
+**Referencia de validacao:** `docs/nextassist/validacao-backend-tenant-movimentacoes-estoque.md`
+
+**Proxima fase sugerida:** Fase 8.7.3 — ordens de servico (entidade critica, acoplada com baixa de estoque, eventos e financeiro).

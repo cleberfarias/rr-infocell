@@ -103,6 +103,7 @@ export class FirestoreMovimentacoesEstoqueRepository implements MovimentacoesEst
       origem: data.origem === "ordem_servico" ? "ordem_servico" : "manual",
       ordemServicoId: data.ordemServicoId ? String(data.ordemServicoId) : undefined,
       criadoPor: data.criadoPor ? String(data.criadoPor) : undefined,
+      tenantId: data.tenantId ? String(data.tenantId) : undefined,
       createdAt: String(data.createdAt ?? ""),
     };
   }
