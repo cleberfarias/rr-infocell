@@ -2,29 +2,11 @@
 
 ## Objetivo
 
-`tenantPayload` e uma camada utilitaria inicial para preparar payloads com `tenantId` no frontend do NextAssist.
+`tenantPayload` e uma camada utilitaria para preparar payloads com `tenantId` no frontend do NextAssist.
 
-Arquivo criado:
+Arquivo principal:
 
 - `frontend/src/lib/tenantPayload.ts`
-
-O objetivo e deixar uma base tipada para uso futuro em staging, sem aplicar ainda em services reais e sem alterar comportamento atual da RR Infocell.
-
-## Exemplo isolado
-
-Arquivo de exemplo:
-
-- `frontend/src/lib/tenantPayload.example.ts`
-
-Esse arquivo demonstra o uso do helper em um payload de sandbox, sem integrar com telas, rotas, services, backend ou banco de dados.
-
-O ponto foi escolhido por ser seguro:
-
-- nao altera fluxo visual;
-- nao chama API;
-- nao salva dados;
-- nao toca services criticos;
-- nao envolve OS, estoque, financeiro, orcamento, PDV, impressao, WhatsApp, produtos ou clientes.
 
 ## Funcoes disponiveis
 
@@ -37,33 +19,70 @@ O helper expoe:
 
 As funcoes usam o tenant atual vindo de `frontend/src/lib/tenant.ts`.
 
-Hoje o tenant atual continua sendo:
+O tenant atual e:
 
 - `tenantId`: `rr-infocell`
 - tenant: RR Infocell
 - produto base: NextAssist
 - plano: `premium`
 
-## Limites atuais
+## Estado atual de aplicacao
 
-Este helper ainda nao:
+### Entidades com tenantId aplicado no payload
 
-- altera dados reais;
-- salva dados;
-- chama API;
-- usa `localStorage`;
-- busca tenant no backend;
-- aplica tenant em services criticos;
-- substitui validacao no backend;
-- representa multiempresa real.
+#### Clientes (`frontend/src/services/clientes.ts`)
 
-Ele apenas prepara payloads em memoria quando for usado futuramente.
+Fluxos alterados:
 
-## Validacao no backend
+- `createCliente` — payload de criacao inclui `tenantId`
+- `updateCliente` — payload de edicao inclui `tenantId`
 
-Mesmo quando esse helper for usado, o backend devera continuar sendo a fonte de seguranca.
+Fluxos nao alterados:
 
-O backend devera:
+- `listClientes` — listagem sem filtro por tenantId
+- `getCliente` — busca individual sem filtro por tenantId
+- `deleteCliente` — exclusao sem validacao de tenantId
+
+#### Produtos (`frontend/src/services/produtos.ts`)
+
+Fluxos alterados:
+
+- `createProduto` — payload de criacao inclui `tenantId`
+- `updateProduto` — payload de edicao inclui `tenantId`
+
+Fluxos nao alterados:
+
+- `listProdutos` — listagem sem filtro por tenantId
+- `deleteProduto` — exclusao sem validacao de tenantId
+
+### Entidades sem tenantId aplicado
+
+Todos os demais services permanecem sem tenantId:
+
+- `ordens-servico.ts` (OS)
+- `movimentacoes-estoque.ts`
+- `contas.ts` (financeiro)
+- `despesas.ts`
+- `orcamentos.ts`
+- `vendas.ts` (PDV)
+- `whatsapp.ts`
+- `usuarios.ts`
+- `checklists.ts`
+- `aparelhos.ts`
+- `categorias.ts`
+- `marcas.ts`
+- `fornecedores.ts`
+- `ordem-eventos.ts`
+
+## Observacao sobre produtos e estoque
+
+O tipo `ProdutoInput` inclui o campo `estoqueAtual`. Adicionar `tenantId` ao payload de criacao/edicao de produto nao altera o comportamento de estoque — e apenas metadado adicional. Movimentacoes reais de estoque ocorrem em `movimentacoes-estoque.ts`, que permanece sem alteracao.
+
+O backend vai ignorar o `tenantId` ate que seja preparado para valida-lo.
+
+## O que o backend ainda precisa fazer
+
+O backend devera, em fase futura:
 
 - resolver tenant do usuario autenticado;
 - validar se o usuario pertence ao tenant;
@@ -72,55 +91,22 @@ O backend devera:
 - validar update/delete por tenant;
 - impedir acesso a dados de outro tenant.
 
-O frontend pode ajudar a montar payloads, mas nao deve ser a unica barreira de isolamento.
+O frontend apenas prepara payloads. O backend e a unica barreira real de isolamento.
 
-## Exemplos conceituais de uso futuro
+## Riscos restantes
 
-Os exemplos abaixo sao apenas conceituais. Nao aplicar em services criticos sem fase especifica e sem staging completo.
+| Risco | Status |
+| --- | --- |
+| Backend nao valida `tenantId` nos payloads | Pendente — campo e ignorado hoje |
+| Listagens retornam dados sem filtro por tenant | Pendente — todos os `list*` sem filtro |
+| Deletes sem validacao de tenant | Pendente |
+| OS, estoque, financeiro, orcamento, PDV, WhatsApp sem tenant | Intencional nesta fase |
+| Mistura de dados entre tenants em consultas | Risco real — depende de backend preparado |
 
-### Create com tenant
+## Proximos passos recomendados
 
-```ts
-const payload = withTenantId({
-  nome: "Cliente teste",
-  telefone: "(00) 00000-0000",
-});
-```
-
-### Validar payload recebido em camada intermediaria
-
-```ts
-assertTenantId(payload);
-```
-
-### Checar se objeto possui tenant
-
-```ts
-if (hasTenantId(payload)) {
-  // payload.tenantId esta disponivel de forma tipada
-}
-```
-
-## Cuidados antes de aplicar em services
-
-Antes de usar em services reais:
-
-- validar ambiente staging;
-- confirmar backup e rollback;
-- definir se `tenantId` sera enviado pelo frontend ou resolvido apenas no backend;
-- mapear services criticos;
-- criar testes de isolamento;
-- revisar OS, estoque, financeiro, orcamento, impressao e WhatsApp;
-- garantir que backend valida tenant independentemente do frontend.
-
-## O que ainda nao foi alterado
-
-- Nenhum service real usa `tenantPayload`.
-- Nenhum dado real recebe `tenantId`.
-- Backend e banco ainda nao validam `tenantId`.
-- Fluxos criticos continuam sem alteracao.
-- Isso ainda nao e multiempresa real.
-
-## Uso recomendado
-
-Usar primeiro em areas nao criticas ou prototipos de staging. Nao aplicar em producao sem validacao completa de isolamento.
+1. Preparar backend para aceitar e armazenar `tenantId` em clientes e produtos.
+2. Criar filtros de listagem por tenant no backend.
+3. Validar em staging com dois tenants distintos.
+4. Somente apos validacao em staging, expandir para OS e entidades criticas.
+5. Nunca aplicar filtros reais por tenant em producao sem backup e rollback planejados.
