@@ -1,4 +1,5 @@
 import { apiRequest } from "./api";
+import { getTenantScopedPayload } from "@/lib/tenantPayload";
 
 export type ContaTipo = "caixa" | "conta_corrente" | "conta_poupanca" | "pix" | "outro";
 
@@ -27,7 +28,7 @@ export const listContas = async (): Promise<Conta[]> => {
 export const createConta = async (input: ContaInput): Promise<Conta> => {
   const r = await apiRequest<ApiResponse<Conta>>("/contas", {
     method: "POST",
-    body: JSON.stringify(input),
+    body: JSON.stringify(getTenantScopedPayload(input)),
   });
   return r.data;
 };
@@ -35,7 +36,7 @@ export const createConta = async (input: ContaInput): Promise<Conta> => {
 export const updateConta = async (id: string, input: Partial<ContaInput & { ativa: boolean }>): Promise<Conta> => {
   const r = await apiRequest<ApiResponse<Conta>>(`/contas/${id}`, {
     method: "PUT",
-    body: JSON.stringify(input),
+    body: JSON.stringify(getTenantScopedPayload(input)),
   });
   return r.data;
 };

@@ -69,13 +69,26 @@ Fluxos nao alterados:
 - `listDespesas` — listagem sem filtro por tenantId
 - `deleteDespesa` — exclusao sem validacao de tenantId
 
+#### Contas (`frontend/src/services/contas.ts`)
+
+Contas financeiras nao vinculam OS, produto ou estoque diretamente. O saldo e alterado pelo backend ao registrar vendas, mas adicionar `tenantId` ao payload de criacao/edicao e puramente aditivo.
+
+Fluxos alterados:
+
+- `createConta` — payload de criacao inclui `tenantId`
+- `updateConta` — payload de edicao inclui `tenantId`
+
+Fluxos nao alterados:
+
+- `listContas` — listagem sem filtro por tenantId
+- `deleteConta` — exclusao sem validacao de tenantId
+
 ### Entidades sem tenantId aplicado
 
 Os demais services permanecem sem tenantId:
 
 - `ordens-servico.ts` (OS) — sensivel; aciona baixa de estoque no backend
 - `movimentacoes-estoque.ts` — sensivel; movimentacoes automaticas via OS
-- `contas.ts` (contas financeiras) — pendente fase 7.5.4
 - `orcamentos.ts` — vincula OS, cliente e produtos
 - `vendas.ts` (PDV) — vincula OS, produto e cliente ao mesmo tempo
 - `whatsapp.ts`
