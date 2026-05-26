@@ -401,3 +401,25 @@ Alteracao em `FirestoreClientesRepository.list()`:
 **Referencia de validacao:** `docs/nextassist/validacao-backend-filtro-tenant-clientes.md`
 
 **Proxima fase sugerida:** Fase 8.8.4 — filtro por tenantId em produtos.
+
+---
+
+## 22. Atualizacao — Fase 8.8.4 (26/05/2026)
+
+**Filtro por tenantId em `produtos`.**
+
+Alteracao em `FirestoreProdutosRepository.list()` (`backend/src/modules/produtos/produtos.repository.ts`):
+- Query Firestore agora usa `.where("tenantId", "==", DEFAULT_TENANT_ID)` antes do `.get()`
+- Ordenacao por nome e filtros por categoria/ativo/search continuam no cliente via `filterProdutos()` (sem mudanca)
+- Sem indice composto necessario (nao ha `.orderBy()` na query Firestore)
+- Produtos antigos sem `tenantId` ficam ocultos; voltam ao editar (update ja aplica `current.tenantId ?? DEFAULT_TENANT_ID`)
+- `findById()`, `create()`, `update()`, `delete()` intocados
+- Logica de estoque, custo, preco, baixa automatica via OS, relacionamentos com OS/vendas/movimentacoes — intocados
+
+**Impacto em dados existentes:** produtos criados antes da Fase 8.5 (sem `tenantId`) deixam de aparecer na listagem. Para recupera-los sem migracao massiva: editar qualquer campo do produto aplica `tenantId` automaticamente.
+
+**Referencia de validacao:** `docs/nextassist/validacao-backend-filtro-tenant-produtos.md`
+
+**Proxima fase sugerida:** Fase 8.8.5 — filtro por tenantId em despesas e contas.
+
+**Proxima fase sugerida:** Fase 8.8.4 — filtro por tenantId em produtos.

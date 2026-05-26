@@ -156,7 +156,10 @@ export class FirestoreProdutosRepository implements ProdutosRepository {
       ativo?: boolean | "";
     } = {},
   ) {
-    const snapshot = await this.firestore.collection(produtosCollection).get();
+    const snapshot = await this.firestore
+      .collection(produtosCollection)
+      .where("tenantId", "==", DEFAULT_TENANT_ID)
+      .get();
 
     const produtos = snapshot.docs
       .map((document) => this.fromDocument(document.id, document.data()))
