@@ -516,3 +516,36 @@ Alteracao em `FirestoreOrdensServicoRepository.list()` (`backend/src/modules/ord
 **Referencia de validacao:** `docs/nextassist/validacao-backend-filtro-tenant-ordens-servico.md`
 
 **Proxima fase sugerida:** Fase 8.8.8 — filtro por tenantId na listagem de vendas (alto risco — `findById()` deve permanecer sem filtro).
+
+---
+
+## 27. Atualizacao — Fase 8.8.8 (26/05/2026)
+
+**Filtro por tenantId em `vendas`.**
+
+Alteracao em `FirestoreVendasRepository.list()` (`backend/src/modules/vendas/vendas.repository.ts`):
+- Adicionado import de `DEFAULT_TENANT_ID` (nao existia neste arquivo)
+- Query inicializa com `.where("tenantId", "==", DEFAULT_TENANT_ID)` antes dos filtros condicionais (`ordemServicoId`, `status`)
+- Todos os filtros usam igualdade (`==`) — sem risco de indice composto
+- Vendas antigas sem `tenantId` ficam ocultas permanentemente — vendas sao append-only, nao existe `update()`, migracao requer script separado
+- `create()`, `fromDocument()`, service, calculo de total/desconto/troco, baixa de estoque via venda direta — intocados
+
+**Nota sobre findByOrdem:** `findByOrdem()` chama `list()` internamente e herda o filtro de `tenantId`. Para OS antigas sem venda com `tenantId`, `findByOrdem` retornara `null`. Na pratica isso e seguro porque OS antigas sem `tenantId` tambem nao aparecem na listagem de OS (Fase 8.8.7). Incluir OS e venda antiga na migracao, se necessario.
+
+**Estado consolidado dos filtros apos esta fase (todas as entidades cobertas):**
+
+| Entidade | Filtro ativo |
+| --- | --- |
+| marcas | Sim (8.8.1) |
+| categorias | Sim (8.8.2) |
+| clientes | Sim (8.8.3) |
+| produtos | Sim (8.8.4) |
+| despesas | Sim (8.8.5) |
+| contas | Sim (8.8.5) |
+| movimentacoes-estoque | Sim (8.8.6) |
+| ordens-servico | Sim (8.8.7) |
+| vendas | Sim (8.8.8) |
+
+**Referencia de validacao:** `docs/nextassist/validacao-backend-filtro-tenant-vendas.md`
+
+**Proxima fase sugerida:** Fase 8.8.9 — validacao final consolidada de todas as listagens filtradas por tenantId, antes de qualquer decisao de producao ou script de migracao.

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
 import type { Venda, VendaStatus } from "./vendas.types.js";
 
 const vendasCollection = "vendas";
@@ -70,7 +71,9 @@ export class FirestoreVendasRepository implements VendasRepository {
       status?: VendaStatus | "";
     } = {},
   ) {
-    let query: FirebaseFirestore.Query = this.firestore.collection(vendasCollection);
+    let query: FirebaseFirestore.Query = this.firestore
+      .collection(vendasCollection)
+      .where("tenantId", "==", DEFAULT_TENANT_ID);
 
     if (filters.ordemServicoId) {
       query = query.where("ordemServicoId", "==", filters.ordemServicoId);
