@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
 import type {
   MovimentacaoEstoque,
   MovimentacaoEstoqueTipo,
@@ -69,7 +70,10 @@ export class FirestoreMovimentacoesEstoqueRepository implements MovimentacoesEst
       tipo?: MovimentacaoEstoqueTipo | "";
     } = {},
   ) {
-    const snapshot = await this.firestore.collection(movimentacoesCollection).get();
+    const snapshot = await this.firestore
+      .collection(movimentacoesCollection)
+      .where("tenantId", "==", DEFAULT_TENANT_ID)
+      .get();
     const movimentacoes = snapshot.docs
       .map((document) => this.fromDocument(document.id, document.data()))
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));

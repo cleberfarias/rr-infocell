@@ -476,3 +476,23 @@ Antes de avancar para OS, movimentacoes e vendas (alto risco), esta fase valida 
 **Referencia de validacao:** `docs/nextassist/validacao-intermediaria-listagens-filtradas.md`
 
 **Proxima fase sugerida:** Fase 8.8.6 — filtro por tenantId na listagem de movimentacoes de estoque (risco medio; leitura apenas, sem transacao de estoque).
+
+---
+
+## 25. Atualizacao — Fase 8.8.6 (26/05/2026)
+
+**Filtro por tenantId em `movimentacoes-estoque`.**
+
+Alteracao em `FirestoreMovimentacoesEstoqueRepository.list()` (`backend/src/modules/movimentacoes-estoque/movimentacoes-estoque.repository.ts`):
+- Adicionado import de `DEFAULT_TENANT_ID` (nao existia neste arquivo)
+- Query Firestore agora usa `.where("tenantId", "==", DEFAULT_TENANT_ID)` antes do `.get()`
+- Ordenacao por data decrescente e filtros por `produtoId`/`tipo` continuam no cliente via `filterMovimentacoes()` (sem mudanca)
+- Sem indice composto necessario (nao ha `.orderBy()` na query Firestore)
+- Movimentacoes antigas sem `tenantId` ficam ocultas — movimentacoes sao imutaveis (sem `update()`), migracao requer script separado
+- `create()`, `fromDocument()`, service, baixa automatica via OS — intocados
+
+**Cobertura da baixa automatica:** a injecao de `tenantId` aconteceu no service (Fase 8.7.2) e cobre tanto movimentacoes manuais quanto automaticas. Apos esta fase, ambas aparecem na listagem filtrada.
+
+**Referencia de validacao:** `docs/nextassist/validacao-backend-filtro-tenant-movimentacoes-estoque.md`
+
+**Proxima fase sugerida:** Fase 8.8.7 — filtro por tenantId na listagem de ordens de servico (alto risco — avaliar criterios de entrada antes de avancar).
