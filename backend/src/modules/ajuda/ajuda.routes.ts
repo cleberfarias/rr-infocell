@@ -110,6 +110,12 @@ O DRE diferencia lucro de serviços e de produtos:
 - **Produtos/peças** → lucro = valor de venda − custo do estoque
 O relatório mostra as duas linhas separadas antes do lucro bruto.
 
+## Financeiro — despesas por vencimento
+- O lucro líquido desconta somente despesas cujo vencimento pertence ao período selecionado.
+- Despesas futuras não reduzem o lucro atual.
+- Despesas não recorrentes entram uma vez, no mês do vencimento.
+- Despesas recorrentes repetem mês a mês a partir do primeiro vencimento informado.
+
 ## Módulos do sistema
 - **Dashboard** — Visão geral: OS em manutenção, abertas, finalizadas, atrasadas, faturamento
 - **Clientes** — Cadastro e histórico de atendimentos
@@ -121,8 +127,8 @@ O relatório mostra as duas linhas separadas antes do lucro bruto.
 - **Estoque** — Dashboard com ativo/inativo, badge clicável, editar, excluir, filtros
 - **Movimentações** — Entrada, saída, transferência e ajuste de estoque com NF-e
 - **PDV / Caixa** — Fechamento de OS, venda direta, cupom térmico
-- **Financeiro** — DRE por tipo (serviço vs produto), gráfico semanal, contas, exportação em PDF
-- **Despesas** — Registro de despesas fixas e variáveis
+- **Financeiro** — DRE por tipo (serviço vs produto), despesas por vencimento, gráfico semanal, contas, exportação em PDF
+- **Despesas** — Registro de despesas fixas e variáveis com vencimento e recorrência
 - **Atendimento** — WhatsApp integrado: enviar/receber mensagens, vincular OS, enviar orçamento
 - **Usuários** — Gestão de acessos (admin, atendente, técnico)
 
