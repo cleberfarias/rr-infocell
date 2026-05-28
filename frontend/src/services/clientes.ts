@@ -24,22 +24,43 @@ export type ClienteInput = {
 
 type ApiResponse<T> = {
   data: T;
-  meta?: Record<string, unknown>;
+  meta?: {
+    page?: number;
+    limit?: number;
+    total?: number;
+    totalPages?: number;
+    query?: string;
+  };
 };
 
-export const listClientes = async (query: string) => {
+export const listClientes = async (query = "") => {
+  const limit = 200;
+  const clientes: Cliente[] = [];
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const response = await fetchClientesPage(query, page, limit);
+    clientes.push(...response.data);
+    totalPages = Number(response.meta?.totalPages ?? 1);
+    page += 1;
+  } while (page <= totalPages);
+
+  return clientes;
+};
+
+const fetchClientesPage = async (query: string, page: number, limit: number) => {
   const search = new URLSearchParams();
 
   if (query.trim()) {
     search.set("q", query.trim());
   }
 
-  const suffix = search.toString() ? `?${search.toString()}` : "";
-  const response = await apiRequest<ApiResponse<Cliente[]>>(
-    `/clientes${suffix}`,
-  );
+  search.set("page", String(page));
+  search.set("limit", String(limit));
 
-  return response.data;
+  const suffix = search.toString() ? `?${search.toString()}` : "";
+  return apiRequest<ApiResponse<Cliente[]>>(`/clientes${suffix}`);
 };
 
 export const getCliente = async (id: string) => {
