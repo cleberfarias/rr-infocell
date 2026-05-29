@@ -55,9 +55,9 @@ export interface DespesasRepository {
     search?: string;
     categoria?: DespesaCategoria | "";
     pago?: boolean | "";
-  }): Promise<Despesa[]>;
+  }, tenantId?: string): Promise<Despesa[]>;
   findById(id: string): Promise<Despesa | null>;
-  create(input: DespesaInput): Promise<Despesa>;
+  create(input: DespesaInput, tenantId?: string): Promise<Despesa>;
   update(id: string, input: DespesaInput): Promise<Despesa | null>;
   delete(id: string): Promise<boolean>;
 }
@@ -117,6 +117,7 @@ export class MemoryDespesasRepository implements DespesasRepository {
       categoria?: DespesaCategoria | "";
       pago?: boolean | "";
     } = {},
+    _tenantId?: string,
   ) {
     const despesas = Array.from(this.despesas.values()).sort((a, b) =>
       a.vencimento.localeCompare(b.vencimento, "pt-BR"),
@@ -129,7 +130,7 @@ export class MemoryDespesasRepository implements DespesasRepository {
     return this.despesas.get(id) ?? null;
   }
 
-  async create(input: DespesaInput) {
+  async create(input: DespesaInput, _tenantId?: string) {
     const despesa = buildDespesa(input);
 
     this.despesas.set(despesa.id, despesa);
@@ -165,10 +166,11 @@ export class FirestoreDespesasRepository implements DespesasRepository {
       categoria?: DespesaCategoria | "";
       pago?: boolean | "";
     } = {},
+    tenantId = DEFAULT_TENANT_ID,
   ) {
     const snapshot = await this.firestore
       .collection(despesasCollection)
-      .where("tenantId", "==", DEFAULT_TENANT_ID)
+      .where("tenantId", "==", tenantId)
       .get();
     const despesas = snapshot.docs
       .map((document) => this.fromDocument(document.id, document.data()))
@@ -187,12 +189,12 @@ export class FirestoreDespesasRepository implements DespesasRepository {
     return this.fromDocument(document.id, document.data() ?? {});
   }
 
-  async create(input: DespesaInput) {
+  async create(input: DespesaInput, tenantId = DEFAULT_TENANT_ID) {
     const document = this.firestore.collection(despesasCollection).doc();
     const despesa = {
       ...buildDespesa(input),
       id: document.id,
-      tenantId: DEFAULT_TENANT_ID,
+      tenantId,
     };
 
     await document.set(withoutUndefined(despesa));

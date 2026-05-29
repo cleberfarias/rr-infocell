@@ -3,10 +3,14 @@ import { ZodError } from "zod";
 
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
+import { resolveTenant, getRequestTenantId, type TenantRequest } from "../../middlewares/tenant.js";
 import { despesaInputSchema, despesaSearchSchema } from "./despesas.schemas.js";
 import { despesasService } from "./despesas.service.js";
 
 export const despesasRoutes = Router();
+
+// Fase 9.9: resolveTenant popula request.tenantId a partir de usuarios/{uid}.
+despesasRoutes.use(resolveTenant);
 
 type AsyncRouteHandler = (
   request: Request,
@@ -34,12 +38,13 @@ const parseOrThrow = <T>(parse: () => T) => {
 despesasRoutes.get(
   "/",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const { q, categoria, pago } = parseOrThrow(() => despesaSearchSchema.parse(request.query));
     const despesas = await despesasService.list({
       categoria,
       pago: pago === "" ? "" : pago === "true",
       search: q,
-    });
+    }, tenantId);
 
     response.status(httpStatus.ok).json({
       data: despesas,
@@ -65,10 +70,11 @@ despesasRoutes.get(
 despesasRoutes.post(
   "/",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const input = parseOrThrow(() => despesaInputSchema.parse(request.body));
 
     response.status(httpStatus.created).json({
-      data: await despesasService.create(input),
+      data: await despesasService.create(input, tenantId),
     });
   }),
 );

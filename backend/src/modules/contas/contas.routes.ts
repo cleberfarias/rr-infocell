@@ -1,16 +1,20 @@
 import { Router } from "express";
 import { getFirestore } from "firebase-admin/firestore";
 
-import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
+import { resolveTenant, getRequestTenantId, type TenantRequest } from "../../middlewares/tenant.js";
 
 export const contasRoutes = Router();
 const COLLECTION = "contas";
 
-contasRoutes.get("/", async (_req, res, next) => {
+// Fase 9.9: resolveTenant popula request.tenantId a partir de usuarios/{uid}.
+contasRoutes.use(resolveTenant);
+
+contasRoutes.get("/", async (req, res, next) => {
   try {
+    const tenantId = getRequestTenantId(req as TenantRequest);
     try {
       const db = getFirestore();
-      const snap = await db.collection(COLLECTION).where("tenantId", "==", DEFAULT_TENANT_ID).get();
+      const snap = await db.collection(COLLECTION).where("tenantId", "==", tenantId).get();
       const data = snap.docs
         .map((doc) => ({ id: doc.id, ...(doc.data() as { nome?: string; tenantId?: string }) }))
         .sort((a, b) => String(a.nome ?? "").localeCompare(String(b.nome ?? ""), "pt-BR"));
@@ -25,6 +29,7 @@ contasRoutes.get("/", async (_req, res, next) => {
 
 contasRoutes.post("/", async (req, res, next) => {
   try {
+    const tenantId = getRequestTenantId(req as TenantRequest);
     const { nome, tipo, saldo } = req.body as { nome?: string; tipo?: string; saldo?: number };
     if (!nome?.trim()) {
       res.status(400).json({ error: { message: "Informe o nome da conta." } });
@@ -37,7 +42,7 @@ contasRoutes.post("/", async (req, res, next) => {
       saldo: saldo ?? 0,
       ativa: true,
       criadoEm: new Date().toISOString(),
-      tenantId: DEFAULT_TENANT_ID,
+      tenantId,
     });
     const doc = await ref.get();
     res.status(201).json({ data: { id: ref.id, ...doc.data() } });

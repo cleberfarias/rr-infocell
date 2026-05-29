@@ -135,7 +135,9 @@ marcasRoutes.use(resolveTenant);
 | `/api/categorias` | ✅ Fase 9.7 | ✅ Fase 9.7 |
 | `/api/clientes` | ✅ Fase 9.8 | ✅ Fase 9.8 |
 | `/api/produtos` | ✅ Fase 9.8 | ✅ Fase 9.8 |
-| Demais módulos | ❌ ainda não | ❌ ainda não |
+| `/api/despesas` | ✅ Fase 9.9 | ✅ Fase 9.9 |
+| `/api/contas` | ✅ Fase 9.9 | ✅ Fase 9.9 |
+| Demais (OS, estoque, vendas...) | ❌ ainda não | ❌ ainda não |
 
 Cadeia atual para `/api/marcas`:
 
