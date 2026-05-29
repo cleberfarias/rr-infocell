@@ -2,8 +2,13 @@ import { Router } from "express";
 import { getFirestore } from "firebase-admin/firestore";
 
 import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
+import { resolveTenant } from "../../middlewares/tenant.js";
 
 export const marcasRoutes = Router();
+
+// Fase 9.5: resolveTenant popula request.tenantId a partir de usuarios/{uid}.
+// A query ainda usa DEFAULT_TENANT_ID (Fase 9.6 migrará para request.tenantId).
+marcasRoutes.use(resolveTenant);
 
 const COLLECTION = "marcas";
 

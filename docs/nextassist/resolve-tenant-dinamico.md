@@ -122,19 +122,31 @@ A migração dos repositories é incremental (Fase 9.5), começando pelos módul
 
 ## 6. Estado atual do `resolveTenant` na cadeia de middlewares
 
-O `resolveTenant` foi atualizado mas **ainda não está registrado em `routes.ts`**. Isso é intencional — a Fase 9.5 conectará o middleware às rotas de forma gradual, módulo a módulo.
+**Fase 9.5 concluída:** `resolveTenant` está registrado nas rotas de marcas.
 
-Cadeia atual de middlewares por requisição:
+```typescript
+// backend/src/modules/marcas/marcas.routes.ts
+marcasRoutes.use(resolveTenant);
+```
+
+| Rota | resolveTenant ativo? |
+|------|:---:|
+| `/api/marcas` | ✅ Fase 9.5 |
+| Todas as demais | ❌ ainda não |
+
+Cadeia atual para `/api/marcas`:
+
+```
+requireAuth → requireRole → resolveTenant → [handler marcas]
+```
+
+Cadeia das demais rotas (sem alteração):
 
 ```
 requireAuth → requireRole → [handler]
 ```
 
-Cadeia planejada após Fase 9.5 (por módulo):
-
-```
-requireAuth → resolveTenant → requireRole → [handler que usa request.tenantId]
-```
+A migração das demais rotas é incremental — módulo a módulo nas fases seguintes.
 
 ---
 
