@@ -3,7 +3,27 @@
 **Fase:** 9.16 — Criar dados mínimos do tenant fake e validar isolamento real
 **Data:** 2026-05-29
 **Branch:** nextassist-saas
-**Status:** 🔲 Aguardando execução
+**Status:** ⚠️ Bloqueada — backend de produção não implantado com código da Fase 9.4
+
+---
+
+## ⚠️ Diagnóstico — 2026-05-29
+
+**Problema identificado:** o backend de produção (Cloud Run) ainda roda o código anterior à Fase 9.4, onde `resolveTenant` retorna `DEFAULT_TENANT_ID = "rr-infocell"` fixo, sem ler `usuarios/{uid}`.
+
+**Sintomas observados:**
+- Demo user autenticado via API recebeu `tenantId: "rr-infocell"` (do fallback hardcoded)
+- 12 documentos de teste foram criados incorretamente com `tenantId: "rr-infocell"` na coleção rr-infocell
+- Demo user via listagem enxergava 61 clientes (todos de rr-infocell)
+- Busca "Cliente Demo" retornou 1 resultado (o dado criado no rr-infocell)
+
+**Limpeza executada:**
+- Script `backend/src/scripts/cleanup-demo-test-data.ts` removeu os 12 documentos contaminantes
+- Firestore restaurado ao estado anterior
+
+**Pré-requisito para executar esta validação:**
+- Deploy do branch `nextassist-saas` para o Cloud Run de produção (ou testar em ambiente local com backend atualizado)
+- Após o deploy, `resolveTenant` lerá `usuarios/{uid}` → retornará `"nextassist-demo"` para o usuário demo
 
 ---
 
