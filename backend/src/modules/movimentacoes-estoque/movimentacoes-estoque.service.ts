@@ -22,11 +22,11 @@ export class MovimentacoesEstoqueService {
     private readonly produtos: ProdutosService = produtosService,
   ) {}
 
-  async list(filters?: { produtoId?: string; tipo?: MovimentacaoEstoqueTipo | "" }) {
-    return this.repository.list(filters);
+  async list(filters?: { produtoId?: string; tipo?: MovimentacaoEstoqueTipo | "" }, tenantId?: string) {
+    return this.repository.list(filters, tenantId);
   }
 
-  async create(input: MovimentacaoEstoqueInput) {
+  async create(input: MovimentacaoEstoqueInput, tenantId = DEFAULT_TENANT_ID) {
     const produto = await this.produtos.getById(input.produtoId);
     const estoqueAnterior = produto.estoqueAtual;
     const estoquePosterior = this.calculateEstoquePosterior(input, estoqueAnterior);
@@ -59,7 +59,7 @@ export class MovimentacoesEstoqueService {
       origem: input.origem ?? "manual",
       ordemServicoId: input.ordemServicoId,
       criadoPor: input.criadoPor,
-      tenantId: DEFAULT_TENANT_ID,
+      tenantId,
       createdAt: now(),
     });
   }

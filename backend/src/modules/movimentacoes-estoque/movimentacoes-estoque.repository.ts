@@ -15,7 +15,7 @@ export interface MovimentacoesEstoqueRepository {
   list(filters?: {
     produtoId?: string;
     tipo?: MovimentacaoEstoqueTipo | "";
-  }): Promise<MovimentacaoEstoque[]>;
+  }, tenantId?: string): Promise<MovimentacaoEstoque[]>;
   create(input: Omit<MovimentacaoEstoque, "id">): Promise<MovimentacaoEstoque>;
 }
 
@@ -41,6 +41,7 @@ export class MemoryMovimentacoesEstoqueRepository implements MovimentacoesEstoqu
       produtoId?: string;
       tipo?: MovimentacaoEstoqueTipo | "";
     } = {},
+    _tenantId?: string,
   ) {
     const movimentacoes = Array.from(this.movimentacoes.values()).sort((a, b) =>
       b.createdAt.localeCompare(a.createdAt),
@@ -69,10 +70,11 @@ export class FirestoreMovimentacoesEstoqueRepository implements MovimentacoesEst
       produtoId?: string;
       tipo?: MovimentacaoEstoqueTipo | "";
     } = {},
+    tenantId = DEFAULT_TENANT_ID,
   ) {
     const snapshot = await this.firestore
       .collection(movimentacoesCollection)
-      .where("tenantId", "==", DEFAULT_TENANT_ID)
+      .where("tenantId", "==", tenantId)
       .get();
     const movimentacoes = snapshot.docs
       .map((document) => this.fromDocument(document.id, document.data()))
