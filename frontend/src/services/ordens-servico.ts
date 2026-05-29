@@ -118,7 +118,17 @@ export type OrdemServicoPecaInput = {
 
 type ApiResponse<T> = {
   data: T;
-  meta?: Record<string, unknown>;
+  meta?: {
+    page?: number;
+    limit?: number;
+    total?: number;
+    totalPages?: number;
+    query?: string;
+    status?: string;
+    prioridade?: string;
+    clienteId?: string;
+    aparelhoId?: string;
+  };
 };
 
 export const listOrdensServico = async (
@@ -129,6 +139,32 @@ export const listOrdensServico = async (
     clienteId?: string;
     aparelhoId?: string;
   } = {},
+) => {
+  const limit = 200;
+  const ordens: OrdemServico[] = [];
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const response = await fetchOrdensServicoPage(filters, page, limit);
+    ordens.push(...response.data);
+    totalPages = Number(response.meta?.totalPages ?? 1);
+    page += 1;
+  } while (page <= totalPages);
+
+  return ordens;
+};
+
+const fetchOrdensServicoPage = async (
+  filters: {
+    query?: string;
+    status?: OrdemServicoStatus | "";
+    prioridade?: OrdemServicoPrioridade | "";
+    clienteId?: string;
+    aparelhoId?: string;
+  },
+  page: number,
+  limit: number,
 ) => {
   const search = new URLSearchParams();
 
@@ -152,12 +188,11 @@ export const listOrdensServico = async (
     search.set("aparelhoId", filters.aparelhoId.trim());
   }
 
-  const suffix = search.toString() ? `?${search.toString()}` : "";
-  const response = await apiRequest<ApiResponse<OrdemServico[]>>(
-    `/ordens-servico${suffix}`,
-  );
+  search.set("page", String(page));
+  search.set("limit", String(limit));
 
-  return response.data;
+  const suffix = search.toString() ? `?${search.toString()}` : "";
+  return apiRequest<ApiResponse<OrdemServico[]>>(`/ordens-servico${suffix}`);
 };
 
 export const getOrdemServico = async (id: string) => {
