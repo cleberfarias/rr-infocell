@@ -213,9 +213,16 @@ Receita de serviços       = soma de valorMaoObra das vendas/OS entregues
 Receita de produtos       = soma de valorPecas das vendas/OS entregues
 (-) Custo de peças        = soma do custo real das peças usadas (pelo custo do estoque)
 = Lucro bruto
-(-) Despesas fixas        = soma das despesas cadastradas
+(-) Despesas do período   = soma das despesas com vencimento dentro do período
 = Lucro líquido estimado
 ```
+
+Regras para despesas no DRE:
+
+- O financeiro não soma todas as despesas cadastradas; ele considera somente as ocorrências cujo vencimento pertence ao período selecionado.
+- Despesa não recorrente entra uma única vez, no período em que o vencimento dela cai.
+- Despesa recorrente começa no primeiro vencimento informado e se repete mês a mês, sempre descontando apenas no mês/período correspondente.
+- Uma despesa com vencimento futuro, por exemplo junho, não reduz o lucro líquido de maio.
 
 ### 6.2 Contas bancárias
 

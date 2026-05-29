@@ -78,6 +78,7 @@ const maintenanceStatuses: OrdemServicoStatus[] = [
   "aguardando_peca",
   "em_manutencao",
   "pronto_para_retirada",
+  "sem_conserto",
 ];
 
 const buildForm = (ordem: OrdemServico): ManutencaoForm => ({

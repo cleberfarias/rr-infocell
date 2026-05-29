@@ -2,6 +2,7 @@ import { db } from "../../firebase/admin.js";
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
 import { clientesService } from "../clientes/clientes.service.js";
+import { createOrdensServicoRepository } from "../ordens-servico/ordens-servico.repository.js";
 import { createAparelhosRepository, type AparelhosRepository } from "./aparelhos.repository.js";
 import type { AparelhoInput } from "./aparelhos.types.js";
 
@@ -41,6 +42,16 @@ export class AparelhosService {
   }
 
   async delete(id: string) {
+    const ordens = await createOrdensServicoRepository(db).list({ aparelhoId: id });
+
+    if (ordens.length > 0) {
+      throw new AppError(
+        "aparelho_has_ordens",
+        "Aparelho possui ordens de servico vinculadas e nao pode ser excluido.",
+        httpStatus.badRequest,
+      );
+    }
+
     const deleted = await this.repository.delete(id);
 
     if (!deleted) {

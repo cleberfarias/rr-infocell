@@ -55,7 +55,7 @@ counters
 ## Modelo de relacionamento
 
 - `clientes/{clienteId}` armazena dados do cliente.
-- `despesas/{despesaId}` armazena custos operacionais, vencimento, recorrencia e status de pagamento.
+- `despesas/{despesaId}` armazena custos operacionais, vencimento, recorrencia e status de pagamento. O financeiro usa `vencimento` para calcular a competencia: despesas nao recorrentes entram apenas no periodo do vencimento e despesas recorrentes repetem mensalmente a partir do primeiro vencimento.
 - `aparelhos/{aparelhoId}` referencia `clienteId`.
 - `ordensServico/{ordemId}` referencia `clienteId` e `aparelhoId`.
 - `ordensServico/{ordemId}` tambem pode armazenar dados de pagamento simples no fechamento de caixa.

@@ -39,6 +39,107 @@ const toDateKey = (value?: string) => {
   return date.toISOString().slice(0, 10);
 };
 
+const startOfDay = (date: Date) =>
+  new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+const endOfDay = (date: Date) =>
+  new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+
+const parseVencimento = (value: string, referenceYear: number) => {
+  const trimmed = value.trim();
+  const brDate = trimmed.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2}|\d{4}))?$/);
+
+  if (brDate) {
+    const day = Number(brDate[1]);
+    const month = Number(brDate[2]) - 1;
+    const yearText = brDate[3];
+    const year = yearText
+      ? Number(yearText.length === 2 ? `20${yearText}` : yearText)
+      : referenceYear;
+    const date = new Date(year, month, day);
+
+    if (
+      date.getFullYear() === year &&
+      date.getMonth() === month &&
+      date.getDate() === day
+    ) {
+      return date;
+    }
+  }
+
+  const isoDate = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+
+  if (isoDate) {
+    const year = Number(isoDate[1]);
+    const month = Number(isoDate[2]) - 1;
+    const day = Number(isoDate[3]);
+    const date = new Date(year, month, day);
+
+    if (
+      date.getFullYear() === year &&
+      date.getMonth() === month &&
+      date.getDate() === day
+    ) {
+      return date;
+    }
+  }
+
+  return null;
+};
+
+const monthlyOccurrenceDate = (year: number, month: number, day: number) => {
+  const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+  return new Date(year, month, Math.min(day, lastDayOfMonth));
+};
+
+const countDespesaOccurrences = (
+  despesa: { vencimento: string; recorrente: boolean },
+  periodStart: Date,
+  periodEnd: Date,
+) => {
+  const firstDueDate = parseVencimento(despesa.vencimento, periodStart.getFullYear());
+
+  if (!firstDueDate) {
+    return 0;
+  }
+
+  const normalizedStart = startOfDay(periodStart);
+  const normalizedEnd = endOfDay(periodEnd);
+  const normalizedDueDate = startOfDay(firstDueDate);
+
+  if (!despesa.recorrente) {
+    return normalizedDueDate >= normalizedStart && normalizedDueDate <= normalizedEnd ? 1 : 0;
+  }
+
+  if (normalizedDueDate > normalizedEnd) {
+    return 0;
+  }
+
+  const dueDay = normalizedDueDate.getDate();
+  let cursor = monthlyOccurrenceDate(
+    normalizedStart.getFullYear(),
+    normalizedStart.getMonth(),
+    dueDay,
+  );
+
+  if (cursor < normalizedStart) {
+    cursor = monthlyOccurrenceDate(cursor.getFullYear(), cursor.getMonth() + 1, dueDay);
+  }
+
+  if (cursor < normalizedDueDate) {
+    cursor = normalizedDueDate;
+  }
+
+  let occurrences = 0;
+
+  while (cursor <= normalizedEnd) {
+    occurrences += 1;
+    cursor = monthlyOccurrenceDate(cursor.getFullYear(), cursor.getMonth() + 1, dueDay);
+  }
+
+  return occurrences;
+};
+
 const TIPO_LABEL: Record<ContaTipo, string> = {
   caixa: "Caixa",
   conta_corrente: "Conta Corrente",
@@ -82,6 +183,7 @@ const Financeiro = () => {
     const trimestre = Math.floor(hoje.getMonth() / 3);
     return new Date(hoje.getFullYear(), trimestre * 3, 1);
   }, [periodo]);
+  const dataFim = useMemo(() => endOfDay(new Date()), [periodo]);
 
   // --- state for contas dialog ---
   const [contaDialogOpen, setContaDialogOpen] = useState(false);
@@ -171,10 +273,18 @@ const Financeiro = () => {
     const todasVendas = vendasQuery.data ?? [];
 
     // Filtrar por período selecionado
-    const vendas = todasVendas.filter((v) => new Date(v.createdAt) >= dataInicio);
+    const vendas = todasVendas.filter((v) => {
+      const data = new Date(v.createdAt);
+      return data >= dataInicio && data <= dataFim;
+    });
     const ordensFiltradas = ordens.filter((o) => {
       const data = o.pagoEm ?? o.entregueEm ?? o.updatedAt;
-      return data && new Date(data) >= dataInicio;
+      if (!data) {
+        return false;
+      }
+
+      const date = new Date(data);
+      return date >= dataInicio && date <= dataFim;
     });
 
     const produtoById = new Map(produtos.map((produto) => [produto.id, produto]));
@@ -219,7 +329,11 @@ const Financeiro = () => {
       );
 
     const custoPecas = custoPecasOS + custoPecasVendasDiretas;
-    const despesasFixas = despesas.reduce((sum, despesa) => sum + despesa.valor, 0);
+    const despesasFixas = despesas.reduce(
+      (sum, despesa) =>
+        sum + despesa.valor * countDespesaOccurrences(despesa, dataInicio, dataFim),
+      0,
+    );
     const lucroBruto = receitaServicos + receitaProdutos - custoPecas;
     const lucroLiquido = lucroBruto - despesasFixas;
 
@@ -272,7 +386,7 @@ const Financeiro = () => {
       receitaServicos,
       quantidadeVendas: vendas.length + ordensFaturadasFallback.length,
     };
-  }, [despesasQuery.data, ordensQuery.data, produtosQuery.data, vendasQuery.data, dataInicio]);
+  }, [despesasQuery.data, ordensQuery.data, produtosQuery.data, vendasQuery.data, dataInicio, dataFim]);
 
   if (isLoading) {
     return (
@@ -319,7 +433,7 @@ const Financeiro = () => {
     { label: "Receita com produtos/peças", valor: financeiro.receitaProdutos, tipo: "in" as const },
     { label: "(-) Custo de peças (CMV)", valor: -financeiro.custoPecas, tipo: "out" as const },
     { label: "= Lucro bruto", valor: financeiro.lucroBruto, tipo: "sum" as const },
-    { label: "(-) Despesas fixas", valor: -financeiro.despesasFixas, tipo: "out" as const },
+    { label: "(-) Despesas do período", valor: -financeiro.despesasFixas, tipo: "out" as const },
     { label: "= Lucro líquido total", valor: financeiro.lucroLiquido, tipo: "sum" as const },
   ];
 
@@ -335,7 +449,7 @@ const Financeiro = () => {
           </p>
           <h2 className="font-display text-2xl font-bold">Visão financeira</h2>
           <p className="text-sm text-muted-foreground">
-            Receita por vendas reais, custos estimados de peças e despesas cadastradas.
+            Receita por vendas reais, custos estimados de peças e despesas no vencimento do período.
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             {periodo === "30d" && "Últimos 30 dias"}

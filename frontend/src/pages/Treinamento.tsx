@@ -277,7 +277,7 @@ const modulos: Modulo[] = [
     key: "financeiro",
     titulo: "Financeiro",
     descricao:
-      "Acompanhe receitas, despesas, lucro líquido e saldos bancários. Exporte o DRE em PDF.",
+      "Acompanhe receitas, despesas por vencimento, lucro líquido e saldos bancários. Exporte o DRE em PDF.",
     icone: MdAccountBalance,
     gradiente: "from-blue-700 via-indigo-600 to-blue-500",
     screenshot: "/screenshots/financeiro.jpg",
@@ -288,7 +288,12 @@ const modulos: Modulo[] = [
       {
         titulo: "DRE simplificado",
         descricao:
-          "A tela mostra receita de serviços, receita de produtos, custo de peças, lucro bruto, despesas fixas e lucro líquido estimado.",
+          "A tela mostra receita de serviços, receita de produtos, custo de peças, lucro bruto, despesas do período e lucro líquido estimado.",
+      },
+      {
+        titulo: "Despesas por vencimento",
+        descricao:
+          "Despesas futuras não reduzem o lucro atual. Despesas não recorrentes entram no mês do vencimento e recorrentes repetem mês a mês.",
       },
       {
         titulo: "Gráfico semanal",

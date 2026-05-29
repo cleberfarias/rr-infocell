@@ -93,8 +93,8 @@ Nova OS → Checklist → Manutenção → Orçamento → PDV/Caixa → Termo de
 | `/app/estoque`       | Dashboard de produtos com modo compacto e filtro por fornecedor |
 | `/app/movimentacoes` | Entrada/saída/transferência com NF-e                            |
 | `/app/pdv`           | Fechamento de OS e venda direta com carrinho +/−                |
-| `/app/financeiro`    | DRE, gráfico semanal, contas bancárias, exportar PDF            |
-| `/app/despesas`      | Registro de despesas operacionais                               |
+| `/app/financeiro`    | DRE por período, gráfico semanal, contas bancárias, exportar PDF |
+| `/app/despesas`      | Registro de despesas operacionais com vencimento e recorrência   |
 | `/app/clientes`      | Cadastro e histórico                                            |
 | `/app/aparelhos`     | Histórico de dispositivos por cliente                           |
 | `/app/atendimento`   | WhatsApp integrado com Baileys                                  |
@@ -182,7 +182,7 @@ cd backend && npm run build && npm run lint
 - ✅ Produto com custo fracionado, estoque mínimo padrão 0 e mão de obra inclusa na peça
 - ✅ Terceirizados com status de repasse (Pendente/Pago) e cálculo de lucro
 - ✅ Kanban de OS com troca de status rápida e modo compacto
-- ✅ DRE simplificado com exportação em PDF
+- ✅ DRE simplificado com despesas por vencimento/recorrência e exportação em PDF
 - ✅ Contas bancárias com saldo editável
 - ✅ WhatsApp integrado (Baileys) com ações automáticas de OS
 - ✅ Assistente IA (GPT-4o-mini) com contexto completo do sistema

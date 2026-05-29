@@ -57,6 +57,7 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 - Backend de despesas implementado com CRUD, filtros, Firestore/fallback local e testes.
 - Tela de despesas integrada com API real para cadastrar, editar, remover, filtrar e marcar pagamento.
 - Tela financeira integrada com vendas, OS, produtos e despesas reais para DRE simplificado, receita semanal e impacto de pecas.
+- Despesas no DRE respeitam o vencimento do periodo selecionado: despesas futuras nao reduzem o lucro atual, despesas nao recorrentes entram uma vez e despesas recorrentes repetem mes a mes a partir do primeiro vencimento.
 
 ## Estado atual do atendimento WhatsApp
 
@@ -79,7 +80,7 @@ Entregar a primeira versao utilizavel do RR Infocell com foco no fluxo de assist
 ## Fora do MVP
 
 - PDV fiscal completo.
-- DRE completo com competencia, centros de custo e exportacao.
+- DRE completo com centros de custo e exportacao avancada.
 - Relatorios avancados.
 - Integracao com MarketUP.
 - Assinatura digital.
