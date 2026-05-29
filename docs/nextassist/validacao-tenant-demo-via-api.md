@@ -27,6 +27,39 @@
 
 ---
 
+## Resultado da Execução — 2026-05-29 (Staging: rr-infocell-api-staging)
+
+### ✅ Confirmado
+
+| Teste | Resultado |
+|-------|-----------|
+| Demo user vê 0 clientes rr-infocell | ✅ (total: 1 — apenas Cliente Demo) |
+| Demo user vê 0 produtos rr-infocell | ✅ (total: 2 — apenas demo) |
+| Demo user vê 0 OS rr-infocell | ✅ (total: 10 — apenas OS demo sem peças) |
+| Demo user vê 0 movimentações rr-infocell | ✅ (total: 3 — apenas movimentações demo) |
+| Demo user vê 0 vendas rr-infocell | ✅ (total: 0 — sem vendas demo criadas) |
+| Marca, categoria, cliente, produto, conta, despesa criados com `tenantId: nextassist-demo` | ✅ |
+| Movimentação manual com produto demo | ✅ |
+| OS sem peça | ✅ |
+| OS com cliente rr-infocell → bloqueado | ✅ `cliente_not_found` |
+| MOV com produto rr-infocell → bloqueado | ✅ `produto_not_found` |
+| Venda com produto rr-infocell → bloqueado | ✅ `produto_not_found` |
+
+### ❌ Bug identificado — `produto_not_found` em fluxos de escrita complexa
+
+| Operação | Esperado | Obtido |
+|----------|---------|--------|
+| OS com peça (demo produto) | 201 | `produto_not_found` |
+| Venda direta (demo produto) | 201 | `produto_not_found` |
+
+**Padrão:** `produtosService.getById(demo_produtoId, "nextassist-demo")` falha quando chamado de dentro de `enrichPecasInput` (OS) e `createVendaDireta` (vendas), mas FUNCIONA quando chamado de `movimentacoesEstoqueService.create`. O produto existe no Firestore com `tenantId: "nextassist-demo"` (confirmado por `GET /api/produtos/:id`).
+
+**Hipótese:** possível diferença no `tenantId` efetivamente passado para o `findById` nessas rotas específicas. Requer debug com logs do Cloud Run ou breakpoint local.
+
+**Não bloqueia isolamento:** a separação entre tenants está funcionando corretamente em todas as listagens e guards.
+
+---
+
 ## 1. Objetivo
 
 Validar que dados criados pelo usuário `demo@nextassist-demo.internal` ficam isolados no tenant `nextassist-demo`, sem afetar nem ser visíveis pelo tenant `rr-infocell`, e vice-versa.
