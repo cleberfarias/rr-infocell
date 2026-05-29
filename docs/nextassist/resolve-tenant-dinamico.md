@@ -129,10 +129,10 @@ A migração dos repositories é incremental (Fase 9.5), começando pelos módul
 marcasRoutes.use(resolveTenant);
 ```
 
-| Rota | resolveTenant ativo? |
-|------|:---:|
-| `/api/marcas` | ✅ Fase 9.5 |
-| Todas as demais | ❌ ainda não |
+| Rota | resolveTenant ativo? | Handler usa tenantId resolvido? |
+|------|:---:|:---:|
+| `/api/marcas` | ✅ Fase 9.5 | ✅ Fase 9.6 |
+| Todas as demais | ❌ ainda não | ❌ ainda não |
 
 Cadeia atual para `/api/marcas`:
 
