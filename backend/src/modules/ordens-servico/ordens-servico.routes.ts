@@ -3,10 +3,15 @@ import { ZodError } from "zod";
 
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
+import { resolveTenant, getRequestTenantId, type TenantRequest } from "../../middlewares/tenant.js";
 import { ordemServicoInputSchema, ordemServicoSearchSchema } from "./ordens-servico.schemas.js";
 import { ordensServicoService } from "./ordens-servico.service.js";
 
 export const ordensServicoRoutes = Router();
+
+// Fase 9.11: resolveTenant popula request.tenantId a partir de usuarios/{uid}.
+// applyPecasDeltas continua usando DEFAULT_TENANT_ID via default do service de movimentações.
+ordensServicoRoutes.use(resolveTenant);
 
 type AsyncRouteHandler = (
   request: Request,
@@ -34,6 +39,7 @@ const parseOrThrow = <T>(parse: () => T) => {
 ordensServicoRoutes.get(
   "/",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const filters = parseOrThrow(() => ordemServicoSearchSchema.parse(request.query));
     const ordens = await ordensServicoService.list({
       search: filters.q,
@@ -41,7 +47,7 @@ ordensServicoRoutes.get(
       prioridade: filters.prioridade,
       clienteId: filters.clienteId,
       aparelhoId: filters.aparelhoId,
-    });
+    }, tenantId);
 
     const page = Math.max(1, parseInt(request.query.page as string) || 1);
     const limit = Math.min(200, Math.max(1, parseInt(request.query.limit as string) || 50));
@@ -80,10 +86,11 @@ ordensServicoRoutes.get(
 ordensServicoRoutes.post(
   "/",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const input = parseOrThrow(() => ordemServicoInputSchema.parse(request.body));
 
     response.status(httpStatus.created).json({
-      data: await ordensServicoService.create(input),
+      data: await ordensServicoService.create(input, tenantId),
     });
   }),
 );

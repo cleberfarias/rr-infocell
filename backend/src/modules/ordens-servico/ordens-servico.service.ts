@@ -32,8 +32,8 @@ export class OrdensServicoService {
     prioridade?: OrdemServico["prioridade"] | "";
     clienteId?: string;
     aparelhoId?: string;
-  }) {
-    return this.repository.list(filters);
+  }, tenantId?: string) {
+    return this.repository.list(filters, tenantId);
   }
 
   async getById(id: string) {
@@ -50,12 +50,12 @@ export class OrdensServicoService {
     return ordem;
   }
 
-  async create(input: OrdemServicoInput) {
+  async create(input: OrdemServicoInput, tenantId?: string) {
     await this.ensureClienteAndAparelho(input);
     const enrichedInput = await this.enrichPecasInput(input);
     await this.ensurePositiveDeltasStock(enrichedInput);
 
-    const ordem = await this.repository.create(enrichedInput);
+    const ordem = await this.repository.create(enrichedInput, tenantId);
     await this.applyPecasDeltas(ordem);
     await this.registrarEvento(
       ordem.id,
