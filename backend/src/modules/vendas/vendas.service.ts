@@ -24,7 +24,7 @@ export class VendasService {
       return this.createVendaDireta(input, tenantId);
     }
 
-    const ordem = await ordensServicoService.getById(input.ordemServicoId);
+    const ordem = await ordensServicoService.getById(input.ordemServicoId, tenantId);
 
     if (ordem.status !== "pronto_para_retirada") {
       throw new AppError(
@@ -109,7 +109,7 @@ export class VendasService {
     const itensInput = input.itens ?? [];
     const itens = await Promise.all(
       itensInput.map(async (item) => {
-        const produto = await produtosService.getById(item.produtoId);
+        const produto = await produtosService.getById(item.produtoId, tenantId);
         const quantidade = item.quantidade;
 
         if (produto.categoria !== "servico" && produto.estoqueAtual < quantidade) {

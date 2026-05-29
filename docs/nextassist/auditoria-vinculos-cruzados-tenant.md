@@ -115,8 +115,8 @@ Para fechar esse gap, o backend precisa validar: *"esse ID pertence ao mesmo ten
 | ordens-servico | `clienteId` | **Alto** | OS vinculada a cliente de outro tenant | ✅ Guard ativo (Fase 9.14.5) |
 | ordens-servico | `aparelhoId` | **Alto** | Aparelho de outro tenant na OS | ➖ Sem guard — `aparelhos` sem tenantId no schema |
 | ordens-servico | `pecasUsadas[].produtoId` | **Alto** | Produto de outro tenant baixado do estoque errado | ✅ Guard ativo (Fase 9.14.5) |
-| vendas | `ordemServicoId` | **Alto** | Venda finaliza OS de outro tenant |
-| vendas | `itens[].produtoId` | **Alto** | Produto de outro tenant vendido e baixado do estoque errado |
+| vendas | `ordemServicoId` | **Alto** | Venda finaliza OS de outro tenant | ✅ Guard ativo (Fase 9.14.6) |
+| vendas | `itens[].produtoId` | **Alto** | Produto de outro tenant vendido e baixado do estoque errado | ✅ Guard ativo (Fase 9.14.6) |
 | movimentacoes-estoque | `produtoId` | **Alto** | Movimentação afeta estoque de produto de outro tenant | ✅ Guard ativo (Fase 9.14.4) |
 | aparelhos | `clienteId` | **Alto** | Aparelho vinculado a cliente de outro tenant |
 | orcamentos | `ordemServicoId` | **Alto** | Orçamento com dados de OS de outro tenant |
