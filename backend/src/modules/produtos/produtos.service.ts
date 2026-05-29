@@ -11,8 +11,8 @@ export class ProdutosService {
     search?: string;
     categoria?: ProdutoCategoria | "";
     ativo?: boolean | "";
-  }) {
-    return this.repository.list(filters);
+  }, tenantId?: string) {
+    return this.repository.list(filters, tenantId);
   }
 
   async getById(id: string) {
@@ -25,9 +25,9 @@ export class ProdutosService {
     return produto;
   }
 
-  async create(input: ProdutoInput) {
+  async create(input: ProdutoInput, tenantId?: string) {
     this.ensureCelularIndividual(input);
-    return this.repository.create(input);
+    return this.repository.create(input, tenantId);
   }
 
   async update(id: string, input: ProdutoInput) {

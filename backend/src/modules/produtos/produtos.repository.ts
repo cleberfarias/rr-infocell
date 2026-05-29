@@ -43,9 +43,9 @@ export interface ProdutosRepository {
     search?: string;
     categoria?: ProdutoCategoria | "";
     ativo?: boolean | "";
-  }): Promise<Produto[]>;
+  }, tenantId?: string): Promise<Produto[]>;
   findById(id: string): Promise<Produto | null>;
-  create(input: ProdutoInput): Promise<Produto>;
+  create(input: ProdutoInput, tenantId?: string): Promise<Produto>;
   update(id: string, input: ProdutoInput): Promise<Produto | null>;
   delete(id: string): Promise<boolean>;
 }
@@ -95,6 +95,7 @@ export class MemoryProdutosRepository implements ProdutosRepository {
       categoria?: ProdutoCategoria | "";
       ativo?: boolean | "";
     } = {},
+    _tenantId?: string,
   ) {
     const produtos = Array.from(this.produtos.values()).sort((a, b) =>
       a.nome.localeCompare(b.nome, "pt-BR"),
@@ -107,7 +108,7 @@ export class MemoryProdutosRepository implements ProdutosRepository {
     return this.produtos.get(id) ?? null;
   }
 
-  async create(input: ProdutoInput) {
+  async create(input: ProdutoInput, _tenantId?: string) {
     const timestamp = now();
     const produto: Produto = {
       id: randomUUID(),
@@ -155,10 +156,11 @@ export class FirestoreProdutosRepository implements ProdutosRepository {
       categoria?: ProdutoCategoria | "";
       ativo?: boolean | "";
     } = {},
+    tenantId = DEFAULT_TENANT_ID,
   ) {
     const snapshot = await this.firestore
       .collection(produtosCollection)
-      .where("tenantId", "==", DEFAULT_TENANT_ID)
+      .where("tenantId", "==", tenantId)
       .get();
 
     const produtos = snapshot.docs
@@ -178,14 +180,14 @@ export class FirestoreProdutosRepository implements ProdutosRepository {
     return this.fromDocument(document.id, document.data() ?? {});
   }
 
-  async create(input: ProdutoInput) {
+  async create(input: ProdutoInput, tenantId = DEFAULT_TENANT_ID) {
     const timestamp = now();
     const document = this.firestore.collection(produtosCollection).doc();
     const produto: Produto = {
       id: document.id,
       ...input,
       ativo: input.ativo ?? true,
-      tenantId: DEFAULT_TENANT_ID,
+      tenantId,
       createdAt: timestamp,
       updatedAt: timestamp,
     };

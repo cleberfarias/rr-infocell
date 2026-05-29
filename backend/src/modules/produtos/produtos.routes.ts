@@ -3,10 +3,14 @@ import { ZodError } from "zod";
 
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
+import { resolveTenant, getRequestTenantId, type TenantRequest } from "../../middlewares/tenant.js";
 import { produtoInputSchema, produtoSearchSchema } from "./produtos.schemas.js";
 import { produtosService } from "./produtos.service.js";
 
 export const produtosRoutes = Router();
+
+// Fase 9.8: resolveTenant popula request.tenantId a partir de usuarios/{uid}.
+produtosRoutes.use(resolveTenant);
 
 type AsyncRouteHandler = (
   request: Request,
@@ -34,12 +38,13 @@ const parseOrThrow = <T>(parse: () => T) => {
 produtosRoutes.get(
   "/",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const { q, categoria, ativo } = parseOrThrow(() => produtoSearchSchema.parse(request.query));
     const produtos = await produtosService.list({
       ativo: ativo === "" ? "" : ativo === "true",
       categoria,
       search: q,
-    });
+    }, tenantId);
 
     const page = Math.max(1, parseInt(request.query.page as string) || 1);
     const limit = Math.min(200, Math.max(1, parseInt(request.query.limit as string) || 50));
@@ -76,10 +81,11 @@ produtosRoutes.get(
 produtosRoutes.post(
   "/",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const input = parseOrThrow(() => produtoInputSchema.parse(request.body));
 
     response.status(httpStatus.created).json({
-      data: await produtosService.create(input),
+      data: await produtosService.create(input, tenantId),
     });
   }),
 );

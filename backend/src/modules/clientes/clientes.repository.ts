@@ -31,10 +31,10 @@ const seedClientes: Cliente[] = [
 ];
 
 export interface ClientesRepository {
-  list(search?: string): Promise<Cliente[]>;
+  list(search?: string, tenantId?: string): Promise<Cliente[]>;
   findById(id: string): Promise<Cliente | null>;
   findByTelefone(telefone: string): Promise<Cliente | null>;
-  create(input: ClienteInput): Promise<Cliente>;
+  create(input: ClienteInput, tenantId?: string): Promise<Cliente>;
   update(id: string, input: ClienteInput): Promise<Cliente | null>;
   delete(id: string): Promise<boolean>;
 }
@@ -44,7 +44,7 @@ export class MemoryClientesRepository implements ClientesRepository {
     seedClientes.map((cliente) => [cliente.id, cliente]),
   );
 
-  async list(search = "") {
+  async list(search = "", _tenantId?: string) {
     const normalizedSearch = search.trim().toLowerCase();
     const clientes = Array.from(this.clientes.values()).sort((a, b) =>
       a.nome.localeCompare(b.nome, "pt-BR"),
@@ -69,7 +69,7 @@ export class MemoryClientesRepository implements ClientesRepository {
     return Array.from(this.clientes.values()).find((c) => c.telefone === telefone) ?? null;
   }
 
-  async create(input: ClienteInput) {
+  async create(input: ClienteInput, _tenantId?: string) {
     const timestamp = now();
     const cliente: Cliente = {
       id: randomUUID(),
@@ -109,10 +109,10 @@ export class MemoryClientesRepository implements ClientesRepository {
 export class FirestoreClientesRepository implements ClientesRepository {
   constructor(private readonly firestore: Firestore) {}
 
-  async list(search = "") {
+  async list(search = "", tenantId = DEFAULT_TENANT_ID) {
     const snapshot = await this.firestore
       .collection(clientesCollection)
-      .where("tenantId", "==", DEFAULT_TENANT_ID)
+      .where("tenantId", "==", tenantId)
       .get();
     const clientes = snapshot.docs
       .map((document) => this.fromDocument(document.id, document.data()))
@@ -154,13 +154,13 @@ export class FirestoreClientesRepository implements ClientesRepository {
     return this.fromDocument(doc.id, doc.data());
   }
 
-  async create(input: ClienteInput) {
+  async create(input: ClienteInput, tenantId = DEFAULT_TENANT_ID) {
     const timestamp = now();
     const document = this.firestore.collection(clientesCollection).doc();
     const cliente: Cliente = {
       id: document.id,
       ...input,
-      tenantId: DEFAULT_TENANT_ID,
+      tenantId,
       createdAt: timestamp,
       updatedAt: timestamp,
     };
