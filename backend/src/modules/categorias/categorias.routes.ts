@@ -1,9 +1,13 @@
 import { Router } from "express";
 import { getFirestore } from "firebase-admin/firestore";
 
-import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
+import { resolveTenant, getRequestTenantId, type TenantRequest } from "../../middlewares/tenant.js";
 
 export const categoriasRoutes = Router();
+
+// Fase 9.7: resolveTenant popula request.tenantId a partir de usuarios/{uid}.
+// Handlers usam getRequestTenantId em vez de DEFAULT_TENANT_ID.
+categoriasRoutes.use(resolveTenant);
 
 const COLLECTION = "categorias";
 
@@ -18,13 +22,14 @@ const CATEGORIAS_PADRAO = [
   { id: "celular_restaurado", nome: "Celular Restaurado", padrao: true },
 ];
 
-categoriasRoutes.get("/", async (_req, res, next) => {
+categoriasRoutes.get("/", async (req, res, next) => {
   try {
+    const tenantId = getRequestTenantId(req as TenantRequest);
     try {
       const db = getFirestore();
       const snap = await db
         .collection(COLLECTION)
-        .where("tenantId", "==", DEFAULT_TENANT_ID)
+        .where("tenantId", "==", tenantId)
         .get();
       const customizadas = snap.docs
         .map((doc) => ({ id: doc.id, ...(doc.data() as { nome: string; tenantId?: string }), padrao: false }))
@@ -40,6 +45,7 @@ categoriasRoutes.get("/", async (_req, res, next) => {
 
 categoriasRoutes.post("/", async (req, res, next) => {
   try {
+    const tenantId = getRequestTenantId(req as TenantRequest);
     const { nome } = req.body as { nome?: string };
     if (!nome?.trim()) {
       res.status(400).json({ error: { message: "Informe o nome da categoria." } });
@@ -48,7 +54,7 @@ categoriasRoutes.post("/", async (req, res, next) => {
     const db = getFirestore();
     const ref = await db
       .collection(COLLECTION)
-      .add({ nome: nome.trim(), criadoEm: new Date().toISOString(), tenantId: DEFAULT_TENANT_ID });
+      .add({ nome: nome.trim(), criadoEm: new Date().toISOString(), tenantId });
     res.status(201).json({ data: { id: ref.id, nome: nome.trim(), padrao: false } });
   } catch (error) {
     next(error);
