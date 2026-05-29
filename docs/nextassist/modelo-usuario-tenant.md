@@ -136,28 +136,22 @@ Após a remoção do fallback, um usuário sem `usuarios/{uid}` válido receber�
 
 ## 8. Impacto no middleware `resolveTenant`
 
-O arquivo `backend/src/middlewares/tenant.ts` deverá evoluir para:
+✅ **Fase 9.4 concluída** — `resolveTenant` já consulta `usuarios/{uid}`.
+
+Fluxo atual em `backend/src/middlewares/tenant.ts`:
 
 ```
-resolveTenant() — fluxo futuro:
-
-1. Verificar que request.user existe (requireAuth já garantiu)
-2. Extrair uid = request.user.uid
-3. Buscar Firestore: usuarios/{uid}
-4. Se não encontrado:
-   a. Logar warning: "Usuario sem documento usuarios/{uid}: <uid>"
-   b. Usar DEFAULT_TENANT_ID como fallback transitório
-5. Se encontrado:
-   a. Ler tenantId do documento
-   b. Verificar status === "ativo"
-   c. Se inativo: retornar 403 com mensagem clara
-6. Definir request.tenantId = tenantId resolvido
-7. Continuar para o próximo middleware/handler
+1. Se não há uid no request (dev bypass) → DEFAULT_TENANT_ID silencioso
+2. Busca usuarios/{uid} no Firestore
+3. Doc existe + status "ativo" + tenantId válido → usa esse tenantId ✅
+4. Qualquer desvio → DEFAULT_TENANT_ID + console.warn
 ```
 
-**Ponto de atenção:** `resolveTenant` deve rodar **após** `requireAuth`, pois depende de `request.user.uid`. A ordem atual `requireAuth → resolveTenant` já está correta.
+O middleware está pronto mas **ainda não está registrado em `routes.ts`**. A Fase 9.5 conectará módulo a módulo.
 
-**Repositories:** Após o middleware evoluir, os repositories devem parar de importar `DEFAULT_TENANT_ID` diretamente e passar a receber o `tenantId` como parâmetro do service/handler. Isso será feito na Fase 9.3.
+Documentação completa do fluxo: [`resolve-tenant-dinamico.md`](resolve-tenant-dinamico.md).
+
+**Repositories:** Continuam usando `DEFAULT_TENANT_ID` diretamente. A migração para `request.tenantId` será feita na Fase 9.5, módulo a módulo.
 
 ---
 
