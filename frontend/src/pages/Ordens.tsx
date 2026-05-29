@@ -139,6 +139,12 @@ type OrdemRow = OrdemServico & {
   aparelho?: Aparelho;
 };
 
+const osSearchTerms = (numero: number) => {
+  const value = String(numero);
+
+  return [value, `os-${value}`, `os ${value}`, `os${value}`];
+};
+
 const Ordens = () => {
   const [urlParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -286,7 +292,7 @@ const Ordens = () => {
         }
         if (!normalizedSearch) return true;
         return [
-          String(ordem.numero),
+          ...osSearchTerms(ordem.numero),
           ordem.defeitoRelatado,
           ordem.diagnostico,
           ordem.tecnicoResponsavel,

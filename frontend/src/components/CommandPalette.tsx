@@ -40,6 +40,12 @@ const statusLabels: Record<string, string> = {
   cancelado: "Cancelado",
 };
 
+const osSearchTerms = (numero: number) => {
+  const value = String(numero);
+
+  return [value, `os-${value}`, `os ${value}`, `os${value}`];
+};
+
 const navItems = [
   { label: "Dashboard", to: "/app", icon: LayoutDashboard },
   { label: "Nova OS", to: "/app/ordens/nova", icon: Plus },
@@ -107,11 +113,10 @@ export function CommandPalette() {
     if (!term) return ordens.slice(0, 8);
     return ordens
       .filter((o) => {
-        const numero = String(o.numero).toLowerCase();
         const clienteNome = clienteMap[o.clienteId]?.toLowerCase() ?? "";
         const status = statusLabels[o.status]?.toLowerCase() ?? "";
         return (
-          numero.includes(term) ||
+          osSearchTerms(o.numero).some((numero) => numero.includes(term)) ||
           clienteNome.includes(term) ||
           status.includes(term) ||
           o.defeitoRelatado.toLowerCase().includes(term)

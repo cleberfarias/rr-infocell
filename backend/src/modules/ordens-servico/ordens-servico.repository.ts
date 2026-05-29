@@ -186,6 +186,9 @@ const filterOrdensServico = (
       !normalizedSearch ||
       [
         String(ordem.numero),
+        `os-${ordem.numero}`,
+        `os ${ordem.numero}`,
+        `os${ordem.numero}`,
         ordem.defeitoRelatado,
         ordem.diagnostico,
         ordem.tecnicoResponsavel,
