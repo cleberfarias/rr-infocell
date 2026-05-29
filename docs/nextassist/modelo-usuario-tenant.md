@@ -262,7 +262,37 @@ Documentação completa em [`dry-run-usuarios-tenant.md`](dry-run-usuarios-tenan
 
 ---
 
-## 13. Próxima fase
+## 13. Script de criação — como rodar
+
+Após revisar o relatório do dry-run (zero `revisar-manualmente`), criar os documentos com:
+
+**Linux / macOS / Git Bash:**
+
+```bash
+cd backend
+ALLOW_USER_TENANT_CREATION=true npx tsx src/scripts/create-user-tenant-documents.ts
+```
+
+**PowerShell (Windows):**
+
+```powershell
+cd backend
+$env:ALLOW_USER_TENANT_CREATION="true"
+npx tsx src/scripts/create-user-tenant-documents.ts
+```
+
+O script:
+- Cria `usuarios/{uid}` para cada usuário ativo sem documento
+- **Não sobrescreve** documentos existentes (idempotente)
+- **Não altera** custom claims
+- **Não ativa** `resolveTenant` dinâmico — isso é a Fase 9.4
+- Gera relatório em `docs/nextassist/reports/create-user-tenant-documents-<timestamp>.md`
+
+Documentação completa em [`criacao-usuarios-tenant.md`](criacao-usuarios-tenant.md).
+
+---
+
+## 14. Próxima fase
 
 **Fase 9.2 — Dry-run e criação dos documentos `usuarios/{uid}`**
 
