@@ -27,7 +27,7 @@ export class MovimentacoesEstoqueService {
   }
 
   async create(input: MovimentacaoEstoqueInput, tenantId = DEFAULT_TENANT_ID) {
-    const produto = await this.produtos.getById(input.produtoId);
+    const produto = await this.produtos.getById(input.produtoId, tenantId);
     const estoqueAnterior = produto.estoqueAtual;
     const estoquePosterior = this.calculateEstoquePosterior(input, estoqueAnterior);
     const quantidade =
