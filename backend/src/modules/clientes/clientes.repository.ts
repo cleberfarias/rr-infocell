@@ -32,7 +32,7 @@ const seedClientes: Cliente[] = [
 
 export interface ClientesRepository {
   list(search?: string, tenantId?: string): Promise<Cliente[]>;
-  findById(id: string): Promise<Cliente | null>;
+  findById(id: string, tenantId?: string): Promise<Cliente | null>;
   findByTelefone(telefone: string): Promise<Cliente | null>;
   create(input: ClienteInput, tenantId?: string): Promise<Cliente>;
   update(id: string, input: ClienteInput): Promise<Cliente | null>;
@@ -61,7 +61,7 @@ export class MemoryClientesRepository implements ClientesRepository {
     );
   }
 
-  async findById(id: string) {
+  async findById(id: string, _tenantId?: string) {
     return this.clientes.get(id) ?? null;
   }
 
@@ -131,14 +131,20 @@ export class FirestoreClientesRepository implements ClientesRepository {
     );
   }
 
-  async findById(id: string) {
+  async findById(id: string, tenantId?: string) {
     const document = await this.firestore.collection(clientesCollection).doc(id).get();
 
     if (!document.exists) {
       return null;
     }
 
-    return this.fromDocument(document.id, document.data() ?? {});
+    const cliente = this.fromDocument(document.id, document.data() ?? {});
+
+    if (tenantId && cliente.tenantId && cliente.tenantId !== tenantId) {
+      return null;
+    }
+
+    return cliente;
   }
 
   async findByTelefone(telefone: string) {

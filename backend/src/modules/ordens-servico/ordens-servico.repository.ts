@@ -160,7 +160,7 @@ export interface OrdensServicoRepository {
     clienteId?: string;
     aparelhoId?: string;
   }, tenantId?: string): Promise<OrdemServico[]>;
-  findById(id: string): Promise<OrdemServico | null>;
+  findById(id: string, tenantId?: string): Promise<OrdemServico | null>;
   create(input: OrdemServicoInput, tenantId?: string): Promise<OrdemServico>;
   update(id: string, input: OrdemServicoInput): Promise<OrdemServico | null>;
   delete(id: string): Promise<boolean>;
@@ -225,7 +225,7 @@ export class MemoryOrdensServicoRepository implements OrdensServicoRepository {
     return filterOrdensServico(ordens, filters);
   }
 
-  async findById(id: string) {
+  async findById(id: string, _tenantId?: string) {
     return this.ordens.get(id) ?? null;
   }
 
@@ -298,14 +298,20 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
     return filterOrdensServico(ordens, filters);
   }
 
-  async findById(id: string) {
+  async findById(id: string, tenantId?: string) {
     const document = await this.firestore.collection(ordensServicoCollection).doc(id).get();
 
     if (!document.exists) {
       return null;
     }
 
-    return this.fromDocument(document.id, document.data() ?? {});
+    const ordem = this.fromDocument(document.id, document.data() ?? {});
+
+    if (tenantId && ordem.tenantId && ordem.tenantId !== tenantId) {
+      return null;
+    }
+
+    return ordem;
   }
 
   async create(input: OrdemServicoInput, tenantId = DEFAULT_TENANT_ID) {

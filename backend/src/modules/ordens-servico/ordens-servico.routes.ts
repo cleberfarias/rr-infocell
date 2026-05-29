@@ -75,10 +75,11 @@ ordensServicoRoutes.get(
 ordensServicoRoutes.get(
   "/:id",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const id = String(request.params.id);
 
     response.status(httpStatus.ok).json({
-      data: await ordensServicoService.getById(id),
+      data: await ordensServicoService.getById(id, tenantId),
     });
   }),
 );

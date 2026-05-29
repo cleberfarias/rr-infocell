@@ -15,8 +15,8 @@ export class ProdutosService {
     return this.repository.list(filters, tenantId);
   }
 
-  async getById(id: string) {
-    const produto = await this.repository.findById(id);
+  async getById(id: string, tenantId?: string) {
+    const produto = await this.repository.findById(id, tenantId);
 
     if (!produto) {
       throw new AppError("produto_not_found", "Produto nao encontrado.", httpStatus.notFound);

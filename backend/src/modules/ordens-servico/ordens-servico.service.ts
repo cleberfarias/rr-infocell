@@ -36,8 +36,8 @@ export class OrdensServicoService {
     return this.repository.list(filters, tenantId);
   }
 
-  async getById(id: string) {
-    const ordem = await this.repository.findById(id);
+  async getById(id: string, tenantId?: string) {
+    const ordem = await this.repository.findById(id, tenantId);
 
     if (!ordem) {
       throw new AppError(

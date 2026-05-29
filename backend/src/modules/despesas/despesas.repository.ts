@@ -56,7 +56,7 @@ export interface DespesasRepository {
     categoria?: DespesaCategoria | "";
     pago?: boolean | "";
   }, tenantId?: string): Promise<Despesa[]>;
-  findById(id: string): Promise<Despesa | null>;
+  findById(id: string, tenantId?: string): Promise<Despesa | null>;
   create(input: DespesaInput, tenantId?: string): Promise<Despesa>;
   update(id: string, input: DespesaInput): Promise<Despesa | null>;
   delete(id: string): Promise<boolean>;
@@ -126,7 +126,7 @@ export class MemoryDespesasRepository implements DespesasRepository {
     return filterDespesas(despesas, filters);
   }
 
-  async findById(id: string) {
+  async findById(id: string, _tenantId?: string) {
     return this.despesas.get(id) ?? null;
   }
 
@@ -179,14 +179,20 @@ export class FirestoreDespesasRepository implements DespesasRepository {
     return filterDespesas(despesas, filters);
   }
 
-  async findById(id: string) {
+  async findById(id: string, tenantId?: string) {
     const document = await this.firestore.collection(despesasCollection).doc(id).get();
 
     if (!document.exists) {
       return null;
     }
 
-    return this.fromDocument(document.id, document.data() ?? {});
+    const despesa = this.fromDocument(document.id, document.data() ?? {});
+
+    if (tenantId && despesa.tenantId && despesa.tenantId !== tenantId) {
+      return null;
+    }
+
+    return despesa;
   }
 
   async create(input: DespesaInput, tenantId = DEFAULT_TENANT_ID) {

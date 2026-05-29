@@ -61,8 +61,9 @@ despesasRoutes.get(
 despesasRoutes.get(
   "/:id",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     response.status(httpStatus.ok).json({
-      data: await despesasService.getById(String(request.params.id)),
+      data: await despesasService.getById(String(request.params.id), tenantId),
     });
   }),
 );

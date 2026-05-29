@@ -14,8 +14,8 @@ export class ClientesService {
     return this.repository.list(search, tenantId);
   }
 
-  async getById(id: string) {
-    const cliente = await this.repository.findById(id);
+  async getById(id: string, tenantId?: string) {
+    const cliente = await this.repository.findById(id, tenantId);
 
     if (!cliente) {
       throw new AppError("cliente_not_found", "Cliente nao encontrado.", httpStatus.notFound);

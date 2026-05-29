@@ -44,7 +44,7 @@ export interface ProdutosRepository {
     categoria?: ProdutoCategoria | "";
     ativo?: boolean | "";
   }, tenantId?: string): Promise<Produto[]>;
-  findById(id: string): Promise<Produto | null>;
+  findById(id: string, tenantId?: string): Promise<Produto | null>;
   create(input: ProdutoInput, tenantId?: string): Promise<Produto>;
   update(id: string, input: ProdutoInput): Promise<Produto | null>;
   delete(id: string): Promise<boolean>;
@@ -104,7 +104,7 @@ export class MemoryProdutosRepository implements ProdutosRepository {
     return filterProdutos(produtos, filters);
   }
 
-  async findById(id: string) {
+  async findById(id: string, _tenantId?: string) {
     return this.produtos.get(id) ?? null;
   }
 
@@ -170,14 +170,20 @@ export class FirestoreProdutosRepository implements ProdutosRepository {
     return filterProdutos(produtos, filters);
   }
 
-  async findById(id: string) {
+  async findById(id: string, tenantId?: string) {
     const document = await this.firestore.collection(produtosCollection).doc(id).get();
 
     if (!document.exists) {
       return null;
     }
 
-    return this.fromDocument(document.id, document.data() ?? {});
+    const produto = this.fromDocument(document.id, document.data() ?? {});
+
+    if (tenantId && produto.tenantId && produto.tenantId !== tenantId) {
+      return null;
+    }
+
+    return produto;
   }
 
   async create(input: ProdutoInput, tenantId = DEFAULT_TENANT_ID) {

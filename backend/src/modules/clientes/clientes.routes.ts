@@ -64,10 +64,11 @@ clientesRoutes.get(
 clientesRoutes.get(
   "/:id",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const id = String(request.params.id);
 
     response.status(httpStatus.ok).json({
-      data: await clientesService.getById(id),
+      data: await clientesService.getById(id, tenantId),
     });
   }),
 );

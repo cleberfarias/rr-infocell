@@ -15,8 +15,8 @@ export class DespesasService {
     return this.repository.list(filters, tenantId);
   }
 
-  async getById(id: string) {
-    const despesa = await this.repository.findById(id);
+  async getById(id: string, tenantId?: string) {
+    const despesa = await this.repository.findById(id, tenantId);
 
     if (!despesa) {
       throw new AppError("despesa_not_found", "Despesa nao encontrada.", httpStatus.notFound);
