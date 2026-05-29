@@ -226,16 +226,52 @@ A Fase 9.2 só deve começar quando todos os itens abaixo estiverem confirmados:
 
 ---
 
-## 12. Próxima fase
+## 12. Dry-run — como rodar e interpretar
+
+O script de auditoria está em:
+
+```
+backend/src/scripts/audit-users-tenant-dry-run.ts
+```
+
+**Comando:**
+
+```bash
+cd backend
+npx tsx src/scripts/audit-users-tenant-dry-run.ts
+```
+
+**Relatório gerado em:**
+
+```
+docs/nextassist/reports/audit-users-tenant-dry-run-<timestamp>.md
+```
+
+**Como interpretar:**
+
+| Ação no relatório | Significado |
+|-------------------|-------------|
+| `✅ manter-documento` | Usuário já tem `usuarios/{uid}` correto — nada a fazer |
+| `⬜ criar-documento` | Usuário ativo sem documento — Fase 9.3 criará |
+| `⚠️ revisar-manualmente` | Dado inconsistente — analisar antes de prosseguir |
+| `🔕 ignorar-desativado` | Usuário desativado sem documento — ignorar por ora |
+
+**A Fase 9.3 só deve criar documentos após revisão do relatório.** Zero casos de `revisar-manualmente` é pré-requisito.
+
+Documentação completa em [`dry-run-usuarios-tenant.md`](dry-run-usuarios-tenant.md).
+
+---
+
+## 13. Próxima fase
 
 **Fase 9.2 — Dry-run e criação dos documentos `usuarios/{uid}`**
 
 Objetivo: mapear os usuários atuais do Firebase Auth, verificar quais já têm documento no Firestore, e criar os documentos ausentes com `tenantId: "rr-infocell"`.
 
 Entregas esperadas:
-- Script dry-run (leitura apenas) que lista usuários e seu estado
-- Relatório gerado pelo dry-run
-- Script de criação dos documentos `usuarios/{uid}` (a executar após revisão)
+- Script dry-run (leitura apenas) que lista usuários e seu estado ✅ criado
+- Relatório gerado pelo dry-run (gerado em `docs/nextassist/reports/` ao executar)
+- Script de criação dos documentos `usuarios/{uid}` (a executar após revisão — Fase 9.3)
 - Critérios de validação pós-criação
 
 ---
