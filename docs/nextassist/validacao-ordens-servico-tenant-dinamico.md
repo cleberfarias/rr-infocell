@@ -3,6 +3,7 @@
 **Fase:** 9.11 — Ordens de Serviço usam `request.tenantId` resolvido
 **Data:** 2026-05-29
 **Branch:** nextassist-saas
+**Validação:** ✅ Aprovada em 2026-05-29 — critérios confirmados
 **Arquivos alterados:**
 - `backend/src/modules/ordens-servico/ordens-servico.routes.ts`
 - `backend/src/modules/ordens-servico/ordens-servico.service.ts`
@@ -101,10 +102,10 @@ Sem passar `tenantId`. O service de movimentações tem `tenantId = DEFAULT_TENA
 
 ## 6. Critérios para avançar para Fase 9.12 (Vendas)
 
-- [ ] `GET /api/ordens-servico` validado sem warnings
-- [ ] OS criada com `tenantId` correto no Firestore
-- [ ] OS com peça + baixa automática + movimentação correta
-- [ ] Fluxo de atualização de status validado
-- [ ] Impressão e eventos funcionando
-- [ ] Vendas e produtos sem regressões
-- [ ] Build TypeScript passou sem erros
+- [x] `GET /api/ordens-servico` validado sem warnings
+- [x] OS criada com `tenantId` correto no Firestore
+- [x] OS com peça + baixa automática + movimentação correta
+- [x] Fluxo de atualização de status validado
+- [x] Impressão e eventos funcionando
+- [x] Vendas e produtos sem regressões
+- [x] Build TypeScript passou sem erros
