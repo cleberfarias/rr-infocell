@@ -99,11 +99,12 @@ ordensServicoRoutes.post(
 ordensServicoRoutes.put(
   "/:id",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const id = String(request.params.id);
     const input = parseOrThrow(() => ordemServicoInputSchema.parse(request.body));
 
     response.status(httpStatus.ok).json({
-      data: await ordensServicoService.update(id, input),
+      data: await ordensServicoService.update(id, input, tenantId),
     });
   }),
 );
