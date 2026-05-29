@@ -121,19 +121,16 @@ Os métodos `findById` no Firestore buscam por ID direto, sem filtro de tenant. 
 A execução seguirá esta ordem, cada passo com aprovação explícita antes do próximo:
 
 ```
-Passo 1 — Criar tenant fake
-  Script: criar documento em coleção de tenants ou apenas definir o tenantId
-  Validar: tenantId "nextassist-demo" não colide com dados existentes
+Passo 1 — Criar tenant fake + usuarios/{uid} + custom claim
+  Script: backend/src/scripts/create-demo-tenant.ts ✅ criado (Fase 9.15)
+  Guard: ALLOW_DEMO_TENANT_CREATION=true
+  Cria: tenants/nextassist-demo + usuarios/{uid} + role: admin (custom claim)
+  Pré-requisito: usuário demo criado via set-user-role.ts ou Firebase Console
+  Validar: dry-run confirma usuário demo em "manter-documento" com tenantId: "nextassist-demo"
 
-Passo 2 — Criar usuário fake no Firebase Auth
+Passo 2 — (incluído no Passo 1) Criar usuário demo no Firebase Auth se não existir
   Ferramenta: set-user-role.ts com --email --password --role admin
-  Validar: usuário criado e custom claim role=admin atribuída
-
-Passo 3 — Criar usuarios/{uid} para o usuário demo
-  Script: create-user-tenant-documents.ts adaptado, ou criação direta
-  tenantId: "nextassist-demo"
-  status: "ativo"
-  Validar: dry-run confirma usuário demo em "manter-documento"
+  Validar: custom claim role=admin atribuída
 
 Passo 4 — Criar dados mínimos (via API autenticada como usuário demo)
   Login como usuário demo no frontend
