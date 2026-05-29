@@ -134,6 +134,10 @@ export class OrdensServicoService {
       return input;
     }
 
+    if (process.env.DEBUG_TENANT_LOOKUP === "true") {
+      console.log(`[TENANT_LOOKUP] enrichPecasInput tenantId=${tenantId} pecas=${input.pecasUsadas.map(p => p.produtoId).join(",")}`);
+    }
+
     const pecasUsadas = await Promise.all(
       input.pecasUsadas.map(async (peca) => {
         const produto = await produtosService.getById(peca.produtoId, tenantId);

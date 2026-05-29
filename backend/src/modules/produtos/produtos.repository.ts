@@ -174,13 +174,23 @@ export class FirestoreProdutosRepository implements ProdutosRepository {
     const document = await this.firestore.collection(produtosCollection).doc(id).get();
 
     if (!document.exists) {
+      if (process.env.DEBUG_TENANT_LOOKUP === "true") {
+        console.log(`[TENANT_LOOKUP] findById id=${id} tenantId=${tenantId} result=not_found_in_firestore`);
+      }
       return null;
     }
 
     const produto = this.fromDocument(document.id, document.data() ?? {});
 
     if (tenantId && produto.tenantId && produto.tenantId !== tenantId) {
+      if (process.env.DEBUG_TENANT_LOOKUP === "true") {
+        console.log(`[TENANT_LOOKUP] findById id=${id} tenantId_received=${tenantId} tenantId_doc=${produto.tenantId} result=tenant_mismatch`);
+      }
       return null;
+    }
+
+    if (process.env.DEBUG_TENANT_LOOKUP === "true") {
+      console.log(`[TENANT_LOOKUP] findById id=${id} tenantId_received=${tenantId} tenantId_doc=${produto.tenantId} result=found`);
     }
 
     return produto;

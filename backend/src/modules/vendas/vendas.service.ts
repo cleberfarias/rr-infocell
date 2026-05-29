@@ -106,6 +106,9 @@ export class VendasService {
   }
 
   private async createVendaDireta(input: VendaInput, tenantId = DEFAULT_TENANT_ID) {
+    if (process.env.DEBUG_TENANT_LOOKUP === "true") {
+      console.log(`[TENANT_LOOKUP] createVendaDireta tenantId=${tenantId} itens=${(input.itens ?? []).map(i => i.produtoId).join(",")}`);
+    }
     const itensInput = input.itens ?? [];
     const itens = await Promise.all(
       itensInput.map(async (item) => {
