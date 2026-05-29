@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ClipboardCheck,
@@ -114,6 +114,8 @@ const STATUS_NEXT: Partial<Record<OrdemServicoStatus, OrdemServicoStatus[]>> = {
   pronto_para_retirada: ["entregue"],
 };
 
+const TABLE_PAGE_SIZE = 10;
+
 const formatPrazo = (valor?: string, status?: string) => {
   if (!valor || ["entregue", "sem_conserto", "cancelado"].includes(status ?? ""))
     return { label: "-", classe: "" };
@@ -170,6 +172,7 @@ const Ordens = () => {
       "default",
   );
   const [deleteTarget, setDeleteTarget] = useState<OrdemServico | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const changeView = (v: "tabela" | "kanban") => {
     setViewMode(v);
@@ -327,6 +330,23 @@ const Ordens = () => {
       ),
     [ordensQuery.data],
   );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    atrasoFilter,
+    prioridadeFilter,
+    search,
+    statusFilter,
+    tecnicoFilter,
+    viewMode,
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(ordens.length / TABLE_PAGE_SIZE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const pageStart = (safeCurrentPage - 1) * TABLE_PAGE_SIZE;
+  const pageEnd = pageStart + TABLE_PAGE_SIZE;
+  const paginatedOrdens = ordens.slice(pageStart, pageEnd);
 
   const StatusDropdown = ({ ordem }: { ordem: OrdemServico }) => {
     const proximos = STATUS_NEXT[ordem.status] ?? [];
@@ -818,7 +838,7 @@ const Ordens = () => {
               rowClass,
             )}
             columns={columns}
-            data={ordens}
+            data={paginatedOrdens}
             getRowKey={(o) => o.id}
             emptyState={
               <EmptyState
@@ -835,10 +855,24 @@ const Ordens = () => {
             footer={
               <>
                 <span>
-                  Mostrando {ordens.length} de {ordensQuery.data?.length ?? 0}{" "}
-                  ordens
+                  Mostrando{" "}
+                  {ordens.length === 0
+                    ? 0
+                    : `${pageStart + 1}-${Math.min(pageEnd, ordens.length)}`}{" "}
+                  de {ordens.length} ordem{ordens.length === 1 ? "" : "s"}
                 </span>
-                <DataTablePagination currentPage={1} totalPages={1} />
+                <DataTablePagination
+                  currentPage={safeCurrentPage}
+                  totalPages={totalPages}
+                  isPreviousDisabled={safeCurrentPage <= 1}
+                  isNextDisabled={safeCurrentPage >= totalPages}
+                  onPrevious={() =>
+                    setCurrentPage((page) => Math.max(1, page - 1))
+                  }
+                  onNext={() =>
+                    setCurrentPage((page) => Math.min(totalPages, page + 1))
+                  }
+                />
               </>
             }
           />

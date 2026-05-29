@@ -85,6 +85,8 @@ type DataTablePaginationProps = {
   totalPages: number;
   isPreviousDisabled?: boolean;
   isNextDisabled?: boolean;
+  onPrevious?: () => void;
+  onNext?: () => void;
 };
 
 export const DataTablePagination = ({
@@ -92,16 +94,30 @@ export const DataTablePagination = ({
   totalPages,
   isPreviousDisabled = true,
   isNextDisabled = true,
+  onPrevious,
+  onNext,
 }: DataTablePaginationProps) => (
   <div className="flex gap-1">
-    <Button variant="ghost" size="sm" disabled={isPreviousDisabled}>
+    <Button
+      variant="ghost"
+      size="sm"
+      disabled={isPreviousDisabled}
+      onClick={onPrevious}
+      type="button"
+    >
       Anterior
     </Button>
     <Button variant="outline" size="sm">
       {currentPage}
       <span className="sr-only"> de {totalPages}</span>
     </Button>
-    <Button variant="ghost" size="sm" disabled={isNextDisabled}>
+    <Button
+      variant="ghost"
+      size="sm"
+      disabled={isNextDisabled}
+      onClick={onNext}
+      type="button"
+    >
       Proxima
     </Button>
   </div>
