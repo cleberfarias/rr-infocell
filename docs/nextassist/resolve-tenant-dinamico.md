@@ -139,7 +139,7 @@ marcasRoutes.use(resolveTenant);
 | `/api/contas` | ✅ Fase 9.9 | ✅ Fase 9.9 |
 | `/api/movimentacoes-estoque` | ✅ Fase 9.10 | ✅ Fase 9.10 |
 | `/api/ordens-servico` | ✅ Fase 9.11 | ✅ Fase 9.11 |
-| `/api/vendas` | ❌ ainda não | ❌ ainda não |
+| `/api/vendas` | ✅ Fase 9.12 | ✅ Fase 9.12 |
 
 Cadeia atual para `/api/marcas`:
 

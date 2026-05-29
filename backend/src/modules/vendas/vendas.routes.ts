@@ -3,10 +3,14 @@ import { ZodError } from "zod";
 
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
+import { resolveTenant, getRequestTenantId, type TenantRequest } from "../../middlewares/tenant.js";
 import { vendaInputSchema, vendaSearchSchema } from "./vendas.schemas.js";
 import { vendasService } from "./vendas.service.js";
 
 export const vendasRoutes = Router();
+
+// Fase 9.12: resolveTenant popula request.tenantId a partir de usuarios/{uid}.
+vendasRoutes.use(resolveTenant);
 
 const parseOrThrow = <T>(parse: () => T) => {
   try {
@@ -37,8 +41,9 @@ const handler =
 vendasRoutes.get(
   "/",
   handler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const filters = parseOrThrow(() => vendaSearchSchema.parse(request.query));
-    const vendas = await vendasService.list(filters);
+    const vendas = await vendasService.list(filters, tenantId);
 
     response.json({
       data: vendas,
@@ -52,10 +57,11 @@ vendasRoutes.get(
 vendasRoutes.post(
   "/",
   handler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const input = parseOrThrow(() => vendaInputSchema.parse(request.body));
 
     response.status(httpStatus.created).json({
-      data: await vendasService.create(input),
+      data: await vendasService.create(input, tenantId),
     });
   }),
 );
