@@ -15,6 +15,7 @@ export type MovimentacaoEstoque = {
   origem: MovimentacaoEstoqueOrigem;
   ordemServicoId?: string;
   criadoPor?: string;
+  tenantId?: string;
   createdAt: string;
 };
 

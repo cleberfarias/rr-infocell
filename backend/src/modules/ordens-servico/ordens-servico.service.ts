@@ -32,12 +32,12 @@ export class OrdensServicoService {
     prioridade?: OrdemServico["prioridade"] | "";
     clienteId?: string;
     aparelhoId?: string;
-  }) {
-    return this.repository.list(filters);
+  }, tenantId?: string) {
+    return this.repository.list(filters, tenantId);
   }
 
-  async getById(id: string) {
-    const ordem = await this.repository.findById(id);
+  async getById(id: string, tenantId?: string) {
+    const ordem = await this.repository.findById(id, tenantId);
 
     if (!ordem) {
       throw new AppError(
@@ -50,12 +50,12 @@ export class OrdensServicoService {
     return ordem;
   }
 
-  async create(input: OrdemServicoInput) {
-    await this.ensureClienteAndAparelho(input);
-    const enrichedInput = await this.enrichPecasInput(input);
-    await this.ensurePositiveDeltasStock(enrichedInput);
+  async create(input: OrdemServicoInput, tenantId?: string) {
+    await this.ensureClienteAndAparelho(input, tenantId);
+    const enrichedInput = await this.enrichPecasInput(input, tenantId);
+    await this.ensurePositiveDeltasStock(enrichedInput, undefined, tenantId);
 
-    const ordem = await this.repository.create(enrichedInput);
+    const ordem = await this.repository.create(enrichedInput, tenantId);
     await this.applyPecasDeltas(ordem);
     await this.registrarEvento(
       ordem.id,
@@ -69,8 +69,8 @@ export class OrdensServicoService {
     return ordem;
   }
 
-  async update(id: string, input: OrdemServicoInput) {
-    const current = await this.getById(id);
+  async update(id: string, input: OrdemServicoInput, tenantId?: string) {
+    const current = await this.getById(id, tenantId);
 
     if (isTerminalStatus(current.status)) {
       throw new AppError(
@@ -80,9 +80,9 @@ export class OrdensServicoService {
       );
     }
 
-    await this.ensureClienteAndAparelho(input);
-    const enrichedInput = await this.enrichPecasInput(input);
-    await this.ensurePositiveDeltasStock(enrichedInput, current);
+    await this.ensureClienteAndAparelho(input, tenantId);
+    const enrichedInput = await this.enrichPecasInput(input, tenantId);
+    await this.ensurePositiveDeltasStock(enrichedInput, current, tenantId);
 
     const ordem = await this.repository.update(id, enrichedInput);
 
@@ -113,9 +113,10 @@ export class OrdensServicoService {
     }
   }
 
-  private async ensureClienteAndAparelho(input: OrdemServicoInput) {
+  private async ensureClienteAndAparelho(input: OrdemServicoInput, tenantId?: string) {
     const [cliente, aparelho] = await Promise.all([
-      clientesService.getById(input.clienteId),
+      clientesService.getById(input.clienteId, tenantId),
+      // aparelhoId sem guard de tenant: aparelhos não possuem tenantId no schema
       aparelhosService.getById(input.aparelhoId),
     ]);
 
@@ -128,14 +129,18 @@ export class OrdensServicoService {
     }
   }
 
-  private async enrichPecasInput(input: OrdemServicoInput): Promise<OrdemServicoInput> {
+  private async enrichPecasInput(input: OrdemServicoInput, tenantId?: string): Promise<OrdemServicoInput> {
     if (!input.pecasUsadas) {
       return input;
     }
 
+    if (process.env.DEBUG_TENANT_LOOKUP === "true") {
+      console.log(`[TENANT_LOOKUP] enrichPecasInput tenantId=${tenantId} pecas=${input.pecasUsadas.map(p => p.produtoId).join(",")}`);
+    }
+
     const pecasUsadas = await Promise.all(
       input.pecasUsadas.map(async (peca) => {
-        const produto = await produtosService.getById(peca.produtoId);
+        const produto = await produtosService.getById(peca.produtoId, tenantId);
 
         return {
           produtoId: produto.id,
@@ -153,12 +158,12 @@ export class OrdensServicoService {
     };
   }
 
-  private async ensurePositiveDeltasStock(input: OrdemServicoInput, current?: OrdemServico) {
+  private async ensurePositiveDeltasStock(input: OrdemServicoInput, current?: OrdemServico, tenantId?: string) {
     const deltas = this.calculatePecasDeltas(input.pecasUsadas ?? [], current);
 
     await Promise.all(
       deltas.map(async (delta) => {
-        const produto = await produtosService.getById(delta.produtoId);
+        const produto = await produtosService.getById(delta.produtoId, tenantId);
 
         if (produto.estoqueAtual < delta.quantidade) {
           throw new AppError(

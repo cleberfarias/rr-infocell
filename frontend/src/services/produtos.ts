@@ -1,4 +1,5 @@
 import { apiRequest } from "./api";
+import { getTenantScopedPayload } from "@/lib/tenantPayload";
 export type ProdutoCategoria =
   | "peca"
   | "produto"
@@ -100,7 +101,7 @@ export const listProdutos = async (
 export const createProduto = async (input: ProdutoInput) => {
   const response = await apiRequest<ApiResponse<Produto>>("/produtos", {
     method: "POST",
-    body: JSON.stringify(input),
+    body: JSON.stringify(getTenantScopedPayload(input)),
   });
 
   return response.data;
@@ -109,7 +110,7 @@ export const createProduto = async (input: ProdutoInput) => {
 export const updateProduto = async (id: string, input: ProdutoInput) => {
   const response = await apiRequest<ApiResponse<Produto>>(`/produtos/${id}`, {
     method: "PUT",
-    body: JSON.stringify(input),
+    body: JSON.stringify(getTenantScopedPayload(input)),
   });
 
   return response.data;

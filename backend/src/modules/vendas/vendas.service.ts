@@ -1,5 +1,6 @@
 import { db } from "../../firebase/admin.js";
 import { AppError } from "../../shared/errors.js";
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
 import { httpStatus } from "../../shared/http-status.js";
 import { ordemEventosService } from "../ordem-eventos/ordem-eventos.service.js";
 import { ordensServicoService } from "../ordens-servico/ordens-servico.service.js";
@@ -14,16 +15,16 @@ const now = () => new Date().toISOString();
 export class VendasService {
   constructor(private readonly repository: VendasRepository = createVendasRepository(db)) {}
 
-  async list(filters?: { ordemServicoId?: string; status?: VendaStatus | "" }) {
-    return this.repository.list(filters);
+  async list(filters?: { ordemServicoId?: string; status?: VendaStatus | "" }, tenantId?: string) {
+    return this.repository.list(filters, tenantId);
   }
 
-  async create(input: VendaInput) {
+  async create(input: VendaInput, tenantId = DEFAULT_TENANT_ID) {
     if (!input.ordemServicoId) {
-      return this.createVendaDireta(input);
+      return this.createVendaDireta(input, tenantId);
     }
 
-    const ordem = await ordensServicoService.getById(input.ordemServicoId);
+    const ordem = await ordensServicoService.getById(input.ordemServicoId, tenantId);
 
     if (ordem.status !== "pronto_para_retirada") {
       throw new AppError(
@@ -86,6 +87,7 @@ export class VendasService {
       valorRecebido: input.valorRecebido,
       troco: Math.max(0, input.valorRecebido - saldo),
       status: "finalizada",
+      tenantId,
       createdAt: delivered.pagoEm ?? now(),
     });
 
@@ -103,11 +105,14 @@ export class VendasService {
     return venda;
   }
 
-  private async createVendaDireta(input: VendaInput) {
+  private async createVendaDireta(input: VendaInput, tenantId = DEFAULT_TENANT_ID) {
+    if (process.env.DEBUG_TENANT_LOOKUP === "true") {
+      console.log(`[TENANT_LOOKUP] createVendaDireta tenantId=${tenantId} itens=${(input.itens ?? []).map(i => i.produtoId).join(",")}`);
+    }
     const itensInput = input.itens ?? [];
     const itens = await Promise.all(
       itensInput.map(async (item) => {
-        const produto = await produtosService.getById(item.produtoId);
+        const produto = await produtosService.getById(item.produtoId, tenantId);
         const quantidade = item.quantidade;
 
         if (produto.categoria !== "servico" && produto.estoqueAtual < quantidade) {
@@ -190,6 +195,7 @@ export class VendasService {
       valorRecebido: input.valorRecebido,
       troco: Math.max(0, input.valorRecebido - valorTotal),
       status: "finalizada",
+      tenantId,
       createdAt: now(),
     });
   }

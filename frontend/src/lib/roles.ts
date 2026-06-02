@@ -35,6 +35,7 @@ export const rolePermissions: Record<Role, string[]> = {
     "observabilidade",
     "atendimento",
     "treinamento",
+    "configuracoes",
   ],
   atendente: [
     "",
@@ -48,6 +49,7 @@ export const rolePermissions: Record<Role, string[]> = {
     "atendimento",
     "observabilidade",
     "treinamento",
+    "configuracoes",
   ],
   tecnico: [
     "",
@@ -60,6 +62,7 @@ export const rolePermissions: Record<Role, string[]> = {
     "atendimento",
     "observabilidade",
     "treinamento",
+    "configuracoes",
   ],
 };
 

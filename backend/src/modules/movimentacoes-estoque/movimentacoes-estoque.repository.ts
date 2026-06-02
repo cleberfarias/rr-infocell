@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
 import type {
   MovimentacaoEstoque,
   MovimentacaoEstoqueTipo,
@@ -14,7 +15,7 @@ export interface MovimentacoesEstoqueRepository {
   list(filters?: {
     produtoId?: string;
     tipo?: MovimentacaoEstoqueTipo | "";
-  }): Promise<MovimentacaoEstoque[]>;
+  }, tenantId?: string): Promise<MovimentacaoEstoque[]>;
   create(input: Omit<MovimentacaoEstoque, "id">): Promise<MovimentacaoEstoque>;
 }
 
@@ -40,6 +41,7 @@ export class MemoryMovimentacoesEstoqueRepository implements MovimentacoesEstoqu
       produtoId?: string;
       tipo?: MovimentacaoEstoqueTipo | "";
     } = {},
+    _tenantId?: string,
   ) {
     const movimentacoes = Array.from(this.movimentacoes.values()).sort((a, b) =>
       b.createdAt.localeCompare(a.createdAt),
@@ -68,8 +70,12 @@ export class FirestoreMovimentacoesEstoqueRepository implements MovimentacoesEst
       produtoId?: string;
       tipo?: MovimentacaoEstoqueTipo | "";
     } = {},
+    tenantId = DEFAULT_TENANT_ID,
   ) {
-    const snapshot = await this.firestore.collection(movimentacoesCollection).get();
+    const snapshot = await this.firestore
+      .collection(movimentacoesCollection)
+      .where("tenantId", "==", tenantId)
+      .get();
     const movimentacoes = snapshot.docs
       .map((document) => this.fromDocument(document.id, document.data()))
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -103,6 +109,7 @@ export class FirestoreMovimentacoesEstoqueRepository implements MovimentacoesEst
       origem: data.origem === "ordem_servico" ? "ordem_servico" : "manual",
       ordemServicoId: data.ordemServicoId ? String(data.ordemServicoId) : undefined,
       criadoPor: data.criadoPor ? String(data.criadoPor) : undefined,
+      tenantId: data.tenantId ? String(data.tenantId) : undefined,
       createdAt: String(data.createdAt ?? ""),
     };
   }

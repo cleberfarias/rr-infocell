@@ -10,12 +10,12 @@ import type { ClienteInput } from "./clientes.types.js";
 export class ClientesService {
   constructor(private readonly repository: ClientesRepository = createClientesRepository(db)) {}
 
-  async list(search?: string) {
-    return this.repository.list(search);
+  async list(search?: string, tenantId?: string) {
+    return this.repository.list(search, tenantId);
   }
 
-  async getById(id: string) {
-    const cliente = await this.repository.findById(id);
+  async getById(id: string, tenantId?: string) {
+    const cliente = await this.repository.findById(id, tenantId);
 
     if (!cliente) {
       throw new AppError("cliente_not_found", "Cliente nao encontrado.", httpStatus.notFound);
@@ -24,11 +24,14 @@ export class ClientesService {
     return cliente;
   }
 
-  async create(input: ClienteInput) {
-    return this.repository.create({
-      ...input,
-      telefone: input.telefone ? normalizarTelefone(input.telefone) : undefined,
-    });
+  async create(input: ClienteInput, tenantId?: string) {
+    return this.repository.create(
+      {
+        ...input,
+        telefone: input.telefone ? normalizarTelefone(input.telefone) : undefined,
+      },
+      tenantId,
+    );
   }
 
   async update(id: string, input: ClienteInput) {

@@ -102,6 +102,7 @@ export class FirestoreOrdemEventosRepository implements OrdemEventosRepository {
       titulo: String(data.titulo ?? ""),
       descricao: data.descricao ? String(data.descricao) : undefined,
       criadoPor: data.criadoPor ? String(data.criadoPor) : undefined,
+      tenantId: data.tenantId ? String(data.tenantId) : undefined,
       createdAt: String(data.createdAt ?? ""),
     };
   }

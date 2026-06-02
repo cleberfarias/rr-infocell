@@ -22,6 +22,7 @@ export type Despesa = {
   recorrente: boolean;
   pago: boolean;
   pagoEm?: string;
+  tenantId?: string;
   createdAt: string;
   updatedAt: string;
 };

@@ -33,6 +33,7 @@ export type Venda = {
   valorRecebido: number;
   troco: number;
   status: VendaStatus;
+  tenantId?: string;
   createdAt: string;
 };
 

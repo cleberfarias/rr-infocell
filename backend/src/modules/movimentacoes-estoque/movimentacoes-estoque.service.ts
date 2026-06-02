@@ -1,6 +1,7 @@
 import { db } from "../../firebase/admin.js";
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
 import { produtosService, type ProdutosService } from "../produtos/produtos.service.js";
 import {
   createMovimentacoesEstoqueRepository,
@@ -21,12 +22,15 @@ export class MovimentacoesEstoqueService {
     private readonly produtos: ProdutosService = produtosService,
   ) {}
 
-  async list(filters?: { produtoId?: string; tipo?: MovimentacaoEstoqueTipo | "" }) {
-    return this.repository.list(filters);
+  async list(filters?: { produtoId?: string; tipo?: MovimentacaoEstoqueTipo | "" }, tenantId?: string) {
+    return this.repository.list(filters, tenantId);
   }
 
-  async create(input: MovimentacaoEstoqueInput) {
-    const produto = await this.produtos.getById(input.produtoId);
+  async create(input: MovimentacaoEstoqueInput, tenantId = DEFAULT_TENANT_ID) {
+    if (process.env.DEBUG_TENANT_LOOKUP === "true") {
+      console.log(`[TENANT_LOOKUP] movimentacao.create produtoId=${input.produtoId} tenantId=${tenantId}`);
+    }
+    const produto = await this.produtos.getById(input.produtoId, tenantId);
     const estoqueAnterior = produto.estoqueAtual;
     const estoquePosterior = this.calculateEstoquePosterior(input, estoqueAnterior);
     const quantidade =
@@ -58,6 +62,7 @@ export class MovimentacoesEstoqueService {
       origem: input.origem ?? "manual",
       ordemServicoId: input.ordemServicoId,
       criadoPor: input.criadoPor,
+      tenantId,
       createdAt: now(),
     });
   }

@@ -1,9 +1,9 @@
-import logo from "@/assets/logo-rrinfocell.png";
+import { tenantConfig } from "@/config/tenantConfig";
 
 export const Logo = ({ className = "h-10" }: { className?: string }) => (
   <img
-    src={logo}
-    alt="RR Infocell - Assistencia Tecnica Especializada"
+    src={tenantConfig.logo}
+    alt={`${tenantConfig.tenantName} - Assistencia Tecnica Especializada`}
     className={className}
     width={1024}
     height={1024}

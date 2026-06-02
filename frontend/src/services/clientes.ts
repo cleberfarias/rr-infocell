@@ -1,4 +1,5 @@
 import { apiRequest } from "./api";
+import { getTenantScopedPayload } from "@/lib/tenantPayload";
 export type Cliente = {
   id: string;
   nome: string;
@@ -72,7 +73,7 @@ export const getCliente = async (id: string) => {
 export const createCliente = async (input: ClienteInput) => {
   const response = await apiRequest<ApiResponse<Cliente>>("/clientes", {
     method: "POST",
-    body: JSON.stringify(input),
+    body: JSON.stringify(getTenantScopedPayload(input)),
   });
 
   return response.data;
@@ -81,7 +82,7 @@ export const createCliente = async (input: ClienteInput) => {
 export const updateCliente = async (id: string, input: ClienteInput) => {
   const response = await apiRequest<ApiResponse<Cliente>>(`/clientes/${id}`, {
     method: "PUT",
-    body: JSON.stringify(input),
+    body: JSON.stringify(getTenantScopedPayload(input)),
   });
 
   return response.data;

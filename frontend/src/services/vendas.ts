@@ -1,5 +1,6 @@
 import { apiRequest } from "./api";
 import type { OrdemServicoFormaPagamento } from "./ordens-servico";
+import { getTenantScopedPayload } from "@/lib/tenantPayload";
 
 export type VendaStatus = "finalizada" | "cancelada";
 export type VendaTipo = "ordem_servico" | "direta";
@@ -81,7 +82,7 @@ export const listVendas = async (
 export const createVenda = async (input: VendaInput) => {
   const response = await apiRequest<ApiResponse<Venda>>("/vendas", {
     method: "POST",
-    body: JSON.stringify(input),
+    body: JSON.stringify(getTenantScopedPayload(input)),
   });
 
   return response.data;

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
 import type { Cliente, ClienteInput } from "./clientes.types.js";
 
 const now = () => new Date().toISOString();
@@ -30,10 +31,10 @@ const seedClientes: Cliente[] = [
 ];
 
 export interface ClientesRepository {
-  list(search?: string): Promise<Cliente[]>;
-  findById(id: string): Promise<Cliente | null>;
+  list(search?: string, tenantId?: string): Promise<Cliente[]>;
+  findById(id: string, tenantId?: string): Promise<Cliente | null>;
   findByTelefone(telefone: string): Promise<Cliente | null>;
-  create(input: ClienteInput): Promise<Cliente>;
+  create(input: ClienteInput, tenantId?: string): Promise<Cliente>;
   update(id: string, input: ClienteInput): Promise<Cliente | null>;
   delete(id: string): Promise<boolean>;
 }
@@ -43,7 +44,7 @@ export class MemoryClientesRepository implements ClientesRepository {
     seedClientes.map((cliente) => [cliente.id, cliente]),
   );
 
-  async list(search = "") {
+  async list(search = "", _tenantId?: string) {
     const normalizedSearch = search.trim().toLowerCase();
     const clientes = Array.from(this.clientes.values()).sort((a, b) =>
       a.nome.localeCompare(b.nome, "pt-BR"),
@@ -60,7 +61,7 @@ export class MemoryClientesRepository implements ClientesRepository {
     );
   }
 
-  async findById(id: string) {
+  async findById(id: string, _tenantId?: string) {
     return this.clientes.get(id) ?? null;
   }
 
@@ -68,7 +69,7 @@ export class MemoryClientesRepository implements ClientesRepository {
     return Array.from(this.clientes.values()).find((c) => c.telefone === telefone) ?? null;
   }
 
-  async create(input: ClienteInput) {
+  async create(input: ClienteInput, _tenantId?: string) {
     const timestamp = now();
     const cliente: Cliente = {
       id: randomUUID(),
@@ -108,8 +109,11 @@ export class MemoryClientesRepository implements ClientesRepository {
 export class FirestoreClientesRepository implements ClientesRepository {
   constructor(private readonly firestore: Firestore) {}
 
-  async list(search = "") {
-    const snapshot = await this.firestore.collection(clientesCollection).get();
+  async list(search = "", tenantId = DEFAULT_TENANT_ID) {
+    const snapshot = await this.firestore
+      .collection(clientesCollection)
+      .where("tenantId", "==", tenantId)
+      .get();
     const clientes = snapshot.docs
       .map((document) => this.fromDocument(document.id, document.data()))
       .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
@@ -127,14 +131,20 @@ export class FirestoreClientesRepository implements ClientesRepository {
     );
   }
 
-  async findById(id: string) {
+  async findById(id: string, tenantId?: string) {
     const document = await this.firestore.collection(clientesCollection).doc(id).get();
 
     if (!document.exists) {
       return null;
     }
 
-    return this.fromDocument(document.id, document.data() ?? {});
+    const cliente = this.fromDocument(document.id, document.data() ?? {});
+
+    if (tenantId && cliente.tenantId && cliente.tenantId !== tenantId) {
+      return null;
+    }
+
+    return cliente;
   }
 
   async findByTelefone(telefone: string) {
@@ -150,12 +160,13 @@ export class FirestoreClientesRepository implements ClientesRepository {
     return this.fromDocument(doc.id, doc.data());
   }
 
-  async create(input: ClienteInput) {
+  async create(input: ClienteInput, tenantId = DEFAULT_TENANT_ID) {
     const timestamp = now();
     const document = this.firestore.collection(clientesCollection).doc();
     const cliente: Cliente = {
       id: document.id,
       ...input,
+      tenantId,
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -175,6 +186,7 @@ export class FirestoreClientesRepository implements ClientesRepository {
     const cliente: Cliente = {
       ...current,
       ...input,
+      tenantId: current.tenantId ?? DEFAULT_TENANT_ID,
       updatedAt: now(),
     };
 
@@ -208,6 +220,7 @@ export class FirestoreClientesRepository implements ClientesRepository {
         data.receberMensagemAutomatica !== undefined
           ? Boolean(data.receberMensagemAutomatica)
           : undefined,
+      tenantId: data.tenantId ? String(data.tenantId) : undefined,
       createdAt: String(data.createdAt ?? ""),
       updatedAt: String(data.updatedAt ?? ""),
     };

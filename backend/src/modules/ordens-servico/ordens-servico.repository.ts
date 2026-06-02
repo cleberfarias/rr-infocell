@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
 import type {
   OrdemServico,
   OrdemServicoInput,
@@ -158,9 +159,9 @@ export interface OrdensServicoRepository {
     prioridade?: OrdemServico["prioridade"] | "";
     clienteId?: string;
     aparelhoId?: string;
-  }): Promise<OrdemServico[]>;
-  findById(id: string): Promise<OrdemServico | null>;
-  create(input: OrdemServicoInput): Promise<OrdemServico>;
+  }, tenantId?: string): Promise<OrdemServico[]>;
+  findById(id: string, tenantId?: string): Promise<OrdemServico | null>;
+  create(input: OrdemServicoInput, tenantId?: string): Promise<OrdemServico>;
   update(id: string, input: OrdemServicoInput): Promise<OrdemServico | null>;
   delete(id: string): Promise<boolean>;
 }
@@ -217,18 +218,19 @@ export class MemoryOrdensServicoRepository implements OrdensServicoRepository {
       clienteId?: string;
       aparelhoId?: string;
     } = {},
+    _tenantId?: string,
   ) {
     const ordens = Array.from(this.ordens.values()).sort((a, b) => b.numero - a.numero);
 
     return filterOrdensServico(ordens, filters);
   }
 
-  async findById(id: string) {
+  async findById(id: string, _tenantId?: string) {
     return this.ordens.get(id) ?? null;
   }
 
-  async create(input: OrdemServicoInput) {
-    const ordem = buildOrdem(input, this.nextNumero);
+  async create(input: OrdemServicoInput, tenantId?: string) {
+    const ordem = { ...buildOrdem(input, this.nextNumero), tenantId: tenantId ?? DEFAULT_TENANT_ID };
     this.nextNumero += 1;
 
     this.ordens.set(ordem.id, ordem);
@@ -243,7 +245,8 @@ export class MemoryOrdensServicoRepository implements OrdensServicoRepository {
       return null;
     }
 
-    const ordem = buildOrdem(input, current.numero, current);
+    const tenantId = current.tenantId ?? DEFAULT_TENANT_ID;
+    const ordem = { ...buildOrdem(input, current.numero, current), tenantId };
     this.ordens.set(id, ordem);
 
     return ordem;
@@ -265,8 +268,11 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
       clienteId?: string;
       aparelhoId?: string;
     } = {},
+    tenantId = DEFAULT_TENANT_ID,
   ) {
-    let query: FirebaseFirestore.Query = this.firestore.collection(ordensServicoCollection);
+    let query: FirebaseFirestore.Query = this.firestore
+      .collection(ordensServicoCollection)
+      .where("tenantId", "==", tenantId);
 
     if (filters.status) {
       query = query.where("status", "==", filters.status);
@@ -292,17 +298,23 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
     return filterOrdensServico(ordens, filters);
   }
 
-  async findById(id: string) {
+  async findById(id: string, tenantId?: string) {
     const document = await this.firestore.collection(ordensServicoCollection).doc(id).get();
 
     if (!document.exists) {
       return null;
     }
 
-    return this.fromDocument(document.id, document.data() ?? {});
+    const ordem = this.fromDocument(document.id, document.data() ?? {});
+
+    if (tenantId && ordem.tenantId && ordem.tenantId !== tenantId) {
+      return null;
+    }
+
+    return ordem;
   }
 
-  async create(input: OrdemServicoInput) {
+  async create(input: OrdemServicoInput, tenantId = DEFAULT_TENANT_ID) {
     return this.firestore.runTransaction(async (transaction) => {
       const counterRef = this.firestore.collection(countersCollection).doc(counterDocument);
       const counter = await transaction.get(counterRef);
@@ -310,10 +322,10 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
       const ordemRef = this.firestore.collection(ordensServicoCollection).doc();
       const ordem = buildOrdem(input, current);
 
-      transaction.set(ordemRef, withoutUndefined({ ...ordem, id: ordemRef.id }));
+      transaction.set(ordemRef, withoutUndefined({ ...ordem, id: ordemRef.id, tenantId }));
       transaction.set(counterRef, { nextNumero: current + 1 }, { merge: true });
 
-      return { ...ordem, id: ordemRef.id };
+      return { ...ordem, id: ordemRef.id, tenantId };
     });
   }
 
@@ -324,7 +336,8 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
       return null;
     }
 
-    const ordem = buildOrdem(input, current.numero, current);
+    const tenantId = current.tenantId ?? DEFAULT_TENANT_ID;
+    const ordem = { ...buildOrdem(input, current.numero, current), tenantId };
 
     await this.firestore.collection(ordensServicoCollection).doc(id).set(withoutUndefined(ordem));
 
@@ -397,6 +410,7 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
         data.automacoes && typeof data.automacoes === "object"
           ? (data.automacoes as OrdemServico["automacoes"])
           : undefined,
+      tenantId: data.tenantId ? String(data.tenantId) : undefined,
       createdAt: String(data.createdAt ?? ""),
       updatedAt: String(data.updatedAt ?? ""),
     };

@@ -7,6 +7,7 @@ export type Cliente = {
   endereco?: string;
   observacoes?: string;
   receberMensagemAutomatica?: boolean;
+  tenantId?: string;
   createdAt: string;
   updatedAt: string;
 };

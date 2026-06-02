@@ -16,6 +16,7 @@ dist-ssr
 .env.*
 !.env.example
 !.env.production.example
+!.env.staging.example
 .firebaserc
 !.firebaserc.example
 .firebase/
@@ -42,3 +43,4 @@ backend/src/scripts/limpar-tudo.ts
 
 # Dados exportados do Firestore para o emulador local
 emulator-data/
+duplicate-reports/

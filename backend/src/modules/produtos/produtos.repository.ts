@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
 import type { Produto, ProdutoCategoria, ProdutoInput } from "./produtos.types.js";
 
 const now = () => new Date().toISOString();
@@ -42,9 +43,9 @@ export interface ProdutosRepository {
     search?: string;
     categoria?: ProdutoCategoria | "";
     ativo?: boolean | "";
-  }): Promise<Produto[]>;
-  findById(id: string): Promise<Produto | null>;
-  create(input: ProdutoInput): Promise<Produto>;
+  }, tenantId?: string): Promise<Produto[]>;
+  findById(id: string, tenantId?: string): Promise<Produto | null>;
+  create(input: ProdutoInput, tenantId?: string): Promise<Produto>;
   update(id: string, input: ProdutoInput): Promise<Produto | null>;
   delete(id: string): Promise<boolean>;
 }
@@ -94,6 +95,7 @@ export class MemoryProdutosRepository implements ProdutosRepository {
       categoria?: ProdutoCategoria | "";
       ativo?: boolean | "";
     } = {},
+    _tenantId?: string,
   ) {
     const produtos = Array.from(this.produtos.values()).sort((a, b) =>
       a.nome.localeCompare(b.nome, "pt-BR"),
@@ -102,11 +104,11 @@ export class MemoryProdutosRepository implements ProdutosRepository {
     return filterProdutos(produtos, filters);
   }
 
-  async findById(id: string) {
+  async findById(id: string, _tenantId?: string) {
     return this.produtos.get(id) ?? null;
   }
 
-  async create(input: ProdutoInput) {
+  async create(input: ProdutoInput, _tenantId?: string) {
     const timestamp = now();
     const produto: Produto = {
       id: randomUUID(),
@@ -154,8 +156,12 @@ export class FirestoreProdutosRepository implements ProdutosRepository {
       categoria?: ProdutoCategoria | "";
       ativo?: boolean | "";
     } = {},
+    tenantId = DEFAULT_TENANT_ID,
   ) {
-    const snapshot = await this.firestore.collection(produtosCollection).get();
+    const snapshot = await this.firestore
+      .collection(produtosCollection)
+      .where("tenantId", "==", tenantId)
+      .get();
 
     const produtos = snapshot.docs
       .map((document) => this.fromDocument(document.id, document.data()))
@@ -164,23 +170,40 @@ export class FirestoreProdutosRepository implements ProdutosRepository {
     return filterProdutos(produtos, filters);
   }
 
-  async findById(id: string) {
+  async findById(id: string, tenantId?: string) {
     const document = await this.firestore.collection(produtosCollection).doc(id).get();
 
     if (!document.exists) {
+      if (process.env.DEBUG_TENANT_LOOKUP === "true") {
+        console.log(`[TENANT_LOOKUP] findById id=${id} tenantId=${tenantId} result=not_found_in_firestore`);
+      }
       return null;
     }
 
-    return this.fromDocument(document.id, document.data() ?? {});
+    const produto = this.fromDocument(document.id, document.data() ?? {});
+
+    if (tenantId && produto.tenantId && produto.tenantId !== tenantId) {
+      if (process.env.DEBUG_TENANT_LOOKUP === "true") {
+        console.log(`[TENANT_LOOKUP] findById id=${id} tenantId_received=${tenantId} tenantId_doc=${produto.tenantId} result=tenant_mismatch`);
+      }
+      return null;
+    }
+
+    if (process.env.DEBUG_TENANT_LOOKUP === "true") {
+      console.log(`[TENANT_LOOKUP] findById id=${id} tenantId_received=${tenantId} tenantId_doc=${produto.tenantId} result=found`);
+    }
+
+    return produto;
   }
 
-  async create(input: ProdutoInput) {
+  async create(input: ProdutoInput, tenantId = DEFAULT_TENANT_ID) {
     const timestamp = now();
     const document = this.firestore.collection(produtosCollection).doc();
     const produto: Produto = {
       id: document.id,
       ...input,
       ativo: input.ativo ?? true,
+      tenantId,
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -201,6 +224,7 @@ export class FirestoreProdutosRepository implements ProdutosRepository {
       ...current,
       ...input,
       ativo: input.ativo ?? current.ativo,
+      tenantId: current.tenantId ?? DEFAULT_TENANT_ID,
       updatedAt: now(),
     };
 
@@ -247,6 +271,7 @@ export class FirestoreProdutosRepository implements ProdutosRepository {
       custoRestauracao:
         data.custoRestauracao !== undefined ? Number(data.custoRestauracao) : undefined,
       observacoes: data.observacoes ? String(data.observacoes) : undefined,
+      tenantId: data.tenantId ? String(data.tenantId) : undefined,
       createdAt: String(data.createdAt ?? ""),
       updatedAt: String(data.updatedAt ?? ""),
     };

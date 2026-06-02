@@ -11,12 +11,12 @@ export class DespesasService {
     search?: string;
     categoria?: DespesaCategoria | "";
     pago?: boolean | "";
-  }) {
-    return this.repository.list(filters);
+  }, tenantId?: string) {
+    return this.repository.list(filters, tenantId);
   }
 
-  async getById(id: string) {
-    const despesa = await this.repository.findById(id);
+  async getById(id: string, tenantId?: string) {
+    const despesa = await this.repository.findById(id, tenantId);
 
     if (!despesa) {
       throw new AppError("despesa_not_found", "Despesa nao encontrada.", httpStatus.notFound);
@@ -25,8 +25,8 @@ export class DespesasService {
     return despesa;
   }
 
-  async create(input: DespesaInput) {
-    return this.repository.create(input);
+  async create(input: DespesaInput, tenantId?: string) {
+    return this.repository.create(input, tenantId);
   }
 
   async update(id: string, input: DespesaInput) {
