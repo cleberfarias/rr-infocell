@@ -1,8 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   ClipboardList,
   Package,
   Plus,
@@ -69,6 +71,8 @@ const isOverdue = (ordem: OrdemServico) => {
 };
 
 const Dashboard = () => {
+  const [mesOffset, setMesOffset] = useState(0);
+
   const ordensQuery = useQuery({
     queryKey: ["ordens-servico"],
     queryFn: () => listOrdensServico(),
@@ -115,13 +119,44 @@ const Dashboard = () => {
     [aparelhosQuery.data],
   );
 
+  const mesSelecionado = useMemo(() => {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() + mesOffset);
+    return d;
+  }, [mesOffset]);
+
+  const isMesAtual = mesOffset === 0;
+
   const relatorio = useMemo(() => {
+    const anoSel = mesSelecionado.getFullYear();
+    const mesSel = mesSelecionado.getMonth();
+
+    const agora = new Date();
+    const diaAtual = agora.getDate();
+
     const abertas = ordens.filter((ordem) => !["entregue", "sem_conserto", "cancelado"].includes(ordem.status));
     const emManutencao = ordens.filter((ordem) => activeStatuses.includes(ordem.status));
     const finalizadas = ordens.filter((ordem) => finalStatuses.includes(ordem.status));
     const atrasadas = ordens.filter(isOverdue);
-    const valorTotal = ordens.reduce((total, ordem) => total + ordem.valorTotal, 0);
-    const ticketMedio = ordens.length > 0 ? valorTotal / ordens.length : 0;
+
+    const ordensDoMes = ordens.filter((ordem) => {
+      const d = new Date(ordem.entradaEm);
+      return d.getFullYear() === anoSel && d.getMonth() === mesSel;
+    });
+
+    const ordensDoDia = ordens.filter((ordem) => {
+      const d = new Date(ordem.entradaEm);
+      return (
+        d.getFullYear() === anoSel &&
+        d.getMonth() === mesSel &&
+        d.getDate() === diaAtual
+      );
+    });
+
+    const valorMes = ordensDoMes.reduce((total, ordem) => total + ordem.valorTotal, 0);
+    const valorDia = ordensDoDia.reduce((total, ordem) => total + ordem.valorTotal, 0);
+    const ticketMedio = ordensDoMes.length > 0 ? valorMes / ordensDoMes.length : 0;
 
     return {
       abertas: abertas.length,
@@ -129,9 +164,12 @@ const Dashboard = () => {
       emManutencao: emManutencao.length,
       finalizadas: finalizadas.length,
       ticketMedio,
-      valorTotal,
+      valorMes,
+      valorDia,
+      qtdMes: ordensDoMes.length,
+      qtdDia: ordensDoDia.length,
     };
-  }, [ordens]);
+  }, [ordens, mesSelecionado]);
 
   const statusChart = useMemo(() => {
     const counts = new Map<string, number>();
@@ -232,7 +270,42 @@ const Dashboard = () => {
         })}
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setMesOffset((o) => o - 1)}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="min-w-[140px] text-center text-sm font-medium capitalize">
+            {mesSelecionado.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
+          </span>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setMesOffset((o) => o + 1)}
+            disabled={isMesAtual}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          {!isMesAtual && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-muted-foreground"
+              onClick={() => setMesOffset(0)}
+            >
+              Voltar ao mês atual
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">
         <MetricCard
           icon={Smartphone}
           label="Em manutenção"
@@ -261,11 +334,20 @@ const Dashboard = () => {
         />
         <MetricCard
           icon={TrendingUp}
-          label="Total em OS"
-          value={formatBRL(relatorio.valorTotal)}
-          trend={`Ticket médio ${formatBRL(relatorio.ticketMedio)}`}
+          label={isMesAtual ? "Total do mês" : `Total de ${mesSelecionado.toLocaleDateString("pt-BR", { month: "short" })}`}
+          value={formatBRL(relatorio.valorMes)}
+          trend={`${relatorio.qtdMes} OS · ticket médio ${formatBRL(relatorio.ticketMedio)}`}
           accentClassName="bg-primary/10 text-primary"
         />
+        {isMesAtual && (
+          <MetricCard
+            icon={TrendingUp}
+            label="Total do dia"
+            value={formatBRL(relatorio.valorDia)}
+            trend={`${relatorio.qtdDia} OS abertas hoje`}
+            accentClassName="bg-emerald-500/10 text-emerald-400"
+          />
+        )}
       </div>
 
       {estoqueInfo.baixos > 0 && (
@@ -378,19 +460,28 @@ const Dashboard = () => {
           </div>
         </SectionPanel>
 
-        <SectionPanel title="Resumo financeiro" description="Valores previstos em OS">
+        <SectionPanel
+          title="Resumo financeiro"
+          description={`Valores de ${mesSelecionado.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}`}
+        >
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Total previsto</dt>
-              <dd className="font-mono font-semibold">{formatBRL(relatorio.valorTotal)}</dd>
+              <dt className="text-muted-foreground">Total do mês</dt>
+              <dd className="font-mono font-semibold text-primary">{formatBRL(relatorio.valorMes)}</dd>
             </div>
+            {isMesAtual && (
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Total do dia</dt>
+                <dd className="font-mono font-semibold text-emerald-400">{formatBRL(relatorio.valorDia)}</dd>
+              </div>
+            )}
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Ticket médio</dt>
               <dd className="font-mono">{formatBRL(relatorio.ticketMedio)}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Quantidade de OS</dt>
-              <dd className="font-mono">{ordens.length}</dd>
+              <dt className="text-muted-foreground">OS no mês</dt>
+              <dd className="font-mono">{relatorio.qtdMes}</dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Canceladas</dt>
