@@ -175,7 +175,7 @@ export class VendasService {
         quantidade: item.quantidade,
         motivo: `Venda direta${item.imei ? ` IMEI ${item.imei}` : ""}`,
         origem: "venda",
-      });
+      }, tenantId);
     }
 
     return this.repository.create({

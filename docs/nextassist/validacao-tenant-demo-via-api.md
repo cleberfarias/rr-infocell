@@ -52,11 +52,9 @@
 | OS com peça (demo produto) | 201 | `produto_not_found` |
 | Venda direta (demo produto) | 201 | `produto_not_found` |
 
-**Causa raiz confirmada (2026-06-02, logs `DEBUG_TENANT_LOOKUP=true`):**
+**Causa raiz confirmada e corrigida (2026-06-02 — fase 9.16.3):**
 
-O `enrichPecasInput` e `createVendaDireta` recebem `tenantId=nextassist-demo` e **encontram o produto corretamente**. O bug ocorre no efeito colateral: quando `applyPecasDeltas` (OS) ou o equivalente em vendas dispara `movimentacoesEstoqueService.create` internamente, o `tenantId` passado para essa chamada é `rr-infocell` (valor default). A movimentação interna valida o produto com o tenant errado → `tenant_mismatch` → `produto_not_found`.
-
-**Correção indicada:** propagar o `tenantId` do request para a chamada interna de `movimentacoesEstoqueService.create` dentro de OS e venda. Ver `docs/nextassist/diagnostico-produto-not-found-tenant-demo.md`.
+O `enrichPecasInput` e `createVendaDireta` recebem `tenantId=nextassist-demo` e encontram o produto corretamente. O bug estava no efeito colateral: `applyPecasDeltas` (OS) e `createVendaDireta` (vendas) chamavam `movimentacoesEstoqueService.create` sem passar `tenantId`, caindo no default `rr-infocell`. Correção: passar `ordem.tenantId` e `tenantId` respectivamente. Ver `docs/nextassist/diagnostico-produto-not-found-tenant-demo.md`.
 
 **Não bloqueia isolamento:** a separação entre tenants está funcionando corretamente em todas as listagens e guards.
 

@@ -187,7 +187,7 @@ export class OrdensServicoService {
         motivo: `Baixa automatica OS-${ordem.numero}`,
         origem: "ordem_servico",
         ordemServicoId: ordem.id,
-      });
+      }, ordem.tenantId);
       await this.registrarEvento(
         ordem.id,
         "peca",

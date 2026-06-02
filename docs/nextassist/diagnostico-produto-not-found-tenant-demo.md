@@ -178,16 +178,37 @@ gcloud logging read \
 |--------------|--------------|
 | `movimentacao.create tenantId=rr-infocell` após `enrichPecasInput tenantId=nextassist-demo` | O `tenantId` do request não é propagado para a movimentação interna |
 
-### Correção indicada
+### Correção aplicada (2026-06-02 — fase 9.16.3)
 
-Localizar onde `applyPecasDeltas` (OS) e o equivalente em vendas chamam `movimentacoesEstoqueService.create` internamente, e garantir que o `tenantId` do usuário logado seja passado explicitamente nessa chamada interna.
+**`ordens-servico.service.ts`** — `applyPecasDeltas`:
+```typescript
+// antes
+await movimentacoesEstoqueService.create({ ... });
+// depois
+await movimentacoesEstoqueService.create({ ... }, ordem.tenantId);
+```
+`ordem.tenantId` já estava disponível no objeto — apenas não estava sendo propagado.
 
-**Restrições da correção:**
-- Não alterar `buildOrdem()`
-- Não alterar `applyPecasDeltas()` (apenas injetar o tenantId correto onde já é chamado)
-- Não alterar cálculo de venda
-- Não alterar regras de negócio
-- A correção é cirúrgica: propagação do `tenantId` de contexto para chamadas internas
+**`vendas.service.ts`** — `createVendaDireta`:
+```typescript
+// antes
+await movimentacoesEstoqueService.create({ ... });
+// depois
+await movimentacoesEstoqueService.create({ ... }, tenantId);
+```
+`tenantId` já era parâmetro de `createVendaDireta` — apenas não estava sendo repassado.
+
+**Mono-tenant `rr-infocell`:** sem impacto. `DEFAULT_TENANT_ID` continua como fallback quando `tenantId` é `undefined`.
+
+### Cenários a revalidar
+
+| Cenário | Esperado após fix |
+|---------|------------------|
+| Movimentação manual com produto demo | 201 ✅ (já funcionava) |
+| OS com peça usando produto demo | 201 ✅ (corrigido) |
+| Venda direta com produto demo | 201 ✅ (corrigido) |
+| Movimentação automática tem `tenantId: nextassist-demo` | ✅ |
+| Fluxos rr-infocell inalterados | ✅ |
 
 ---
 
