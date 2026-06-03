@@ -10,6 +10,8 @@ import type {
 const movimentacoesCollection = "movimentacoesEstoque";
 const withoutUndefined = <T extends Record<string, unknown>>(data: T) =>
   Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as T;
+const getMovimentacaoTenantId = (movimentacao: MovimentacaoEstoque) =>
+  movimentacao.tenantId ?? DEFAULT_TENANT_ID;
 
 export interface MovimentacoesEstoqueRepository {
   list(
@@ -75,12 +77,16 @@ export class FirestoreMovimentacoesEstoqueRepository implements MovimentacoesEst
     } = {},
     tenantId = DEFAULT_TENANT_ID,
   ) {
-    const snapshot = await this.firestore
-      .collection(movimentacoesCollection)
-      .where("tenantId", "==", tenantId)
-      .get();
+    let query: FirebaseFirestore.Query = this.firestore.collection(movimentacoesCollection);
+
+    if (tenantId !== DEFAULT_TENANT_ID) {
+      query = query.where("tenantId", "==", tenantId);
+    }
+
+    const snapshot = await query.get();
     const movimentacoes = snapshot.docs
       .map((document) => this.fromDocument(document.id, document.data()))
+      .filter((movimentacao) => getMovimentacaoTenantId(movimentacao) === tenantId)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
     return filterMovimentacoes(movimentacoes, filters);

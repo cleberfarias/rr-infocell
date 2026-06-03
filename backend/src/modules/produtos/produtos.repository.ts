@@ -8,6 +8,7 @@ const now = () => new Date().toISOString();
 const produtosCollection = "produtos";
 const withoutUndefined = <T extends Record<string, unknown>>(data: T) =>
   Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as T;
+const getProdutoTenantId = (produto: Produto) => produto.tenantId ?? DEFAULT_TENANT_ID;
 
 const seedProdutos: Produto[] = [
   {
@@ -163,13 +164,17 @@ export class FirestoreProdutosRepository implements ProdutosRepository {
     } = {},
     tenantId = DEFAULT_TENANT_ID,
   ) {
-    const snapshot = await this.firestore
-      .collection(produtosCollection)
-      .where("tenantId", "==", tenantId)
-      .get();
+    let query: FirebaseFirestore.Query = this.firestore.collection(produtosCollection);
+
+    if (tenantId !== DEFAULT_TENANT_ID) {
+      query = query.where("tenantId", "==", tenantId);
+    }
+
+    const snapshot = await query.get();
 
     const produtos = snapshot.docs
       .map((document) => this.fromDocument(document.id, document.data()))
+      .filter((produto) => getProdutoTenantId(produto) === tenantId)
       .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
     return filterProdutos(produtos, filters);
@@ -189,7 +194,7 @@ export class FirestoreProdutosRepository implements ProdutosRepository {
 
     const produto = this.fromDocument(document.id, document.data() ?? {});
 
-    if (tenantId && produto.tenantId && produto.tenantId !== tenantId) {
+    if (tenantId && getProdutoTenantId(produto) !== tenantId) {
       if (process.env.DEBUG_TENANT_LOOKUP === "true") {
         console.log(
           `[TENANT_LOOKUP] findById id=${id} tenantId_received=${tenantId} tenantId_doc=${produto.tenantId} result=tenant_mismatch`,
