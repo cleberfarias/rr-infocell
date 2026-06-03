@@ -7,6 +7,7 @@ import type { Venda, VendaStatus } from "./vendas.types.js";
 const vendasCollection = "vendas";
 const withoutUndefined = <T extends Record<string, unknown>>(data: T) =>
   Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as T;
+const getVendaTenantId = (venda: Venda) => venda.tenantId ?? DEFAULT_TENANT_ID;
 
 export interface VendasRepository {
   list(
@@ -76,9 +77,11 @@ export class FirestoreVendasRepository implements VendasRepository {
     } = {},
     tenantId = DEFAULT_TENANT_ID,
   ) {
-    let query: FirebaseFirestore.Query = this.firestore
-      .collection(vendasCollection)
-      .where("tenantId", "==", tenantId);
+    let query: FirebaseFirestore.Query = this.firestore.collection(vendasCollection);
+
+    if (tenantId !== DEFAULT_TENANT_ID) {
+      query = query.where("tenantId", "==", tenantId);
+    }
 
     if (filters.ordemServicoId) {
       query = query.where("ordemServicoId", "==", filters.ordemServicoId);
@@ -91,6 +94,7 @@ export class FirestoreVendasRepository implements VendasRepository {
     const snapshot = await query.get();
     const vendas = snapshot.docs
       .map((document) => this.fromDocument(document.id, document.data()))
+      .filter((venda) => getVendaTenantId(venda) === tenantId)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
     return filterVendas(vendas, filters);

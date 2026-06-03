@@ -2,6 +2,7 @@ import { Router } from "express";
 import { getFirestore } from "firebase-admin/firestore";
 
 import { resolveTenant, getRequestTenantId, type TenantRequest } from "../../middlewares/tenant.js";
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
 
 export const categoriasRoutes = Router();
 
@@ -10,6 +11,7 @@ export const categoriasRoutes = Router();
 categoriasRoutes.use(resolveTenant);
 
 const COLLECTION = "categorias";
+const getDocTenantId = (data: { tenantId?: string }) => data.tenantId ?? DEFAULT_TENANT_ID;
 
 // Categorias padrão do sistema (sempre disponíveis)
 const CATEGORIAS_PADRAO = [
@@ -27,13 +29,20 @@ categoriasRoutes.get("/", async (req, res, next) => {
     const tenantId = getRequestTenantId(req as TenantRequest);
     try {
       const db = getFirestore();
-      const snap = await db.collection(COLLECTION).where("tenantId", "==", tenantId).get();
+      let query: FirebaseFirestore.Query = db.collection(COLLECTION);
+
+      if (tenantId !== DEFAULT_TENANT_ID) {
+        query = query.where("tenantId", "==", tenantId);
+      }
+
+      const snap = await query.get();
       const customizadas = snap.docs
         .map((doc) => ({
           id: doc.id,
           ...(doc.data() as { nome: string; tenantId?: string }),
           padrao: false,
         }))
+        .filter((categoria) => getDocTenantId(categoria) === tenantId)
         .sort((a, b) => a.nome.localeCompare(b.nome));
       return res.json({ data: [...CATEGORIAS_PADRAO, ...customizadas] });
     } catch {

@@ -8,6 +8,7 @@ const now = () => new Date().toISOString();
 const despesasCollection = "despesas";
 const withoutUndefined = <T extends Record<string, unknown>>(data: T) =>
   Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as T;
+const getDespesaTenantId = (despesa: Despesa) => despesa.tenantId ?? DEFAULT_TENANT_ID;
 
 const seedDespesas: Despesa[] = [
   {
@@ -171,12 +172,16 @@ export class FirestoreDespesasRepository implements DespesasRepository {
     } = {},
     tenantId = DEFAULT_TENANT_ID,
   ) {
-    const snapshot = await this.firestore
-      .collection(despesasCollection)
-      .where("tenantId", "==", tenantId)
-      .get();
+    let query: FirebaseFirestore.Query = this.firestore.collection(despesasCollection);
+
+    if (tenantId !== DEFAULT_TENANT_ID) {
+      query = query.where("tenantId", "==", tenantId);
+    }
+
+    const snapshot = await query.get();
     const despesas = snapshot.docs
       .map((document) => this.fromDocument(document.id, document.data()))
+      .filter((despesa) => getDespesaTenantId(despesa) === tenantId)
       .sort((a, b) => a.vencimento.localeCompare(b.vencimento, "pt-BR"));
 
     return filterDespesas(despesas, filters);
@@ -191,7 +196,7 @@ export class FirestoreDespesasRepository implements DespesasRepository {
 
     const despesa = this.fromDocument(document.id, document.data() ?? {});
 
-    if (tenantId && despesa.tenantId && despesa.tenantId !== tenantId) {
+    if (tenantId && getDespesaTenantId(despesa) !== tenantId) {
       return null;
     }
 
