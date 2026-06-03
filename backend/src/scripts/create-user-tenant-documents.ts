@@ -123,9 +123,10 @@ async function verificarDocumentosExistentes(uids: string[]): Promise<Set<string
 
 // ── Resolucao de role ─────────────────────────────────────────────────────────
 
-function resolverRole(
-  customClaims: Record<string, unknown> | undefined,
-): { role: UsuarioRole; viaClaim: boolean } {
+function resolverRole(customClaims: Record<string, unknown> | undefined): {
+  role: UsuarioRole;
+  viaClaim: boolean;
+} {
   const claimRole = customClaims?.["role"];
   if (typeof claimRole === "string" && ROLES_VALIDAS.includes(claimRole as UsuarioRole)) {
     return { role: claimRole as UsuarioRole, viaClaim: true };
@@ -235,7 +236,9 @@ function gerarRelatorioMd(
     L.push(
       `> Estes usuarios nao tinham custom claim \`role\` no Firebase Auth. Role \`${ROLE_FALLBACK}\` foi aplicada como fallback seguro.`,
     );
-    L.push(`> Revise se a role esta correta e, se necessario, use o script \`set-user-role.ts\` para corrigir.`);
+    L.push(
+      `> Revise se a role esta correta e, se necessario, use o script \`set-user-role.ts\` para corrigir.`,
+    );
     L.push(``);
     L.push(`| UID | Email |`);
     L.push(`| --- | --- |`);
@@ -266,7 +269,9 @@ function gerarRelatorioMd(
   L.push(``);
   L.push(`**Nenhuma custom claim foi alterada.**`);
   L.push(`O middleware \`resolveTenant\` ainda usa \`DEFAULT_TENANT_ID\` fixo — nao foi ativado.`);
-  L.push(`Os documentos criados serao usados na Fase 9.4, quando \`resolveTenant\` for atualizado.`);
+  L.push(
+    `Os documentos criados serao usados na Fase 9.4, quando \`resolveTenant\` for atualizado.`,
+  );
 
   return L.join("\n");
 }
@@ -412,9 +417,7 @@ async function main() {
   const criados = processados.filter((u) => u.resultado === "criado").length;
   const pulados = processados.filter((u) => u.resultado === "pulado-existe").length;
   const ignorados = processados.filter((u) => u.resultado === "ignorado-desativado").length;
-  const fallbacks = processados.filter(
-    (u) => u.resultado === "criado" && !u.roleFonteClaim,
-  ).length;
+  const fallbacks = processados.filter((u) => u.resultado === "criado" && !u.roleFonteClaim).length;
 
   console.log();
   console.log(SEP);
@@ -432,9 +435,7 @@ async function main() {
   console.log();
 
   if (fallbacks > 0) {
-    console.log(
-      `⚠️  ${fallbacks} usuario(s) receberam role "${ROLE_FALLBACK}" por fallback.`,
-    );
+    console.log(`⚠️  ${fallbacks} usuario(s) receberam role "${ROLE_FALLBACK}" por fallback.`);
     console.log(`   Revise o relatorio e corrija via set-user-role.ts se necessario.`);
     console.log();
   }

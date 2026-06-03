@@ -47,10 +47,13 @@ movimentacoesEstoqueRoutes.get(
     const { produtoId, tipo } = parseOrThrow(() =>
       movimentacaoEstoqueSearchSchema.parse(request.query),
     );
-    const movimentacoes = await movimentacoesEstoqueService.list({
-      produtoId,
-      tipo,
-    }, tenantId);
+    const movimentacoes = await movimentacoesEstoqueService.list(
+      {
+        produtoId,
+        tipo,
+      },
+      tenantId,
+    );
 
     response.status(httpStatus.ok).json({
       data: movimentacoes,

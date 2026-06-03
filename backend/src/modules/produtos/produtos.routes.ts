@@ -40,11 +40,14 @@ produtosRoutes.get(
   asyncHandler(async (request, response) => {
     const tenantId = getRequestTenantId(request as TenantRequest);
     const { q, categoria, ativo } = parseOrThrow(() => produtoSearchSchema.parse(request.query));
-    const produtos = await produtosService.list({
-      ativo: ativo === "" ? "" : ativo === "true",
-      categoria,
-      search: q,
-    }, tenantId);
+    const produtos = await produtosService.list(
+      {
+        ativo: ativo === "" ? "" : ativo === "true",
+        categoria,
+        search: q,
+      },
+      tenantId,
+    );
 
     const page = Math.max(1, parseInt(request.query.page as string) || 1);
     const limit = Math.min(200, Math.max(1, parseInt(request.query.limit as string) || 50));

@@ -51,11 +51,14 @@ const seedDespesas: Despesa[] = [
 ];
 
 export interface DespesasRepository {
-  list(filters?: {
-    search?: string;
-    categoria?: DespesaCategoria | "";
-    pago?: boolean | "";
-  }, tenantId?: string): Promise<Despesa[]>;
+  list(
+    filters?: {
+      search?: string;
+      categoria?: DespesaCategoria | "";
+      pago?: boolean | "";
+    },
+    tenantId?: string,
+  ): Promise<Despesa[]>;
   findById(id: string, tenantId?: string): Promise<Despesa | null>;
   create(input: DespesaInput, tenantId?: string): Promise<Despesa>;
   update(id: string, input: DespesaInput): Promise<Despesa | null>;

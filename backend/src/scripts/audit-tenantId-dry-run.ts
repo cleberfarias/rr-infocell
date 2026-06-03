@@ -124,7 +124,13 @@ async function mapearRelacoesOs(osStats: CollectionStats): Promise<{
       vendasVinculadas.some((v) => v.comTenantId) ||
       movimentacoesVinculadas.some((m) => m.comTenantId);
 
-    relacoes.push({ osId, osNumero, vendasVinculadas, movimentacoesVinculadas, alertaInconsistencia });
+    relacoes.push({
+      osId,
+      osNumero,
+      vendasVinculadas,
+      movimentacoesVinculadas,
+      alertaInconsistencia,
+    });
   }
 
   // Ordenar OS com inconsistencia primeiro
@@ -170,7 +176,9 @@ function gerarRelatorioMd(
   for (const s of stats) {
     totalGeral += s.total;
     totalSem += s.semTenantId;
-    L.push(`| ${s.collection} | ${s.total} | ${s.comTenantId} | ${s.semTenantId} | ${s.percentualSem} |`);
+    L.push(
+      `| ${s.collection} | ${s.total} | ${s.comTenantId} | ${s.semTenantId} | ${s.percentualSem} |`,
+    );
   }
 
   L.push(``);
@@ -264,7 +272,8 @@ function gerarRelatorioMd(
   L.push(``);
   for (const col of ["clientes", "produtos", "despesas", "ordensServico"]) {
     const n = byCol[col] ?? 0;
-    const obs = n === 0 ? "nenhuma acao necessaria" : "editar qualquer campo aplica tenantId automaticamente";
+    const obs =
+      n === 0 ? "nenhuma acao necessaria" : "editar qualquer campo aplica tenantId automaticamente";
     L.push(`- **${col}:** ${n} sem tenantId — ${obs}`);
   }
   L.push(``);
@@ -272,14 +281,19 @@ function gerarRelatorioMd(
   L.push(``);
   for (const col of ["contas", "movimentacoesEstoque", "vendas"]) {
     const n = byCol[col] ?? 0;
-    const obs = n === 0 ? "nenhuma acao necessaria" : "script obrigatorio (imutavel ou PUT parcial nao injeta tenantId)";
+    const obs =
+      n === 0
+        ? "nenhuma acao necessaria"
+        : "script obrigatorio (imutavel ou PUT parcial nao injeta tenantId)";
     L.push(`- **${col}:** ${n} sem tenantId — ${obs}`);
   }
   L.push(``);
   L.push(`### Regra critica de migracao conjunta`);
   L.push(``);
   L.push(`Se houver OS a migrar via script:`);
-  L.push(`**OS + vendas vinculadas + movimentacoes vinculadas devem receber tenantId no mesmo batch.**`);
+  L.push(
+    `**OS + vendas vinculadas + movimentacoes vinculadas devem receber tenantId no mesmo batch.**`,
+  );
   L.push(`Migrar OS sem venda abre risco de venda duplicada (findByOrdem retorna null).`);
   L.push(``);
   L.push(`---`);
@@ -330,9 +344,13 @@ async function main() {
 
   console.log();
   const osStats = stats.find((s) => s.collection === "ordensServico")!;
-  console.log(`Mapeando relacoes OS → vendas → movimentacoes (${osStats.semTenantId} OS sem tenantId)...`);
+  console.log(
+    `Mapeando relacoes OS → vendas → movimentacoes (${osStats.semTenantId} OS sem tenantId)...`,
+  );
   const { relacoes, truncatedRelacoes } = await mapearRelacoesOs(osStats);
-  console.log(`  ${relacoes.length} OS mapeadas${truncatedRelacoes ? ` (limitado a ${MAX_OS_PARA_MAPEAR_RELACOES})` : ""}`);
+  console.log(
+    `  ${relacoes.length} OS mapeadas${truncatedRelacoes ? ` (limitado a ${MAX_OS_PARA_MAPEAR_RELACOES})` : ""}`,
+  );
 
   const inconsistentes = relacoes.filter((r) => r.alertaInconsistencia);
   if (inconsistentes.length > 0) {

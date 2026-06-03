@@ -39,11 +39,14 @@ const seedProdutos: Produto[] = [
 ];
 
 export interface ProdutosRepository {
-  list(filters?: {
-    search?: string;
-    categoria?: ProdutoCategoria | "";
-    ativo?: boolean | "";
-  }, tenantId?: string): Promise<Produto[]>;
+  list(
+    filters?: {
+      search?: string;
+      categoria?: ProdutoCategoria | "";
+      ativo?: boolean | "";
+    },
+    tenantId?: string,
+  ): Promise<Produto[]>;
   findById(id: string, tenantId?: string): Promise<Produto | null>;
   create(input: ProdutoInput, tenantId?: string): Promise<Produto>;
   update(id: string, input: ProdutoInput, tenantId?: string): Promise<Produto | null>;
@@ -177,7 +180,9 @@ export class FirestoreProdutosRepository implements ProdutosRepository {
 
     if (!document.exists) {
       if (process.env.DEBUG_TENANT_LOOKUP === "true") {
-        console.log(`[TENANT_LOOKUP] findById id=${id} tenantId=${tenantId} result=not_found_in_firestore`);
+        console.log(
+          `[TENANT_LOOKUP] findById id=${id} tenantId=${tenantId} result=not_found_in_firestore`,
+        );
       }
       return null;
     }
@@ -186,13 +191,17 @@ export class FirestoreProdutosRepository implements ProdutosRepository {
 
     if (tenantId && produto.tenantId && produto.tenantId !== tenantId) {
       if (process.env.DEBUG_TENANT_LOOKUP === "true") {
-        console.log(`[TENANT_LOOKUP] findById id=${id} tenantId_received=${tenantId} tenantId_doc=${produto.tenantId} result=tenant_mismatch`);
+        console.log(
+          `[TENANT_LOOKUP] findById id=${id} tenantId_received=${tenantId} tenantId_doc=${produto.tenantId} result=tenant_mismatch`,
+        );
       }
       return null;
     }
 
     if (process.env.DEBUG_TENANT_LOOKUP === "true") {
-      console.log(`[TENANT_LOOKUP] findById id=${id} tenantId_received=${tenantId} tenantId_doc=${produto.tenantId} result=found`);
+      console.log(
+        `[TENANT_LOOKUP] findById id=${id} tenantId_received=${tenantId} tenantId_doc=${produto.tenantId} result=found`,
+      );
     }
 
     return produto;

@@ -142,10 +142,7 @@ async function executarLote2(timestamp: string): Promise<ResultadoLote> {
   // IDs ja adicionados — previne duplicatas se uma venda/mov aparecer duas vezes
   const adicionados = new Set<string>();
 
-  const adicionarSeNecessario = (
-    ref: FirebaseFirestore.DocumentReference,
-    colName: string,
-  ) => {
+  const adicionarSeNecessario = (ref: FirebaseFirestore.DocumentReference, colName: string) => {
     const key = `${colName}/${ref.id}`;
     if (adicionados.has(key)) return false;
     adicionados.add(key);
@@ -166,7 +163,10 @@ async function executarLote2(timestamp: string): Promise<ResultadoLote> {
     // Vendas vinculadas
     const vendasSnap = await db.collection("vendas").where("ordemServicoId", "==", osDoc.id).get();
     for (const vDoc of vendasSnap.docs) {
-      if (vDoc.data().tenantId) { resultado.pulados++; continue; }
+      if (vDoc.data().tenantId) {
+        resultado.pulados++;
+        continue;
+      }
       adicionarSeNecessario(vDoc.ref, "vendas");
     }
 
@@ -176,7 +176,10 @@ async function executarLote2(timestamp: string): Promise<ResultadoLote> {
       .where("ordemServicoId", "==", osDoc.id)
       .get();
     for (const mDoc of movSnap.docs) {
-      if (mDoc.data().tenantId) { resultado.pulados++; continue; }
+      if (mDoc.data().tenantId) {
+        resultado.pulados++;
+        continue;
+      }
       adicionarSeNecessario(mDoc.ref, "movimentacoesEstoque");
     }
   }
@@ -186,7 +189,10 @@ async function executarLote2(timestamp: string): Promise<ResultadoLote> {
   const todasMov = await db.collection("movimentacoesEstoque").get();
   let movManuais = 0;
   for (const mDoc of todasMov.docs) {
-    if (mDoc.data().tenantId) { resultado.pulados++; continue; }
+    if (mDoc.data().tenantId) {
+      resultado.pulados++;
+      continue;
+    }
     if (mDoc.data().ordemServicoId) continue; // ja processada no bloco OS acima
     if (adicionarSeNecessario(mDoc.ref, "movimentacoesEstoque")) movManuais++;
   }
@@ -197,7 +203,10 @@ async function executarLote2(timestamp: string): Promise<ResultadoLote> {
   const todasVendas = await db.collection("vendas").get();
   let vendasDiretas = 0;
   for (const vDoc of todasVendas.docs) {
-    if (vDoc.data().tenantId) { resultado.pulados++; continue; }
+    if (vDoc.data().tenantId) {
+      resultado.pulados++;
+      continue;
+    }
     if (vDoc.data().ordemServicoId) continue; // ja processada no bloco OS acima
     if (adicionarSeNecessario(vDoc.ref, "vendas")) vendasDiretas++;
   }
@@ -210,11 +219,7 @@ async function executarLote2(timestamp: string): Promise<ResultadoLote> {
 
 // ── Geracao do relatorio Markdown ─────────────────────────────────────────────
 
-function gerarRelatorio(
-  lotes: ResultadoLote[],
-  ambiente: string,
-  timestamp: string,
-): string {
+function gerarRelatorio(lotes: ResultadoLote[], ambiente: string, timestamp: string): string {
   const L: string[] = [];
 
   L.push(`# Relatorio de Migracao — tenantId`);
@@ -299,13 +304,17 @@ async function main() {
   console.log("Lote 1: clientes + produtos (sem dependencias cruzadas)");
   const lote1 = await executarLote1(timestamp);
   lotes.push(lote1);
-  console.log(`  -> ${lote1.migrados.length} migrados | ${lote1.pulados} pulados | ${lote1.batches} batches`);
+  console.log(
+    `  -> ${lote1.migrados.length} migrados | ${lote1.pulados} pulados | ${lote1.batches} batches`,
+  );
   console.log();
 
   console.log("Lote 2: OS + vendas + movimentacoes (bloco critico)");
   const lote2 = await executarLote2(timestamp);
   lotes.push(lote2);
-  console.log(`  -> ${lote2.migrados.length} migrados | ${lote2.pulados} pulados | ${lote2.batches} batches`);
+  console.log(
+    `  -> ${lote2.migrados.length} migrados | ${lote2.pulados} pulados | ${lote2.batches} batches`,
+  );
   console.log();
 
   const relatorio = gerarRelatorio(lotes, ambiente, timestamp);

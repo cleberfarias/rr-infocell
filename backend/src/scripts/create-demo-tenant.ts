@@ -26,9 +26,7 @@ import { join } from "node:path";
 if (process.env.ALLOW_DEMO_TENANT_CREATION !== "true") {
   console.error("ERRO: variavel ALLOW_DEMO_TENANT_CREATION=true nao definida.");
   console.error("Para executar:");
-  console.error(
-    "  ALLOW_DEMO_TENANT_CREATION=true npx tsx src/scripts/create-demo-tenant.ts",
-  );
+  console.error("  ALLOW_DEMO_TENANT_CREATION=true npx tsx src/scripts/create-demo-tenant.ts");
   process.exit(1);
 }
 
@@ -152,7 +150,10 @@ async function criarDocumentoUsuario(
 
 // ── Etapa 4: Configurar custom claim role ─────────────────────────────────────
 
-async function configurarCustomClaim(uid: string, hasRoleClaim: boolean): Promise<{ status: EtapaStatus; mensagem: string }> {
+async function configurarCustomClaim(
+  uid: string,
+  hasRoleClaim: boolean,
+): Promise<{ status: EtapaStatus; mensagem: string }> {
   if (hasRoleClaim) {
     return {
       status: "ja-existia",
@@ -193,10 +194,18 @@ function gerarRelatorio(resultado: Resultado, timestamp: string): string {
   L.push(``);
   L.push(`| Etapa | Status | Detalhe |`);
   L.push(`| --- | --- | --- |`);
-  L.push(`| Documento \`tenants/${DEMO_TENANT.id}\` | ${icon(resultado.tenant)} ${resultado.tenant} | ${resultado.tenantMensagem} |`);
-  L.push(`| Usuario \`${DEMO_USER_EMAIL}\` no Firebase Auth | ${icon(resultado.usuario)} ${resultado.usuario} | ${resultado.usuarioUid ? `UID: \`${resultado.usuarioUid}\`` : "Nao encontrado — criar manualmente"} |`);
-  L.push(`| Documento \`usuarios/${resultado.usuarioUid ?? "pendente"}\` | ${icon(resultado.usuarioDocumento)} ${resultado.usuarioDocumento} | tenantId: \`${DEMO_TENANT.id}\` |`);
-  L.push(`| Custom claim \`role: admin\` | ${icon(resultado.usuarioCustomClaim)} ${resultado.usuarioCustomClaim} | ${resultado.customClaimMensagem} |`);
+  L.push(
+    `| Documento \`tenants/${DEMO_TENANT.id}\` | ${icon(resultado.tenant)} ${resultado.tenant} | ${resultado.tenantMensagem} |`,
+  );
+  L.push(
+    `| Usuario \`${DEMO_USER_EMAIL}\` no Firebase Auth | ${icon(resultado.usuario)} ${resultado.usuario} | ${resultado.usuarioUid ? `UID: \`${resultado.usuarioUid}\`` : "Nao encontrado — criar manualmente"} |`,
+  );
+  L.push(
+    `| Documento \`usuarios/${resultado.usuarioUid ?? "pendente"}\` | ${icon(resultado.usuarioDocumento)} ${resultado.usuarioDocumento} | tenantId: \`${DEMO_TENANT.id}\` |`,
+  );
+  L.push(
+    `| Custom claim \`role: admin\` | ${icon(resultado.usuarioCustomClaim)} ${resultado.usuarioCustomClaim} | ${resultado.customClaimMensagem} |`,
+  );
   L.push(``);
 
   if (resultado.usuario === "pendente") {
@@ -230,9 +239,15 @@ function gerarRelatorio(resultado: Resultado, timestamp: string): string {
   L.push(``);
 
   if (resultado.usuario !== "pendente") {
-    L.push(`1. **Validar isolamento:** logar como usuario rr-infocell e confirmar que dados de ${DEMO_TENANT.id} nao aparecem`);
-    L.push(`2. **Criar dados minimos:** Fase 9.16 — criar 1 de cada entidade no tenant ${DEMO_TENANT.id} via API`);
-    L.push(`3. **Validar isolamento real:** logar como usuario demo e confirmar que dados de rr-infocell nao aparecem`);
+    L.push(
+      `1. **Validar isolamento:** logar como usuario rr-infocell e confirmar que dados de ${DEMO_TENANT.id} nao aparecem`,
+    );
+    L.push(
+      `2. **Criar dados minimos:** Fase 9.16 — criar 1 de cada entidade no tenant ${DEMO_TENANT.id} via API`,
+    );
+    L.push(
+      `3. **Validar isolamento real:** logar como usuario demo e confirmar que dados de rr-infocell nao aparecem`,
+    );
   } else {
     L.push(`1. **Criar usuario demo** conforme instrucoes acima`);
     L.push(`2. **Executar novamente** este script`);
@@ -296,7 +311,9 @@ async function main() {
   if (usuarioResult.status === "pendente") {
     console.log(`  ⏳ Usuario ${DEMO_USER_EMAIL} nao encontrado no Firebase Auth`);
     console.log(`     → Crie o usuario e execute o script novamente.`);
-    console.log(`     → Use: npx tsx src/scripts/set-user-role.ts --email ${DEMO_USER_EMAIL} --password "Senha" --role admin`);
+    console.log(
+      `     → Use: npx tsx src/scripts/set-user-role.ts --email ${DEMO_USER_EMAIL} --password "Senha" --role admin`,
+    );
     resultado.usuarioDocumento = "pendente";
     resultado.usuarioCustomClaim = "pendente";
     resultado.customClaimMensagem = "Aguardando criacao do usuario";

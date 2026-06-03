@@ -28,16 +28,16 @@ const db = getFirestore();
 // Documentos criados durante teste de isolamento 9.16 (2026-05-29)
 // Foram salvos com tenantId: rr-infocell por engano (backend producao sem codigo 9.4)
 const toDelete: Record<string, string[]> = {
-  marcas:              ["FN9QtrQ6unswiNkoJ0VK"],
-  categorias:          ["TDtJwmk622ZpVV2fxeYH"],
-  clientes:            ["aKSEKDFEf0Bg0jnDozvw"],
-  produtos:            ["4H7teuyRu13dLNg5o78B"],
-  contas:              ["b3siPgEquI58O1wG7FTZ"],
-  despesas:            ["BgJvN1RsLzhbixf17jeW"],
-  movimentacoesEstoque:["RSitfWxBU1qoIvTOq2Me"],
-  aparelhos:           ["6A5bmypk75AkU6kOvQ1S"],
-  ordensServico:       ["TtbO3Qogq4PJxYDJzo1J", "Tk8saoSZLGVOvV6GjnP5"],
-  vendas:              ["JjkwR0okXEx490LRtpUy", "K89qeUrKN906YoFK8jxd"],
+  marcas: ["FN9QtrQ6unswiNkoJ0VK"],
+  categorias: ["TDtJwmk622ZpVV2fxeYH"],
+  clientes: ["aKSEKDFEf0Bg0jnDozvw"],
+  produtos: ["4H7teuyRu13dLNg5o78B"],
+  contas: ["b3siPgEquI58O1wG7FTZ"],
+  despesas: ["BgJvN1RsLzhbixf17jeW"],
+  movimentacoesEstoque: ["RSitfWxBU1qoIvTOq2Me"],
+  aparelhos: ["6A5bmypk75AkU6kOvQ1S"],
+  ordensServico: ["TtbO3Qogq4PJxYDJzo1J", "Tk8saoSZLGVOvV6GjnP5"],
+  vendas: ["JjkwR0okXEx490LRtpUy", "K89qeUrKN906YoFK8jxd"],
 };
 
 async function main() {

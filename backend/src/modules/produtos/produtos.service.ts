@@ -7,11 +7,14 @@ import type { ProdutoCategoria, ProdutoInput } from "./produtos.types.js";
 export class ProdutosService {
   constructor(private readonly repository: ProdutosRepository = createProdutosRepository(db)) {}
 
-  async list(filters?: {
-    search?: string;
-    categoria?: ProdutoCategoria | "";
-    ativo?: boolean | "";
-  }, tenantId?: string) {
+  async list(
+    filters?: {
+      search?: string;
+      categoria?: ProdutoCategoria | "";
+      ativo?: boolean | "";
+    },
+    tenantId?: string,
+  ) {
     return this.repository.list(filters, tenantId);
   }
 

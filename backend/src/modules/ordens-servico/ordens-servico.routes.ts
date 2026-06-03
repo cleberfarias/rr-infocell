@@ -41,13 +41,16 @@ ordensServicoRoutes.get(
   asyncHandler(async (request, response) => {
     const tenantId = getRequestTenantId(request as TenantRequest);
     const filters = parseOrThrow(() => ordemServicoSearchSchema.parse(request.query));
-    const ordens = await ordensServicoService.list({
-      search: filters.q,
-      status: filters.status,
-      prioridade: filters.prioridade,
-      clienteId: filters.clienteId,
-      aparelhoId: filters.aparelhoId,
-    }, tenantId);
+    const ordens = await ordensServicoService.list(
+      {
+        search: filters.q,
+        status: filters.status,
+        prioridade: filters.prioridade,
+        clienteId: filters.clienteId,
+        aparelhoId: filters.aparelhoId,
+      },
+      tenantId,
+    );
 
     const page = Math.max(1, parseInt(request.query.page as string) || 1);
     const limit = Math.min(200, Math.max(1, parseInt(request.query.limit as string) || 50));

@@ -153,13 +153,16 @@ const seedOrdensServico: OrdemServico[] = [
 ];
 
 export interface OrdensServicoRepository {
-  list(filters?: {
-    search?: string;
-    status?: OrdemServicoStatus | "";
-    prioridade?: OrdemServico["prioridade"] | "";
-    clienteId?: string;
-    aparelhoId?: string;
-  }, tenantId?: string): Promise<OrdemServico[]>;
+  list(
+    filters?: {
+      search?: string;
+      status?: OrdemServicoStatus | "";
+      prioridade?: OrdemServico["prioridade"] | "";
+      clienteId?: string;
+      aparelhoId?: string;
+    },
+    tenantId?: string,
+  ): Promise<OrdemServico[]>;
   findById(id: string, tenantId?: string): Promise<OrdemServico | null>;
   create(input: OrdemServicoInput, tenantId?: string): Promise<OrdemServico>;
   update(id: string, input: OrdemServicoInput): Promise<OrdemServico | null>;
@@ -230,7 +233,10 @@ export class MemoryOrdensServicoRepository implements OrdensServicoRepository {
   }
 
   async create(input: OrdemServicoInput, tenantId?: string) {
-    const ordem = { ...buildOrdem(input, this.nextNumero), tenantId: tenantId ?? DEFAULT_TENANT_ID };
+    const ordem = {
+      ...buildOrdem(input, this.nextNumero),
+      tenantId: tenantId ?? DEFAULT_TENANT_ID,
+    };
     this.nextNumero += 1;
 
     this.ordens.set(ordem.id, ordem);

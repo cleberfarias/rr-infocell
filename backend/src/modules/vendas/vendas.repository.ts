@@ -9,7 +9,10 @@ const withoutUndefined = <T extends Record<string, unknown>>(data: T) =>
   Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as T;
 
 export interface VendasRepository {
-  list(filters?: { ordemServicoId?: string; status?: VendaStatus | "" }, tenantId?: string): Promise<Venda[]>;
+  list(
+    filters?: { ordemServicoId?: string; status?: VendaStatus | "" },
+    tenantId?: string,
+  ): Promise<Venda[]>;
   findByOrdem(ordemServicoId: string): Promise<Venda | null>;
   create(input: Omit<Venda, "id">): Promise<Venda>;
 }
