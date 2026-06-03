@@ -1,10 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { STALE_TIME } from "@/constants/query";
 import {
   AlertTriangle,
   ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
   LayoutList,
   Loader2,
   Package,
@@ -60,6 +62,7 @@ import {
 } from "@/services/produtos";
 
 const today = new Date().toISOString().slice(0, 10);
+const ESTOQUE_PAGE_SIZE = 25;
 
 const emptyNovoProduto = {
   sku: "",
@@ -110,6 +113,7 @@ const Estoque = () => {
   const [statusFiltro, setStatusFiltro] = useState<
     "ativos" | "inativos" | "todos"
   >("ativos");
+  const [currentPage, setCurrentPage] = useState(1);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [novoProduto, setNovoProduto] = useState(emptyNovoProduto);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -414,6 +418,38 @@ const Estoque = () => {
     estoqueFiltro,
     statusFiltro,
   ]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(produtosFiltrados.length / ESTOQUE_PAGE_SIZE),
+  );
+  const pageStart = (currentPage - 1) * ESTOQUE_PAGE_SIZE;
+  const produtosPaginados = produtosFiltrados.slice(
+    pageStart,
+    pageStart + ESTOQUE_PAGE_SIZE,
+  );
+  const pageFrom = produtosFiltrados.length > 0 ? pageStart + 1 : 0;
+  const pageTo = Math.min(
+    pageStart + ESTOQUE_PAGE_SIZE,
+    produtosFiltrados.length,
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    search,
+    categoriaFilter,
+    marcaFilter,
+    fornecedorFilter,
+    estoqueFiltro,
+    statusFiltro,
+  ]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const getCategoriaLabel = (id: string) => {
     const found = categoriasQuery.data?.find((c) => c.id === id);
@@ -1596,7 +1632,7 @@ const Estoque = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {produtosFiltrados.map((produto) => {
+                      {produtosPaginados.map((produto) => {
                         const baixo =
                           produto.estoqueAtual <= produto.estoqueMinimo;
                         const zerado = produto.estoqueAtual <= 0;
@@ -1734,6 +1770,46 @@ const Estoque = () => {
                       })}
                     </tbody>
                   </table>
+                </div>
+                <div className="flex flex-col gap-3 border-t border-border bg-secondary/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    Mostrando{" "}
+                    <span className="font-medium text-foreground">
+                      {pageFrom}-{pageTo}
+                    </span>{" "}
+                    de{" "}
+                    <span className="font-medium text-foreground">
+                      {produtosFiltrados.length}
+                    </span>{" "}
+                    itens
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage === 1}
+                      onClick={() =>
+                        setCurrentPage((page) => Math.max(1, page - 1))
+                      }
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Anterior
+                    </Button>
+                    <div className="flex h-9 min-w-24 items-center justify-center rounded-md border border-border bg-background px-3 text-xs font-medium text-muted-foreground">
+                      {currentPage} / {totalPages}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage === totalPages}
+                      onClick={() =>
+                        setCurrentPage((page) => Math.min(totalPages, page + 1))
+                      }
+                    >
+                      Próxima
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </Card>
             )}
