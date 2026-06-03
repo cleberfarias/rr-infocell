@@ -16,6 +16,7 @@ const counterDocument = "ordensServico";
 const terminalStatuses: OrdemServicoStatus[] = ["entregue", "sem_conserto", "cancelado"];
 const withoutUndefined = <T extends Record<string, unknown>>(data: T) =>
   Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as T;
+const getOrdemTenantId = (ordem: OrdemServico) => ordem.tenantId ?? DEFAULT_TENANT_ID;
 
 const buildOrdem = (
   input: OrdemServicoInput,
@@ -276,9 +277,11 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
     } = {},
     tenantId = DEFAULT_TENANT_ID,
   ) {
-    let query: FirebaseFirestore.Query = this.firestore
-      .collection(ordensServicoCollection)
-      .where("tenantId", "==", tenantId);
+    let query: FirebaseFirestore.Query = this.firestore.collection(ordensServicoCollection);
+
+    if (tenantId !== DEFAULT_TENANT_ID) {
+      query = query.where("tenantId", "==", tenantId);
+    }
 
     if (filters.status) {
       query = query.where("status", "==", filters.status);
@@ -299,6 +302,7 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
     const snapshot = await query.get();
     const ordens = snapshot.docs
       .map((document) => this.fromDocument(document.id, document.data()))
+      .filter((ordem) => getOrdemTenantId(ordem) === tenantId)
       .sort((a, b) => b.numero - a.numero);
 
     return filterOrdensServico(ordens, filters);
@@ -313,7 +317,7 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
 
     const ordem = this.fromDocument(document.id, document.data() ?? {});
 
-    if (tenantId && ordem.tenantId && ordem.tenantId !== tenantId) {
+    if (tenantId && getOrdemTenantId(ordem) !== tenantId) {
       return null;
     }
 
