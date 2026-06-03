@@ -28,8 +28,11 @@ import { listAparelhos } from "@/services/aparelhos";
 import { listOrdensServico, type OrdemServico } from "@/services/ordens-servico";
 import { formatBRL, capitalizeFirst } from "@/lib/formatters";
 import {
+  ChevronLeft,
+  ChevronRight,
   Edit,
   History,
+  LayoutList,
   Loader2,
   Plus,
   Search,
@@ -48,6 +51,9 @@ const emptyForm: ClienteInput = {
   receberMensagemAutomatica: true,
 };
 
+const ITEMS_PER_PAGE_GRID = 20;
+const ITEMS_PER_PAGE_LIST = 30;
+
 const Clientes = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -55,10 +61,13 @@ const Clientes = () => {
   const [editingCliente, setEditingCliente] = useState<Cliente | null>(null);
   const [form, setForm] = useState<ClienteInput>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [page, setPage] = useState(1);
 
   const clientesQuery = useQuery({
     queryKey: ["clientes", search],
     queryFn: () => listClientes(search),
+    placeholderData: (prev) => prev,
   });
 
   const aparelhosQuery = useQuery({
@@ -141,6 +150,13 @@ const Clientes = () => {
     [clientes],
   );
 
+  const itemsPerPage = viewMode === "list" ? ITEMS_PER_PAGE_LIST : ITEMS_PER_PAGE_GRID;
+  const totalPages = Math.max(1, Math.ceil(clientes.length / itemsPerPage));
+  const clientesPagina = useMemo(
+    () => clientes.slice((page - 1) * itemsPerPage, page * itemsPerPage),
+    [clientes, page, itemsPerPage],
+  );
+
   const openCreateDialog = () => {
     setEditingCliente(null);
     setForm(emptyForm);
@@ -201,11 +217,19 @@ const Clientes = () => {
               id="clientes-search"
               className="pl-9"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => { setSearch(event.target.value); setPage(1); }}
               placeholder="Nome, telefone, documento ou e-mail"
             />
           </div>
         </FormField>
+        <div className="flex gap-1">
+          <Button size="icon" variant={viewMode === "grid" ? "default" : "outline"} title="Cards" onClick={() => { setViewMode("grid"); setPage(1); }}>
+            <UserRound className="h-4 w-4" />
+          </Button>
+          <Button size="icon" variant={viewMode === "list" ? "default" : "outline"} title="Lista" onClick={() => { setViewMode("list"); setPage(1); }}>
+            <LayoutList className="h-4 w-4" />
+          </Button>
+        </div>
         <div className="grid min-w-[260px] grid-cols-3 gap-2 text-center text-xs">
           <div className="rounded-md border border-border bg-secondary/30 px-3 py-2">
             <p className="font-mono uppercase text-muted-foreground">Total</p>
@@ -255,9 +279,64 @@ const Clientes = () => {
             actions={<Button onClick={openCreateDialog}>Novo cliente</Button>}
           />
         </Card>
+      ) : viewMode === "list" ? (
+        <>
+          <Card className="surface-panel overflow-hidden p-0">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-secondary/30">
+                  <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wider text-muted-foreground">Nome</th>
+                  <th className="hidden px-4 py-3 text-left font-mono text-xs uppercase tracking-wider text-muted-foreground sm:table-cell">Telefone</th>
+                  <th className="hidden px-4 py-3 text-left font-mono text-xs uppercase tracking-wider text-muted-foreground md:table-cell">Documento</th>
+                  <th className="px-4 py-3 text-center font-mono text-xs uppercase tracking-wider text-muted-foreground">Aparelhos</th>
+                  <th className="px-4 py-3 text-center font-mono text-xs uppercase tracking-wider text-muted-foreground">OS</th>
+                  <th className="px-4 py-3 text-right font-mono text-xs uppercase tracking-wider text-muted-foreground">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {clientesPagina.map((cliente) => {
+                  const clienteAparelhos = aparelhosByCliente.get(cliente.id) ?? [];
+                  const clienteOrdens = ordensByCliente.get(cliente.id) ?? [];
+                  return (
+                    <tr key={cliente.id} className="border-b border-border/40 transition-colors hover:bg-secondary/20">
+                      <td className="px-4 py-3">
+                        <p className="font-semibold">{cliente.nome}</p>
+                        {cliente.email && <p className="text-xs text-muted-foreground">{cliente.email}</p>}
+                      </td>
+                      <td className="hidden px-4 py-3 text-muted-foreground sm:table-cell">{cliente.telefone ?? "—"}</td>
+                      <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">{cliente.documento ?? "—"}</td>
+                      <td className="px-4 py-3 text-center">{clienteAparelhos.length}</td>
+                      <td className="px-4 py-3 text-center">{clienteOrdens.length}</td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="inline-flex gap-1">
+                          <Button variant="ghost" size="icon" title="Editar" onClick={() => openEditDialog(cliente)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" title="Excluir" disabled={deleteMutation.isPending} onClick={() => handleDelete(cliente)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </Card>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">{clientes.length} clientes · página {page} de {totalPages}</span>
+              <div className="flex gap-1">
+                <Button size="icon" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
+                <Button size="icon" variant="outline" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}><ChevronRight className="h-4 w-4" /></Button>
+              </div>
+            </div>
+          )}
+        </>
       ) : (
+        <>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {clientes.map((cliente) => {
+          {clientesPagina.map((cliente) => {
             const clienteAparelhos = aparelhosByCliente.get(cliente.id) ?? [];
             const clienteOrdens = ordensByCliente.get(cliente.id) ?? [];
             const abertas = clienteOrdens.filter(
@@ -383,6 +462,16 @@ const Clientes = () => {
             );
           })}
         </div>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">{clientes.length} clientes · página {page} de {totalPages}</span>
+            <div className="flex gap-1">
+              <Button size="icon" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
+              <Button size="icon" variant="outline" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}><ChevronRight className="h-4 w-4" /></Button>
+            </div>
+          </div>
+        )}
+        </>
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

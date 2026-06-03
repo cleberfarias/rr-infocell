@@ -48,7 +48,7 @@ export class MovimentacoesEstoqueService {
       observacoes: produto.observacoes,
     };
 
-    await this.produtos.update(produto.id, updatedProduto);
+    await this.produtos.update(produto.id, updatedProduto, tenantId);
 
     return this.repository.create({
       produtoId: produto.id,

@@ -214,23 +214,35 @@ const Estoque = () => {
         ativo: true,
       });
 
+      let movimentacaoError: string | null = null;
       if (qtd > 0) {
-        await createMovimentacaoEstoque({
-          produtoId: produto.id,
-          tipo: novoProduto.tipo,
-          quantidade: qtd,
-          motivo: motivoFinal,
-        });
+        try {
+          await createMovimentacaoEstoque({
+            produtoId: produto.id,
+            tipo: novoProduto.tipo,
+            quantidade: qtd,
+            motivo: motivoFinal,
+          });
+        } catch (err) {
+          movimentacaoError =
+            err instanceof Error ? err.message : "Erro ao registrar entrada de estoque.";
+        }
       }
 
-      return produto;
+      return { produto, movimentacaoError };
     },
-    onSuccess: async (produto) => {
+    onSuccess: async ({ produto, movimentacaoError }) => {
       await queryClient.invalidateQueries({ queryKey: ["produtos"] });
       await queryClient.invalidateQueries({
         queryKey: ["movimentacoes-estoque"],
       });
-      toast.success(`"${produto.nome}" cadastrado com sucesso.`);
+      if (movimentacaoError) {
+        toast.warning(
+          `"${produto.nome}" cadastrado, mas a entrada de estoque falhou: ${movimentacaoError}`,
+        );
+      } else {
+        toast.success(`"${produto.nome}" cadastrado com sucesso.`);
+      }
       setNovoProduto(emptyNovoProduto);
       setFormErrors({});
       setSheetOpen(false);

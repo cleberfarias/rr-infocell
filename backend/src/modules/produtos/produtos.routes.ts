@@ -94,11 +94,12 @@ produtosRoutes.post(
 produtosRoutes.put(
   "/:id",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const id = String(request.params.id);
     const input = parseOrThrow(() => produtoInputSchema.parse(request.body));
 
     response.status(httpStatus.ok).json({
-      data: await produtosService.update(id, input),
+      data: await produtosService.update(id, input, tenantId),
     });
   }),
 );
@@ -106,9 +107,10 @@ produtosRoutes.put(
 produtosRoutes.delete(
   "/:id",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const id = String(request.params.id);
 
-    await produtosService.delete(id);
+    await produtosService.delete(id, tenantId);
 
     response.status(204).send();
   }),

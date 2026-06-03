@@ -46,8 +46,8 @@ export interface ProdutosRepository {
   }, tenantId?: string): Promise<Produto[]>;
   findById(id: string, tenantId?: string): Promise<Produto | null>;
   create(input: ProdutoInput, tenantId?: string): Promise<Produto>;
-  update(id: string, input: ProdutoInput): Promise<Produto | null>;
-  delete(id: string): Promise<boolean>;
+  update(id: string, input: ProdutoInput, tenantId?: string): Promise<Produto | null>;
+  delete(id: string, tenantId?: string): Promise<boolean>;
 }
 
 const filterProdutos = (
@@ -123,8 +123,8 @@ export class MemoryProdutosRepository implements ProdutosRepository {
     return produto;
   }
 
-  async update(id: string, input: ProdutoInput) {
-    const current = await this.findById(id);
+  async update(id: string, input: ProdutoInput, tenantId?: string) {
+    const current = await this.findById(id, tenantId);
 
     if (!current) {
       return null;
@@ -142,7 +142,9 @@ export class MemoryProdutosRepository implements ProdutosRepository {
     return produto;
   }
 
-  async delete(id: string) {
+  async delete(id: string, tenantId?: string) {
+    const current = await this.findById(id, tenantId);
+    if (!current) return false;
     return this.produtos.delete(id);
   }
 }
@@ -213,8 +215,8 @@ export class FirestoreProdutosRepository implements ProdutosRepository {
     return produto;
   }
 
-  async update(id: string, input: ProdutoInput) {
-    const current = await this.findById(id);
+  async update(id: string, input: ProdutoInput, tenantId?: string) {
+    const current = await this.findById(id, tenantId);
 
     if (!current) {
       return null;
@@ -233,8 +235,8 @@ export class FirestoreProdutosRepository implements ProdutosRepository {
     return produto;
   }
 
-  async delete(id: string) {
-    const current = await this.findById(id);
+  async delete(id: string, tenantId?: string) {
+    const current = await this.findById(id, tenantId);
 
     if (!current) {
       return false;

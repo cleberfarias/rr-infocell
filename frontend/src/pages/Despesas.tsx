@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Filter,
   Loader2,
   Pencil,
@@ -76,12 +78,29 @@ const toInput = (despesa: Despesa): DespesaInput => ({
   pago: despesa.pago,
 });
 
+const parseDespesaMes = (vencimento: string): { mes: number; ano: number | null } | null => {
+  const m = vencimento.match(/^\d{1,2}\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+  if (!m) return null;
+  const mes = Number(m[1]) - 1;
+  const anoText = m[2];
+  const ano = anoText ? Number(anoText.length === 2 ? `20${anoText}` : anoText) : null;
+  return { mes, ano };
+};
+
 const Despesas = () => {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<DespesaInput>(emptyForm);
   const [filtro, setFiltro] = useState<DespesaCategoria | "todas">("todas");
+  const [mesOffset, setMesOffset] = useState(0);
+
+  const mesRef = useMemo(() => {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() + mesOffset);
+    return d;
+  }, [mesOffset]);
 
   const despesasQuery = useQuery({
     queryKey: ["despesas"],
@@ -96,6 +115,18 @@ const Despesas = () => {
         : lista.filter((despesa) => despesa.categoria === filtro),
     [lista, filtro],
   );
+
+  const despesasDoMes = useMemo(() => {
+    const ano = mesRef.getFullYear();
+    const mes = mesRef.getMonth();
+    return filtrada.filter((despesa) => {
+      if (despesa.recorrente) return true;
+      const parsed = parseDespesaMes(despesa.vencimento);
+      if (!parsed) return true;
+      if (parsed.ano === null) return parsed.mes === mes;
+      return parsed.mes === mes && parsed.ano === ano;
+    });
+  }, [filtrada, mesRef]);
 
   const invalidateDespesas = async () => {
     await queryClient.invalidateQueries({ queryKey: ["despesas"] });
@@ -155,12 +186,12 @@ const Despesas = () => {
     },
   });
 
-  const total = filtrada.reduce((sum, despesa) => sum + despesa.valor, 0);
-  const totalPago = filtrada
+  const total = despesasDoMes.reduce((sum, despesa) => sum + despesa.valor, 0);
+  const totalPago = despesasDoMes
     .filter((despesa) => despesa.pago)
     .reduce((sum, despesa) => sum + despesa.valor, 0);
   const totalAberto = total - totalPago;
-  const recorrentes = filtrada.filter((despesa) => despesa.recorrente).length;
+  const recorrentes = despesasDoMes.filter((despesa) => despesa.recorrente).length;
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
   const abrirNovo = () => {
@@ -246,11 +277,22 @@ const Despesas = () => {
             // Custos fixos da loja
           </p>
           <h2 className="font-display text-2xl font-bold">Despesas</h2>
-          <p className="text-sm text-muted-foreground">
-            Aluguel, agua, luz, internet e demais custos operacionais.
+          <p className="text-sm text-muted-foreground capitalize">
+            {mesRef.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1 rounded-md border border-border bg-secondary/30 px-1">
+            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setMesOffset((m) => m - 1)}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="min-w-[110px] text-center text-sm font-medium capitalize">
+              {mesRef.toLocaleDateString("pt-BR", { month: "short", year: "numeric" })}
+            </span>
+            <Button size="icon" variant="ghost" className="h-8 w-8" disabled={mesOffset >= 0} onClick={() => setMesOffset((m) => m + 1)}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
           <Select
             value={filtro}
             onValueChange={(value) =>
@@ -411,7 +453,7 @@ const Despesas = () => {
             {formatBRL(total)}
           </p>
           <p className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
-            <Receipt className="h-3 w-3" /> {filtrada.length} lançamentos
+            <Receipt className="h-3 w-3" /> {despesasDoMes.length} lançamentos
           </p>
         </Card>
         <Card className="surface-panel p-5">
@@ -477,7 +519,7 @@ const Despesas = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtrada.map((despesa) => (
+            {despesasDoMes.map((despesa) => (
               <TableRow key={despesa.id} className="border-border/40">
                 <TableCell>
                   <div className="font-medium">{despesa.descricao}</div>
@@ -542,13 +584,13 @@ const Despesas = () => {
                 </TableCell>
               </TableRow>
             ))}
-            {filtrada.length === 0 && (
+            {despesasDoMes.length === 0 && (
               <TableRow>
                 <TableCell
                   colSpan={7}
                   className="py-10 text-center text-sm text-muted-foreground"
                 >
-                  Nenhuma despesa nesta categoria.
+                  Nenhuma despesa neste mês.
                 </TableCell>
               </TableRow>
             )}

@@ -146,7 +146,10 @@ const Dashboard = () => {
     });
 
     const ordensDoDia = ordens.filter((ordem) => {
-      const d = new Date(ordem.entradaEm);
+      if (ordem.status !== "entregue") return false;
+      const raw = ordem.pagoEm ?? ordem.entregueEm;
+      if (!raw) return false;
+      const d = new Date(raw);
       return (
         d.getFullYear() === anoSel &&
         d.getMonth() === mesSel &&
@@ -344,7 +347,7 @@ const Dashboard = () => {
             icon={TrendingUp}
             label="Total do dia"
             value={formatBRL(relatorio.valorDia)}
-            trend={`${relatorio.qtdDia} OS abertas hoje`}
+            trend={`${relatorio.qtdDia} OS entregues hoje`}
             accentClassName="bg-emerald-500/10 text-emerald-400"
           />
         )}
