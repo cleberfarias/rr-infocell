@@ -58,16 +58,19 @@ export class OrcamentosService {
       throw new AppError("orcamento_not_found", "Orcamento nao encontrado.", httpStatus.notFound);
     }
 
-    await ordemEventosService.create({
-      ordemServicoId: ordem.id,
-      tipo: "orcamento",
-      titulo: `Orcamento ${this.statusLabel(status)}`,
-      descricao: `Total ${orcamento.valorTotal.toLocaleString("pt-BR", {
-        style: "currency",
-        currency: "BRL",
-      })}${orcamento.canalAprovacao ? `. Canal: ${orcamento.canalAprovacao}` : ""}`,
-      criadoPor: "Sistema",
-    });
+    await ordemEventosService.create(
+      {
+        ordemServicoId: ordem.id,
+        tipo: "orcamento",
+        titulo: `Orcamento ${this.statusLabel(status)}`,
+        descricao: `Total ${orcamento.valorTotal.toLocaleString("pt-BR", {
+          style: "currency",
+          currency: "BRL",
+        })}${orcamento.canalAprovacao ? `. Canal: ${orcamento.canalAprovacao}` : ""}`,
+        criadoPor: "Sistema",
+      },
+      tenantId,
+    );
 
     return orcamento;
   }
