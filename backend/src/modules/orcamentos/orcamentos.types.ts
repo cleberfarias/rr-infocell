@@ -20,6 +20,7 @@ export type Orcamento = {
   canalAprovacao?: "balcao" | "whatsapp" | "telefone";
   mensagemAprovacao?: string;
   observacoes?: string;
+  tenantId?: string;
   createdAt: string;
   updatedAt: string;
 };

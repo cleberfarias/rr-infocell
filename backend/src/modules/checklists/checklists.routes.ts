@@ -3,10 +3,13 @@ import { ZodError } from "zod";
 
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
+import { resolveTenant, getRequestTenantId, type TenantRequest } from "../../middlewares/tenant.js";
 import { checklistInputSchema, checklistSearchSchema } from "./checklists.schemas.js";
 import { checklistsService } from "./checklists.service.js";
 
 export const checklistsRoutes = Router();
+
+checklistsRoutes.use(resolveTenant);
 
 type AsyncRouteHandler = (
   request: Request,
@@ -34,8 +37,9 @@ const parseOrThrow = <T>(parse: () => T) => {
 checklistsRoutes.get(
   "/",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const filters = parseOrThrow(() => checklistSearchSchema.parse(request.query));
-    const checklists = await checklistsService.list(filters);
+    const checklists = await checklistsService.list(filters, tenantId);
 
     response.status(httpStatus.ok).json({
       data: checklists,
@@ -51,10 +55,11 @@ checklistsRoutes.get(
 checklistsRoutes.get(
   "/:id",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const id = String(request.params.id);
 
     response.status(httpStatus.ok).json({
-      data: await checklistsService.getById(id),
+      data: await checklistsService.getById(id, tenantId),
     });
   }),
 );
@@ -62,10 +67,11 @@ checklistsRoutes.get(
 checklistsRoutes.post(
   "/",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const input = parseOrThrow(() => checklistInputSchema.parse(request.body));
 
     response.status(httpStatus.created).json({
-      data: await checklistsService.create(input),
+      data: await checklistsService.create(input, tenantId),
     });
   }),
 );
@@ -73,11 +79,12 @@ checklistsRoutes.post(
 checklistsRoutes.put(
   "/:id",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const id = String(request.params.id);
     const input = parseOrThrow(() => checklistInputSchema.parse(request.body));
 
     response.status(httpStatus.ok).json({
-      data: await checklistsService.update(id, input),
+      data: await checklistsService.update(id, input, tenantId),
     });
   }),
 );
@@ -85,9 +92,10 @@ checklistsRoutes.put(
 checklistsRoutes.delete(
   "/:id",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const id = String(request.params.id);
 
-    await checklistsService.delete(id);
+    await checklistsService.delete(id, tenantId);
 
     response.status(204).send();
   }),

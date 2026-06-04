@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
 import type {
   Checklist,
   ChecklistFoto,
@@ -12,17 +13,17 @@ const now = () => new Date().toISOString();
 const checklistsCollection = "checklists";
 const withoutUndefined = <T extends Record<string, unknown>>(data: T) =>
   Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as T;
+const getChecklistTenantId = (c: Checklist) => c.tenantId ?? DEFAULT_TENANT_ID;
 
 export interface ChecklistsRepository {
-  list(filters?: {
-    ordemServicoId?: string;
-    aparelhoId?: string;
-    tipo?: Checklist["tipo"] | "";
-  }): Promise<Checklist[]>;
-  findById(id: string): Promise<Checklist | null>;
-  create(input: ChecklistInput): Promise<Checklist>;
-  update(id: string, input: ChecklistInput): Promise<Checklist | null>;
-  delete(id: string): Promise<boolean>;
+  list(
+    filters?: { ordemServicoId?: string; aparelhoId?: string; tipo?: Checklist["tipo"] | "" },
+    tenantId?: string,
+  ): Promise<Checklist[]>;
+  findById(id: string, tenantId?: string): Promise<Checklist | null>;
+  create(input: ChecklistInput, tenantId?: string): Promise<Checklist>;
+  update(id: string, input: ChecklistInput, tenantId?: string): Promise<Checklist | null>;
+  delete(id: string, tenantId?: string): Promise<boolean>;
 }
 
 const filterChecklists = (
@@ -49,6 +50,7 @@ export class MemoryChecklistsRepository implements ChecklistsRepository {
 
   async list(
     filters: { ordemServicoId?: string; aparelhoId?: string; tipo?: Checklist["tipo"] | "" } = {},
+    _tenantId?: string,
   ) {
     const checklists = Array.from(this.checklists.values()).sort((a, b) =>
       b.createdAt.localeCompare(a.createdAt),
@@ -57,11 +59,11 @@ export class MemoryChecklistsRepository implements ChecklistsRepository {
     return filterChecklists(checklists, filters);
   }
 
-  async findById(id: string) {
+  async findById(id: string, _tenantId?: string) {
     return this.checklists.get(id) ?? null;
   }
 
-  async create(input: ChecklistInput) {
+  async create(input: ChecklistInput, tenantId?: string) {
     const timestamp = now();
     const checklist: Checklist = {
       id: randomUUID(),
@@ -69,6 +71,7 @@ export class MemoryChecklistsRepository implements ChecklistsRepository {
       tipo: input.tipo ?? "entrada",
       itens: normalizeItens(input.itens),
       fotos: normalizeFotos(input.fotos),
+      tenantId,
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -78,7 +81,7 @@ export class MemoryChecklistsRepository implements ChecklistsRepository {
     return checklist;
   }
 
-  async update(id: string, input: ChecklistInput) {
+  async update(id: string, input: ChecklistInput, _tenantId?: string) {
     const current = await this.findById(id);
 
     if (!current) {
@@ -98,7 +101,7 @@ export class MemoryChecklistsRepository implements ChecklistsRepository {
     return checklist;
   }
 
-  async delete(id: string) {
+  async delete(id: string, _tenantId?: string) {
     return this.checklists.delete(id);
   }
 }
@@ -108,8 +111,13 @@ export class FirestoreChecklistsRepository implements ChecklistsRepository {
 
   async list(
     filters: { ordemServicoId?: string; aparelhoId?: string; tipo?: Checklist["tipo"] | "" } = {},
+    tenantId = DEFAULT_TENANT_ID,
   ) {
     let query: FirebaseFirestore.Query = this.firestore.collection(checklistsCollection);
+
+    if (tenantId !== DEFAULT_TENANT_ID) {
+      query = query.where("tenantId", "==", tenantId);
+    }
 
     if (filters.ordemServicoId) {
       query = query.where("ordemServicoId", "==", filters.ordemServicoId);
@@ -127,20 +135,27 @@ export class FirestoreChecklistsRepository implements ChecklistsRepository {
 
     return snapshot.docs
       .map((document) => this.fromDocument(document.id, document.data()))
+      .filter((c) => getChecklistTenantId(c) === tenantId)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
-  async findById(id: string) {
+  async findById(id: string, tenantId?: string) {
     const document = await this.firestore.collection(checklistsCollection).doc(id).get();
 
     if (!document.exists) {
       return null;
     }
 
-    return this.fromDocument(document.id, document.data() ?? {});
+    const checklist = this.fromDocument(document.id, document.data() ?? {});
+
+    if (tenantId && getChecklistTenantId(checklist) !== tenantId) {
+      return null;
+    }
+
+    return checklist;
   }
 
-  async create(input: ChecklistInput) {
+  async create(input: ChecklistInput, tenantId = DEFAULT_TENANT_ID) {
     const timestamp = now();
     const document = this.firestore.collection(checklistsCollection).doc();
     const checklist: Checklist = {
@@ -149,6 +164,7 @@ export class FirestoreChecklistsRepository implements ChecklistsRepository {
       tipo: input.tipo ?? "entrada",
       itens: normalizeItens(input.itens),
       fotos: normalizeFotos(input.fotos),
+      tenantId,
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -158,8 +174,8 @@ export class FirestoreChecklistsRepository implements ChecklistsRepository {
     return checklist;
   }
 
-  async update(id: string, input: ChecklistInput) {
-    const current = await this.findById(id);
+  async update(id: string, input: ChecklistInput, tenantId?: string) {
+    const current = await this.findById(id, tenantId);
 
     if (!current) {
       return null;
@@ -178,8 +194,8 @@ export class FirestoreChecklistsRepository implements ChecklistsRepository {
     return checklist;
   }
 
-  async delete(id: string) {
-    const current = await this.findById(id);
+  async delete(id: string, tenantId?: string) {
+    const current = await this.findById(id, tenantId);
 
     if (!current) {
       return false;
@@ -214,6 +230,7 @@ export class FirestoreChecklistsRepository implements ChecklistsRepository {
         : [],
       observacoesGerais: data.observacoesGerais ? String(data.observacoesGerais) : undefined,
       criadoPor: data.criadoPor ? String(data.criadoPor) : undefined,
+      tenantId: data.tenantId ? String(data.tenantId) : undefined,
       createdAt: String(data.createdAt ?? ""),
       updatedAt: String(data.updatedAt ?? ""),
     };

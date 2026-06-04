@@ -1,14 +1,19 @@
 import { randomUUID } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
 import type { OrdemEvento, OrdemEventoTipo } from "./ordem-eventos.types.js";
 
 const eventosCollection = "ordemEventos";
 const withoutUndefined = <T extends Record<string, unknown>>(data: T) =>
   Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as T;
+const getEventoTenantId = (e: OrdemEvento) => e.tenantId ?? DEFAULT_TENANT_ID;
 
 export interface OrdemEventosRepository {
-  list(filters?: { ordemServicoId?: string; tipo?: OrdemEventoTipo | "" }): Promise<OrdemEvento[]>;
+  list(
+    filters?: { ordemServicoId?: string; tipo?: OrdemEventoTipo | "" },
+    tenantId?: string,
+  ): Promise<OrdemEvento[]>;
   create(input: Omit<OrdemEvento, "id">): Promise<OrdemEvento>;
 }
 
@@ -35,6 +40,7 @@ export class MemoryOrdemEventosRepository implements OrdemEventosRepository {
       ordemServicoId?: string;
       tipo?: OrdemEventoTipo | "";
     } = {},
+    _tenantId?: string,
   ) {
     const eventos = Array.from(this.eventos.values()).sort((a, b) =>
       b.createdAt.localeCompare(a.createdAt),
@@ -63,8 +69,13 @@ export class FirestoreOrdemEventosRepository implements OrdemEventosRepository {
       ordemServicoId?: string;
       tipo?: OrdemEventoTipo | "";
     } = {},
+    tenantId = DEFAULT_TENANT_ID,
   ) {
     let query: FirebaseFirestore.Query = this.firestore.collection(eventosCollection);
+
+    if (tenantId !== DEFAULT_TENANT_ID) {
+      query = query.where("tenantId", "==", tenantId);
+    }
 
     if (filters.ordemServicoId) {
       query = query.where("ordemServicoId", "==", filters.ordemServicoId);
@@ -77,6 +88,7 @@ export class FirestoreOrdemEventosRepository implements OrdemEventosRepository {
     const snapshot = await query.get();
     const eventos = snapshot.docs
       .map((document) => this.fromDocument(document.id, document.data()))
+      .filter((e) => getEventoTenantId(e) === tenantId)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
     return filterEventos(eventos, filters);

@@ -25,6 +25,7 @@ export type Checklist = {
   fotos: ChecklistFoto[];
   observacoesGerais?: string;
   criadoPor?: string;
+  tenantId?: string;
   createdAt: string;
   updatedAt: string;
 };

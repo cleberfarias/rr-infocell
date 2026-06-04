@@ -3,10 +3,13 @@ import { ZodError } from "zod";
 
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
+import { resolveTenant, getRequestTenantId, type TenantRequest } from "../../middlewares/tenant.js";
 import { aparelhoInputSchema, aparelhoSearchSchema } from "./aparelhos.schemas.js";
 import { aparelhosService } from "./aparelhos.service.js";
 
 export const aparelhosRoutes = Router();
+
+aparelhosRoutes.use(resolveTenant);
 
 type AsyncRouteHandler = (
   request: Request,
@@ -34,8 +37,9 @@ const parseOrThrow = <T>(parse: () => T) => {
 aparelhosRoutes.get(
   "/",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const { q, clienteId } = parseOrThrow(() => aparelhoSearchSchema.parse(request.query));
-    const aparelhos = await aparelhosService.list({ search: q, clienteId });
+    const aparelhos = await aparelhosService.list({ search: q, clienteId }, tenantId);
 
     response.status(httpStatus.ok).json({
       data: aparelhos,
@@ -51,10 +55,11 @@ aparelhosRoutes.get(
 aparelhosRoutes.get(
   "/:id",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const id = String(request.params.id);
 
     response.status(httpStatus.ok).json({
-      data: await aparelhosService.getById(id),
+      data: await aparelhosService.getById(id, tenantId),
     });
   }),
 );
@@ -62,10 +67,11 @@ aparelhosRoutes.get(
 aparelhosRoutes.post(
   "/",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const input = parseOrThrow(() => aparelhoInputSchema.parse(request.body));
 
     response.status(httpStatus.created).json({
-      data: await aparelhosService.create(input),
+      data: await aparelhosService.create(input, tenantId),
     });
   }),
 );
@@ -73,11 +79,12 @@ aparelhosRoutes.post(
 aparelhosRoutes.put(
   "/:id",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const id = String(request.params.id);
     const input = parseOrThrow(() => aparelhoInputSchema.parse(request.body));
 
     response.status(httpStatus.ok).json({
-      data: await aparelhosService.update(id, input),
+      data: await aparelhosService.update(id, input, tenantId),
     });
   }),
 );
@@ -85,9 +92,10 @@ aparelhosRoutes.put(
 aparelhosRoutes.delete(
   "/:id",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const id = String(request.params.id);
 
-    await aparelhosService.delete(id);
+    await aparelhosService.delete(id, tenantId);
 
     response.status(204).send();
   }),

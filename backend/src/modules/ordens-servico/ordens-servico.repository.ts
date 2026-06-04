@@ -12,7 +12,6 @@ import type {
 const now = () => new Date().toISOString();
 const ordensServicoCollection = "ordensServico";
 const countersCollection = "counters";
-const counterDocument = "ordensServico";
 const terminalStatuses: OrdemServicoStatus[] = ["entregue", "sem_conserto", "cancelado"];
 const withoutUndefined = <T extends Record<string, unknown>>(data: T) =>
   Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as T;
@@ -326,7 +325,7 @@ export class FirestoreOrdensServicoRepository implements OrdensServicoRepository
 
   async create(input: OrdemServicoInput, tenantId = DEFAULT_TENANT_ID) {
     return this.firestore.runTransaction(async (transaction) => {
-      const counterRef = this.firestore.collection(countersCollection).doc(counterDocument);
+      const counterRef = this.firestore.collection(countersCollection).doc(tenantId);
       const counter = await transaction.get(counterRef);
       const current = Number(counter.data()?.nextNumero ?? 1);
       const ordemRef = this.firestore.collection(ordensServicoCollection).doc();

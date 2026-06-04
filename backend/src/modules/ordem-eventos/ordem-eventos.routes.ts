@@ -3,10 +3,13 @@ import { ZodError } from "zod";
 
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
+import { resolveTenant, getRequestTenantId, type TenantRequest } from "../../middlewares/tenant.js";
 import { ordemEventoInputSchema, ordemEventoSearchSchema } from "./ordem-eventos.schemas.js";
 import { ordemEventosService } from "./ordem-eventos.service.js";
 
 export const ordemEventosRoutes = Router();
+
+ordemEventosRoutes.use(resolveTenant);
 
 type AsyncRouteHandler = (
   request: Request,
@@ -34,8 +37,9 @@ const parseOrThrow = <T>(parse: () => T) => {
 ordemEventosRoutes.get(
   "/",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const filters = parseOrThrow(() => ordemEventoSearchSchema.parse(request.query));
-    const eventos = await ordemEventosService.list(filters);
+    const eventos = await ordemEventosService.list(filters, tenantId);
 
     response.status(httpStatus.ok).json({
       data: eventos,
@@ -51,10 +55,11 @@ ordemEventosRoutes.get(
 ordemEventosRoutes.post(
   "/",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const input = parseOrThrow(() => ordemEventoInputSchema.parse(request.body));
 
     response.status(httpStatus.created).json({
-      data: await ordemEventosService.create(input),
+      data: await ordemEventosService.create(input, tenantId),
     });
   }),
 );

@@ -1,16 +1,21 @@
 import { randomUUID } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
 import type { Orcamento, OrcamentoStatus } from "./orcamentos.types.js";
 
 const orcamentosCollection = "orcamentos";
 const withoutUndefined = <T extends Record<string, unknown>>(data: T) =>
   Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as T;
+const getOrcamentoTenantId = (o: Orcamento) => o.tenantId ?? DEFAULT_TENANT_ID;
 
 export interface OrcamentosRepository {
-  list(filters?: { ordemServicoId?: string; status?: OrcamentoStatus | "" }): Promise<Orcamento[]>;
-  findById(id: string): Promise<Orcamento | null>;
-  findLatestByOrdem(ordemServicoId: string): Promise<Orcamento | null>;
+  list(
+    filters?: { ordemServicoId?: string; status?: OrcamentoStatus | "" },
+    tenantId?: string,
+  ): Promise<Orcamento[]>;
+  findById(id: string, tenantId?: string): Promise<Orcamento | null>;
+  findLatestByOrdem(ordemServicoId: string, tenantId?: string): Promise<Orcamento | null>;
   create(input: Omit<Orcamento, "id">): Promise<Orcamento>;
   update(id: string, input: Omit<Orcamento, "id" | "createdAt">): Promise<Orcamento | null>;
 }
@@ -38,6 +43,7 @@ export class MemoryOrcamentosRepository implements OrcamentosRepository {
       ordemServicoId?: string;
       status?: OrcamentoStatus | "";
     } = {},
+    _tenantId?: string,
   ) {
     const orcamentos = Array.from(this.orcamentos.values()).sort((a, b) =>
       b.updatedAt.localeCompare(a.updatedAt),
@@ -46,12 +52,12 @@ export class MemoryOrcamentosRepository implements OrcamentosRepository {
     return filterOrcamentos(orcamentos, filters);
   }
 
-  async findById(id: string) {
+  async findById(id: string, _tenantId?: string) {
     return this.orcamentos.get(id) ?? null;
   }
 
-  async findLatestByOrdem(ordemServicoId: string) {
-    const [latest] = await this.list({ ordemServicoId });
+  async findLatestByOrdem(ordemServicoId: string, tenantId?: string) {
+    const [latest] = await this.list({ ordemServicoId }, tenantId);
 
     return latest ?? null;
   }
@@ -95,8 +101,13 @@ export class FirestoreOrcamentosRepository implements OrcamentosRepository {
       ordemServicoId?: string;
       status?: OrcamentoStatus | "";
     } = {},
+    tenantId = DEFAULT_TENANT_ID,
   ) {
     let query: FirebaseFirestore.Query = this.firestore.collection(orcamentosCollection);
+
+    if (tenantId !== DEFAULT_TENANT_ID) {
+      query = query.where("tenantId", "==", tenantId);
+    }
 
     if (filters.ordemServicoId) {
       query = query.where("ordemServicoId", "==", filters.ordemServicoId);
@@ -109,23 +120,30 @@ export class FirestoreOrcamentosRepository implements OrcamentosRepository {
     const snapshot = await query.get();
     const orcamentos = snapshot.docs
       .map((document) => this.fromDocument(document.id, document.data()))
+      .filter((o) => getOrcamentoTenantId(o) === tenantId)
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 
     return filterOrcamentos(orcamentos, filters);
   }
 
-  async findById(id: string) {
+  async findById(id: string, tenantId?: string) {
     const document = await this.firestore.collection(orcamentosCollection).doc(id).get();
 
     if (!document.exists) {
       return null;
     }
 
-    return this.fromDocument(document.id, document.data() ?? {});
+    const orcamento = this.fromDocument(document.id, document.data() ?? {});
+
+    if (tenantId && getOrcamentoTenantId(orcamento) !== tenantId) {
+      return null;
+    }
+
+    return orcamento;
   }
 
-  async findLatestByOrdem(ordemServicoId: string) {
-    const [latest] = await this.list({ ordemServicoId });
+  async findLatestByOrdem(ordemServicoId: string, tenantId?: string) {
+    const [latest] = await this.list({ ordemServicoId }, tenantId);
 
     return latest ?? null;
   }
@@ -182,6 +200,7 @@ export class FirestoreOrcamentosRepository implements OrcamentosRepository {
         : undefined,
       mensagemAprovacao: data.mensagemAprovacao ? String(data.mensagemAprovacao) : undefined,
       observacoes: data.observacoes ? String(data.observacoes) : undefined,
+      tenantId: data.tenantId ? String(data.tenantId) : undefined,
       createdAt: String(data.createdAt ?? ""),
       updatedAt: String(data.updatedAt ?? ""),
     };
