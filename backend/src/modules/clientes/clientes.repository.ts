@@ -8,6 +8,7 @@ const now = () => new Date().toISOString();
 const clientesCollection = "clientes";
 const withoutUndefined = <T extends Record<string, unknown>>(data: T) =>
   Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as T;
+const getClienteTenantId = (cliente: Cliente) => cliente.tenantId ?? DEFAULT_TENANT_ID;
 
 const seedClientes: Cliente[] = [
   {
@@ -110,12 +111,16 @@ export class FirestoreClientesRepository implements ClientesRepository {
   constructor(private readonly firestore: Firestore) {}
 
   async list(search = "", tenantId = DEFAULT_TENANT_ID) {
-    const snapshot = await this.firestore
-      .collection(clientesCollection)
-      .where("tenantId", "==", tenantId)
-      .get();
+    let query: FirebaseFirestore.Query = this.firestore.collection(clientesCollection);
+
+    if (tenantId !== DEFAULT_TENANT_ID) {
+      query = query.where("tenantId", "==", tenantId);
+    }
+
+    const snapshot = await query.get();
     const clientes = snapshot.docs
       .map((document) => this.fromDocument(document.id, document.data()))
+      .filter((cliente) => getClienteTenantId(cliente) === tenantId)
       .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
     const normalizedSearch = search.trim().toLowerCase();
@@ -140,7 +145,7 @@ export class FirestoreClientesRepository implements ClientesRepository {
 
     const cliente = this.fromDocument(document.id, document.data() ?? {});
 
-    if (tenantId && cliente.tenantId && cliente.tenantId !== tenantId) {
+    if (tenantId && getClienteTenantId(cliente) !== tenantId) {
       return null;
     }
 

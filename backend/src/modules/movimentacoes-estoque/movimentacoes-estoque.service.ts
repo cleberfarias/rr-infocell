@@ -22,13 +22,18 @@ export class MovimentacoesEstoqueService {
     private readonly produtos: ProdutosService = produtosService,
   ) {}
 
-  async list(filters?: { produtoId?: string; tipo?: MovimentacaoEstoqueTipo | "" }, tenantId?: string) {
+  async list(
+    filters?: { produtoId?: string; tipo?: MovimentacaoEstoqueTipo | "" },
+    tenantId?: string,
+  ) {
     return this.repository.list(filters, tenantId);
   }
 
   async create(input: MovimentacaoEstoqueInput, tenantId = DEFAULT_TENANT_ID) {
     if (process.env.DEBUG_TENANT_LOOKUP === "true") {
-      console.log(`[TENANT_LOOKUP] movimentacao.create produtoId=${input.produtoId} tenantId=${tenantId}`);
+      console.log(
+        `[TENANT_LOOKUP] movimentacao.create produtoId=${input.produtoId} tenantId=${tenantId}`,
+      );
     }
     const produto = await this.produtos.getById(input.produtoId, tenantId);
     const estoqueAnterior = produto.estoqueAtual;
@@ -48,7 +53,7 @@ export class MovimentacoesEstoqueService {
       observacoes: produto.observacoes,
     };
 
-    await this.produtos.update(produto.id, updatedProduto);
+    await this.produtos.update(produto.id, updatedProduto, tenantId);
 
     return this.repository.create({
       produtoId: produto.id,

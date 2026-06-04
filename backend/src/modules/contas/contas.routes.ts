@@ -2,9 +2,11 @@ import { Router } from "express";
 import { getFirestore } from "firebase-admin/firestore";
 
 import { resolveTenant, getRequestTenantId, type TenantRequest } from "../../middlewares/tenant.js";
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
 
 export const contasRoutes = Router();
 const COLLECTION = "contas";
+const getDocTenantId = (data: { tenantId?: string }) => data.tenantId ?? DEFAULT_TENANT_ID;
 
 // Fase 9.9: resolveTenant popula request.tenantId a partir de usuarios/{uid}.
 contasRoutes.use(resolveTenant);
@@ -14,9 +16,16 @@ contasRoutes.get("/", async (req, res, next) => {
     const tenantId = getRequestTenantId(req as TenantRequest);
     try {
       const db = getFirestore();
-      const snap = await db.collection(COLLECTION).where("tenantId", "==", tenantId).get();
+      let query: FirebaseFirestore.Query = db.collection(COLLECTION);
+
+      if (tenantId !== DEFAULT_TENANT_ID) {
+        query = query.where("tenantId", "==", tenantId);
+      }
+
+      const snap = await query.get();
       const data = snap.docs
         .map((doc) => ({ id: doc.id, ...(doc.data() as { nome?: string; tenantId?: string }) }))
+        .filter((conta) => getDocTenantId(conta) === tenantId)
         .sort((a, b) => String(a.nome ?? "").localeCompare(String(b.nome ?? ""), "pt-BR"));
       return res.json({ data });
     } catch {

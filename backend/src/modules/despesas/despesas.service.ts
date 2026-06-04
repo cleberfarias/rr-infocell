@@ -7,11 +7,14 @@ import type { DespesaCategoria, DespesaInput } from "./despesas.types.js";
 export class DespesasService {
   constructor(private readonly repository: DespesasRepository = createDespesasRepository(db)) {}
 
-  async list(filters?: {
-    search?: string;
-    categoria?: DespesaCategoria | "";
-    pago?: boolean | "";
-  }, tenantId?: string) {
+  async list(
+    filters?: {
+      search?: string;
+      categoria?: DespesaCategoria | "";
+      pago?: boolean | "";
+    },
+    tenantId?: string,
+  ) {
     return this.repository.list(filters, tenantId);
   }
 

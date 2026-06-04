@@ -1,6 +1,6 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Edit, Loader2, Plus, Search, Smartphone, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Edit, LayoutList, Loader2, Plus, Search, Smartphone, Trash2 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
 import { EmptyState, FormField, PageHeader } from "@/components/design-system";
@@ -44,6 +44,9 @@ const emptyForm: AparelhoInput = {
   observacoes: "",
 };
 
+const ITEMS_PER_PAGE_GRID = 20;
+const ITEMS_PER_PAGE_LIST = 30;
+
 const Aparelhos = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -55,6 +58,8 @@ const Aparelhos = () => {
   const [editingAparelho, setEditingAparelho] = useState<Aparelho | null>(null);
   const [form, setForm] = useState<AparelhoInput>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [page, setPage] = useState(1);
 
   const clientesQuery = useQuery({
     queryKey: ["clientes", "aparelhos-select"],
@@ -121,6 +126,13 @@ const Aparelhos = () => {
       clientes: new Set(aparelhos.map((aparelho) => aparelho.clienteId)).size,
     }),
     [aparelhos],
+  );
+
+  const itemsPerPage = viewMode === "list" ? ITEMS_PER_PAGE_LIST : ITEMS_PER_PAGE_GRID;
+  const totalPages = Math.max(1, Math.ceil(aparelhos.length / itemsPerPage));
+  const aparelhosPagina = useMemo(
+    () => aparelhos.slice((page - 1) * itemsPerPage, page * itemsPerPage),
+    [aparelhos, page, itemsPerPage],
   );
 
   const openCreateDialog = () => {
@@ -220,7 +232,7 @@ const Aparelhos = () => {
               id="aparelhos-search"
               className="pl-9"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => { setSearch(event.target.value); setPage(1); }}
               placeholder="Marca, modelo, cor, IMEI ou estado"
             />
           </div>
@@ -240,20 +252,28 @@ const Aparelhos = () => {
             </SelectContent>
           </Select>
         </FormField>
-        <div className="grid min-w-[260px] grid-cols-3 gap-2 text-center text-xs">
-          <div className="rounded-md border border-border bg-secondary/30 px-3 py-2">
-            <p className="font-mono uppercase text-muted-foreground">Total</p>
-            <p className="font-display text-lg font-bold">{stats.total}</p>
+        <div className="flex items-end gap-2">
+          <div className="grid min-w-[260px] grid-cols-3 gap-2 text-center text-xs">
+            <div className="rounded-md border border-border bg-secondary/30 px-3 py-2">
+              <p className="font-mono uppercase text-muted-foreground">Total</p>
+              <p className="font-display text-lg font-bold">{stats.total}</p>
+            </div>
+            <div className="rounded-md border border-border bg-secondary/30 px-3 py-2">
+              <p className="font-mono uppercase text-muted-foreground">IMEI</p>
+              <p className="font-display text-lg font-bold">{stats.comImei}</p>
+            </div>
+            <div className="rounded-md border border-border bg-secondary/30 px-3 py-2">
+              <p className="font-mono uppercase text-muted-foreground">Clientes</p>
+              <p className="font-display text-lg font-bold">{stats.clientes}</p>
+            </div>
           </div>
-          <div className="rounded-md border border-border bg-secondary/30 px-3 py-2">
-            <p className="font-mono uppercase text-muted-foreground">IMEI</p>
-            <p className="font-display text-lg font-bold">{stats.comImei}</p>
-          </div>
-          <div className="rounded-md border border-border bg-secondary/30 px-3 py-2">
-            <p className="font-mono uppercase text-muted-foreground">
-              Clientes
-            </p>
-            <p className="font-display text-lg font-bold">{stats.clientes}</p>
+          <div className="flex gap-1 pb-0.5">
+            <Button size="icon" variant={viewMode === "grid" ? "default" : "outline"} title="Cards" onClick={() => { setViewMode("grid"); setPage(1); }}>
+              <Smartphone className="h-4 w-4" />
+            </Button>
+            <Button size="icon" variant={viewMode === "list" ? "default" : "outline"} title="Lista" onClick={() => { setViewMode("list"); setPage(1); }}>
+              <LayoutList className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </Card>
@@ -290,9 +310,58 @@ const Aparelhos = () => {
             actions={<Button onClick={openCreateDialog}>Novo aparelho</Button>}
           />
         </Card>
+      ) : viewMode === "list" ? (
+        <>
+          <Card className="surface-panel overflow-hidden p-0">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-secondary/30">
+                  <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wider text-muted-foreground">Aparelho</th>
+                  <th className="hidden px-4 py-3 text-left font-mono text-xs uppercase tracking-wider text-muted-foreground sm:table-cell">Cliente</th>
+                  <th className="hidden px-4 py-3 text-left font-mono text-xs uppercase tracking-wider text-muted-foreground md:table-cell">IMEI / Serial</th>
+                  <th className="hidden px-4 py-3 text-left font-mono text-xs uppercase tracking-wider text-muted-foreground lg:table-cell">Cor</th>
+                  <th className="px-4 py-3 text-right font-mono text-xs uppercase tracking-wider text-muted-foreground">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {aparelhosPagina.map((aparelho) => (
+                  <tr key={aparelho.id} className="border-b border-border/40 transition-colors hover:bg-secondary/20">
+                    <td className="px-4 py-3">
+                      <p className="font-semibold">{aparelho.marca} {aparelho.modelo}</p>
+                      {aparelho.estadoFisico && <p className="text-xs text-muted-foreground">{aparelho.estadoFisico}</p>}
+                    </td>
+                    <td className="hidden px-4 py-3 text-muted-foreground sm:table-cell">{getClienteName(aparelho.clienteId)}</td>
+                    <td className="hidden px-4 py-3 font-mono text-xs text-muted-foreground md:table-cell">{aparelho.imeiSerial ?? "—"}</td>
+                    <td className="hidden px-4 py-3 text-muted-foreground lg:table-cell">{aparelho.cor ?? "—"}</td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="inline-flex gap-1">
+                        <Button variant="ghost" size="icon" title="Editar" onClick={() => openEditDialog(aparelho)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" title="Excluir" disabled={deleteMutation.isPending} onClick={() => handleDelete(aparelho)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">{aparelhos.length} aparelhos · página {page} de {totalPages}</span>
+              <div className="flex gap-1">
+                <Button size="icon" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
+                <Button size="icon" variant="outline" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}><ChevronRight className="h-4 w-4" /></Button>
+              </div>
+            </div>
+          )}
+        </>
       ) : (
+        <>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {aparelhos.map((aparelho) => (
+          {aparelhosPagina.map((aparelho) => (
             <Card
               key={aparelho.id}
               className="surface-panel group p-5 transition-all hover:border-primary/40 hover:shadow-glow"
@@ -368,6 +437,16 @@ const Aparelhos = () => {
             </Card>
           ))}
         </div>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">{aparelhos.length} aparelhos · página {page} de {totalPages}</span>
+            <div className="flex gap-1">
+              <Button size="icon" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
+              <Button size="icon" variant="outline" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}><ChevronRight className="h-4 w-4" /></Button>
+            </div>
+          </div>
+        )}
+        </>
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

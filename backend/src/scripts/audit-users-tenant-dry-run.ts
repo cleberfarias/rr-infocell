@@ -177,7 +177,9 @@ function gerarRelatorioMd(
 
   L.push(`# Relatorio Dry-Run — Auditoria Usuarios x Tenant`);
   L.push(``);
-  L.push(`> **SOMENTE LEITURA — nenhuma escrita foi feita no Firestore. Nenhuma custom claim foi alterada.**`);
+  L.push(
+    `> **SOMENTE LEITURA — nenhuma escrita foi feita no Firestore. Nenhuma custom claim foi alterada.**`,
+  );
   L.push(``);
   L.push(`| Campo | Valor |`);
   L.push(`| --- | --- |`);
@@ -255,7 +257,9 @@ function gerarRelatorioMd(
   L.push(``);
 
   if (aRevisar > 0) {
-    L.push(`> ⚠️  **${aRevisar} usuario(s) requerem revisao manual antes de prosseguir para a Fase 9.3.**`);
+    L.push(
+      `> ⚠️  **${aRevisar} usuario(s) requerem revisao manual antes de prosseguir para a Fase 9.3.**`,
+    );
     L.push(`> Verifique cada caso na secao "revisar manualmente" acima.`);
     L.push(``);
   }

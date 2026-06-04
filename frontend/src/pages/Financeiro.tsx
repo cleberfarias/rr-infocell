@@ -10,7 +10,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Building2, Calendar, CreditCard, FileDown, Loader2, Plus, TrendingDown, TrendingUp, Wallet, X } from "lucide-react";
+import { Building2, ChevronLeft, ChevronRight, CreditCard, FileDown, Loader2, Plus, TrendingDown, TrendingUp, Wallet, X } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -167,23 +167,31 @@ const Financeiro = () => {
   const queryClient = useQueryClient();
 
   // --- período filter ---
-  const [periodo, setPeriodo] = useState<"30d" | "mes" | "trimestre">("30d");
+  const [periodo, setPeriodo] = useState<"mes" | "trimestre">("mes");
+  const [mesOffset, setMesOffset] = useState(0);
+
+  const mesNavegado = useMemo(() => {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() + mesOffset);
+    return d;
+  }, [mesOffset]);
 
   const dataInicio = useMemo(() => {
-    const hoje = new Date();
-    if (periodo === "30d") {
-      const d = new Date(hoje);
-      d.setDate(hoje.getDate() - 30);
-      return d;
-    }
     if (periodo === "mes") {
-      return new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+      return new Date(mesNavegado.getFullYear(), mesNavegado.getMonth(), 1);
     }
     // trimestre
-    const trimestre = Math.floor(hoje.getMonth() / 3);
-    return new Date(hoje.getFullYear(), trimestre * 3, 1);
-  }, [periodo]);
-  const dataFim = useMemo(() => endOfDay(new Date()), [periodo]);
+    const trimestre = Math.floor(new Date().getMonth() / 3);
+    return new Date(new Date().getFullYear(), trimestre * 3, 1);
+  }, [periodo, mesNavegado]);
+
+  const dataFim = useMemo(() => {
+    if (periodo === "mes") {
+      return new Date(mesNavegado.getFullYear(), mesNavegado.getMonth() + 1, 0, 23, 59, 59, 999);
+    }
+    return endOfDay(new Date());
+  }, [periodo, mesNavegado]);
 
   // --- state for contas dialog ---
   const [contaDialogOpen, setContaDialogOpen] = useState(false);
@@ -452,21 +460,27 @@ const Financeiro = () => {
             Receita por vendas reais, custos estimados de peças e despesas no vencimento do período.
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            {periodo === "30d" && "Últimos 30 dias"}
-            {periodo === "mes" && `${new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}`}
+            {periodo === "mes" && mesNavegado.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
             {periodo === "trimestre" && `${Math.floor(new Date().getMonth() / 3) + 1}º trimestre de ${new Date().getFullYear()}`}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant={periodo === "30d" ? "default" : "outline"}
-            onClick={() => setPeriodo("30d")}
-          >
-            <Calendar className="h-4 w-4" /> 30 dias
-          </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {periodo === "mes" && (
+            <div className="flex items-center gap-1 rounded-md border border-border bg-secondary/30 px-1">
+              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setMesOffset((m) => m - 1)}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="min-w-[130px] text-center text-sm font-medium capitalize">
+                {mesNavegado.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
+              </span>
+              <Button size="icon" variant="ghost" className="h-8 w-8" disabled={mesOffset >= 0} onClick={() => setMesOffset((m) => m + 1)}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
           <Button
             variant={periodo === "mes" ? "default" : "outline"}
-            onClick={() => setPeriodo("mes")}
+            onClick={() => { setPeriodo("mes"); setMesOffset(0); }}
           >
             Mensal
           </Button>

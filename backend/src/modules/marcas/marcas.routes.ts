@@ -2,6 +2,7 @@ import { Router } from "express";
 import { getFirestore } from "firebase-admin/firestore";
 
 import { resolveTenant, getRequestTenantId, type TenantRequest } from "../../middlewares/tenant.js";
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
 
 export const marcasRoutes = Router();
 
@@ -10,6 +11,7 @@ export const marcasRoutes = Router();
 marcasRoutes.use(resolveTenant);
 
 const COLLECTION = "marcas";
+const getDocTenantId = (data: { tenantId?: string }) => data.tenantId ?? DEFAULT_TENANT_ID;
 
 const MARCAS_PADRAO = [
   "Apple",
@@ -29,12 +31,20 @@ marcasRoutes.get("/", async (req, res, next) => {
     const tenantId = getRequestTenantId(req as TenantRequest);
     try {
       const db = getFirestore();
-      const snap = await db
-        .collection(COLLECTION)
-        .where("tenantId", "==", tenantId)
-        .get();
+      let query: FirebaseFirestore.Query = db.collection(COLLECTION);
+
+      if (tenantId !== DEFAULT_TENANT_ID) {
+        query = query.where("tenantId", "==", tenantId);
+      }
+
+      const snap = await query.get();
       const custom = snap.docs
-        .map((doc) => ({ id: doc.id, ...(doc.data() as { nome: string; tenantId?: string }), padrao: false }))
+        .map((doc) => ({
+          id: doc.id,
+          ...(doc.data() as { nome: string; tenantId?: string }),
+          padrao: false,
+        }))
+        .filter((marca) => getDocTenantId(marca) === tenantId)
         .sort((a, b) => a.nome.localeCompare(b.nome));
       return res.json({ data: [...MARCAS_PADRAO, ...custom] });
     } catch {

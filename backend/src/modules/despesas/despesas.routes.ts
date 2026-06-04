@@ -40,11 +40,14 @@ despesasRoutes.get(
   asyncHandler(async (request, response) => {
     const tenantId = getRequestTenantId(request as TenantRequest);
     const { q, categoria, pago } = parseOrThrow(() => despesaSearchSchema.parse(request.query));
-    const despesas = await despesasService.list({
-      categoria,
-      pago: pago === "" ? "" : pago === "true",
-      search: q,
-    }, tenantId);
+    const despesas = await despesasService.list(
+      {
+        categoria,
+        pago: pago === "" ? "" : pago === "true",
+        search: q,
+      },
+      tenantId,
+    );
 
     response.status(httpStatus.ok).json({
       data: despesas,

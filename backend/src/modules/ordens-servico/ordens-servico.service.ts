@@ -26,13 +26,16 @@ export class OrdensServicoService {
     private readonly repository: OrdensServicoRepository = createOrdensServicoRepository(db),
   ) {}
 
-  async list(filters?: {
-    search?: string;
-    status?: OrdemServicoStatus | "";
-    prioridade?: OrdemServico["prioridade"] | "";
-    clienteId?: string;
-    aparelhoId?: string;
-  }, tenantId?: string) {
+  async list(
+    filters?: {
+      search?: string;
+      status?: OrdemServicoStatus | "";
+      prioridade?: OrdemServico["prioridade"] | "";
+      clienteId?: string;
+      aparelhoId?: string;
+    },
+    tenantId?: string,
+  ) {
     return this.repository.list(filters, tenantId);
   }
 
@@ -129,13 +132,18 @@ export class OrdensServicoService {
     }
   }
 
-  private async enrichPecasInput(input: OrdemServicoInput, tenantId?: string): Promise<OrdemServicoInput> {
+  private async enrichPecasInput(
+    input: OrdemServicoInput,
+    tenantId?: string,
+  ): Promise<OrdemServicoInput> {
     if (!input.pecasUsadas) {
       return input;
     }
 
     if (process.env.DEBUG_TENANT_LOOKUP === "true") {
-      console.log(`[TENANT_LOOKUP] enrichPecasInput tenantId=${tenantId} pecas=${input.pecasUsadas.map(p => p.produtoId).join(",")}`);
+      console.log(
+        `[TENANT_LOOKUP] enrichPecasInput tenantId=${tenantId} pecas=${input.pecasUsadas.map((p) => p.produtoId).join(",")}`,
+      );
     }
 
     const pecasUsadas = await Promise.all(
@@ -158,7 +166,11 @@ export class OrdensServicoService {
     };
   }
 
-  private async ensurePositiveDeltasStock(input: OrdemServicoInput, current?: OrdemServico, tenantId?: string) {
+  private async ensurePositiveDeltasStock(
+    input: OrdemServicoInput,
+    current?: OrdemServico,
+    tenantId?: string,
+  ) {
     const deltas = this.calculatePecasDeltas(input.pecasUsadas ?? [], current);
 
     await Promise.all(
