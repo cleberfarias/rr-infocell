@@ -7,7 +7,7 @@ export const defaultTenant: Tenant = {
   slug: "rr-infocell",
   name: "RR Infocell",
   productName: "NextAssist",
-  plan: "premium",
+  plan: "empresarial",
   whiteLabel: true,
   status: "active",
   createdAt: "2024-01-01T00:00:00.000Z",

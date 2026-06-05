@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const tenantPlanSchema = z.enum(["free", "starter", "premium", "enterprise"]);
+export const tenantPlanSchema = z.enum(["starter", "profissional", "empresarial"]);
 export const tenantStatusSchema = z.enum(["active", "inactive", "suspended"]);
 
 export const tenantInputSchema = z.object({

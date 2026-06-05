@@ -9,7 +9,12 @@ export default function CtaSection() {
         14 dias grátis, sem cartão.
       </p>
       <div className="cta-actions">
-        <a href="#contato" className="btn-primary">
+        <a
+          href="https://wa.me/5548999019525?text=Ol%C3%A1!%20Quero%20conhecer%20o%20NextAssist."
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-primary"
+        >
           🚀 Começar teste gratuito
         </a>
         <a href="https://rr-infocell.web.app" target="_blank" rel="noopener noreferrer" className="btn-secondary">

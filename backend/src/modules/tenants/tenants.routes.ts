@@ -38,7 +38,7 @@ tenantsRoutes.get(
         id: tenantId,
         name: data.name ?? tenantId,
         productName: data.productName ?? "NextAssist",
-        plan: data.plan ?? "premium",
+        plan: data.plan ?? "empresarial",
         branding: data.branding ?? {},
       },
     });
@@ -50,7 +50,7 @@ function buildFallback(tenantId: string) {
     id: tenantId,
     name: tenantId === DEFAULT_TENANT_ID ? "RR Infocell" : tenantId,
     productName: "NextAssist",
-    plan: "premium",
+    plan: "empresarial",
     branding: {},
   };
 }

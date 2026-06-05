@@ -74,7 +74,7 @@ const allNav: NavItem[] = [
 ];
 
 const canShowNavItemForPlan = (moduleKey?: ModuleKey) => {
-  return !moduleKey || canUseModule(moduleKey, "premium");
+  return !moduleKey || canUseModule(moduleKey, "empresarial");
 };
 
 const navOrder: Record<string, number> = {

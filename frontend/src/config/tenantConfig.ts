@@ -5,9 +5,9 @@ const fallbackTenantId = "rr-infocell";
 const fallbackProductName = "NextAssist";
 const fallbackSystemName = "RR Infocell";
 const fallbackTenantName = "RR Infocell";
-const fallbackPlan: PlanKey = "premium";
+const fallbackPlan: PlanKey = "empresarial";
 
-const planKeys: PlanKey[] = ["basico", "profissional", "premium"];
+const planKeys: PlanKey[] = ["starter", "profissional", "empresarial"];
 
 const getEnvValue = (value: string | undefined, fallback: string) => {
   const trimmed = value?.trim();

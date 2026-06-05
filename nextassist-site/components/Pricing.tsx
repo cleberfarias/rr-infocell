@@ -6,6 +6,7 @@ const PLANS = [
     desc: "Para quem está começando sozinho.",
     amount: "89",
     popular: false,
+    checkoutUrl: "https://pay.kiwify.com.br/GXfaAPz",
     items: [
       { text: "1 usuário", ok: true },
       { text: "OS ilimitadas", ok: true },
@@ -22,6 +23,7 @@ const PLANS = [
     desc: "Para lojas com equipe e maior volume.",
     amount: "149",
     popular: true,
+    checkoutUrl: "https://pay.kiwify.com.br/rZsfReN",
     items: [
       { text: "Até 5 usuários", ok: true },
       { text: "OS ilimitadas", ok: true },
@@ -38,6 +40,7 @@ const PLANS = [
     desc: "Para redes com alto volume e múltiplas unidades.",
     amount: "249",
     popular: false,
+    checkoutUrl: "https://pay.kiwify.com.br/DLAAS9J",
     items: [
       { text: "Usuários ilimitados", ok: true },
       { text: "OS ilimitadas", ok: true },
@@ -86,10 +89,12 @@ export default function Pricing() {
                   ))}
                 </ul>
                 <a
-                  href="#contato"
+                  href={plan.checkoutUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className={`plan-btn ${plan.popular ? "p-primary" : "p-outline"}`}
                 >
-                  {plan.popular ? "Começar grátis →" : "Testar grátis"}
+                  Contratar agora →
                 </a>
               </div>
             ))}
@@ -103,7 +108,12 @@ export default function Pricing() {
                 franquias e revendedores que querem oferecer o produto como próprio.
               </p>
             </div>
-            <a href="#contato" className="btn-primary">
+            <a
+              href="https://wa.me/5548999019525?text=Ol%C3%A1!%20Tenho%20interesse%20no%20NextAssist%20White%20Label."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-primary"
+            >
               Falar com vendas →
             </a>
           </div>

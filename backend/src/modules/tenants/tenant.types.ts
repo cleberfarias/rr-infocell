@@ -1,4 +1,4 @@
-export type TenantPlan = "free" | "starter" | "premium" | "enterprise";
+export type TenantPlan = "starter" | "profissional" | "empresarial";
 export type TenantStatus = "active" | "inactive" | "suspended";
 
 export type TenantBranding = {
