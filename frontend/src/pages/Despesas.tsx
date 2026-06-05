@@ -79,10 +79,15 @@ const toInput = (despesa: Despesa): DespesaInput => ({
 });
 
 const parseDespesaMes = (vencimento: string): { mes: number; ano: number | null } | null => {
-  const m = vencimento.match(/^\d{1,2}\/(\d{1,2})(?:\/(\d{2,4}))?$/);
-  if (!m) return null;
-  const mes = Number(m[1]) - 1;
-  const anoText = m[2];
+  const trimmed = vencimento.trim();
+  const brDate = trimmed.match(/^\d{1,2}\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+  const isoDate = trimmed.match(/^(\d{4})-(\d{2})-\d{2}/);
+
+  const mes = brDate ? Number(brDate[1]) - 1 : isoDate ? Number(isoDate[2]) - 1 : NaN;
+  const anoText = brDate ? brDate[2] : isoDate ? isoDate[1] : undefined;
+
+  if (!Number.isInteger(mes) || mes < 0 || mes > 11) return null;
+
   const ano = anoText ? Number(anoText.length === 2 ? `20${anoText}` : anoText) : null;
   return { mes, ano };
 };
@@ -120,7 +125,6 @@ const Despesas = () => {
     const ano = mesRef.getFullYear();
     const mes = mesRef.getMonth();
     return filtrada.filter((despesa) => {
-      if (despesa.recorrente) return true;
       const parsed = parseDespesaMes(despesa.vencimento);
       if (!parsed) return true;
       if (parsed.ano === null) return parsed.mes === mes;

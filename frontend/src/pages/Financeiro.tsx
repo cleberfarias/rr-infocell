@@ -87,57 +87,22 @@ const parseVencimento = (value: string, referenceYear: number) => {
   return null;
 };
 
-const monthlyOccurrenceDate = (year: number, month: number, day: number) => {
-  const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
-  return new Date(year, month, Math.min(day, lastDayOfMonth));
-};
-
 const countDespesaOccurrences = (
-  despesa: { vencimento: string; recorrente: boolean },
+  despesa: { vencimento: string },
   periodStart: Date,
   periodEnd: Date,
 ) => {
-  const firstDueDate = parseVencimento(despesa.vencimento, periodStart.getFullYear());
+  const dueDate = parseVencimento(despesa.vencimento, periodStart.getFullYear());
 
-  if (!firstDueDate) {
+  if (!dueDate) {
     return 0;
   }
 
   const normalizedStart = startOfDay(periodStart);
   const normalizedEnd = endOfDay(periodEnd);
-  const normalizedDueDate = startOfDay(firstDueDate);
+  const normalizedDueDate = startOfDay(dueDate);
 
-  if (!despesa.recorrente) {
-    return normalizedDueDate >= normalizedStart && normalizedDueDate <= normalizedEnd ? 1 : 0;
-  }
-
-  if (normalizedDueDate > normalizedEnd) {
-    return 0;
-  }
-
-  const dueDay = normalizedDueDate.getDate();
-  let cursor = monthlyOccurrenceDate(
-    normalizedStart.getFullYear(),
-    normalizedStart.getMonth(),
-    dueDay,
-  );
-
-  if (cursor < normalizedStart) {
-    cursor = monthlyOccurrenceDate(cursor.getFullYear(), cursor.getMonth() + 1, dueDay);
-  }
-
-  if (cursor < normalizedDueDate) {
-    cursor = normalizedDueDate;
-  }
-
-  let occurrences = 0;
-
-  while (cursor <= normalizedEnd) {
-    occurrences += 1;
-    cursor = monthlyOccurrenceDate(cursor.getFullYear(), cursor.getMonth() + 1, dueDay);
-  }
-
-  return occurrences;
+  return normalizedDueDate >= normalizedStart && normalizedDueDate <= normalizedEnd ? 1 : 0;
 };
 
 const TIPO_LABEL: Record<ContaTipo, string> = {

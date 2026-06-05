@@ -654,17 +654,21 @@ const PDV = () => {
   @page { size: ${pgWidth} auto; margin: 2mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: 'Courier New', Courier, monospace;
+    font-family: 'Lucida Console', 'Consolas', 'Courier New', monospace;
     font-size: ${larguraCupom === "58mm" ? "11px" : "12px"};
-    line-height: 1.35;
+    font-weight: 700;
+    line-height: 1.3;
     color: #000;
     background: #fff;
     width: ${pgWidth};
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    text-rendering: geometricPrecision;
   }
   .center { text-align: center; }
-  .bold { font-weight: 700; }
-  .small { font-size: 10px; }
-  .sep { border: none; border-top: 1px dashed #000; margin: 2px 0; }
+  .bold { font-weight: 900; }
+  .small { font-size: ${larguraCupom === "58mm" ? "10px" : "11px"}; }
+  .sep { border: none; border-top: 2px dashed #000; margin: 2px 0; }
 </style>
 </head><body>
 ${logoHtml}<div class="center">${EMPRESA.cnpj} ${EMPRESA.nome.toUpperCase()}</div>
