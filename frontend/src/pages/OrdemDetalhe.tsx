@@ -837,6 +837,45 @@ const OrdemDetalhe = () => {
                 )}
               </td>
             </tr>
+            {!viaInterna && (
+              <tr>
+                <th
+                  style={{
+                    border: "1px solid #d1d5db",
+                    padding: "6px 8px",
+                    background: "#f3f4f6",
+                    textAlign: "left",
+                    fontSize: 10,
+                    textTransform: "uppercase",
+                    width: 140,
+                  }}
+                >
+                  Garantia
+                </th>
+                <td
+                  style={{
+                    border: "1px solid #d1d5db",
+                    padding: "6px 8px",
+                    fontSize: 11,
+                  }}
+                >
+                  <strong>
+                    {ordem.garantiaDias
+                      ? `${ordem.garantiaDias} dias`
+                      : "Nao informada"}
+                  </strong>
+                  <span style={{ marginLeft: 8 }}>
+                    Inicio: {garantiaInicioLabel} | Valida ate:{" "}
+                    {garantiaValidadeLabel}
+                  </span>
+                  {ordem.garantiaObservacoes && (
+                    <p style={{ margin: "3px 0 0", fontSize: 10 }}>
+                      {ordem.garantiaObservacoes}
+                    </p>
+                  )}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
 
