@@ -171,13 +171,16 @@ export class VendasService {
         continue;
       }
 
-      await movimentacoesEstoqueService.create({
-        produtoId: item.produtoId,
-        tipo: "saida",
-        quantidade: item.quantidade,
-        motivo: `Venda direta${item.imei ? ` IMEI ${item.imei}` : ""}`,
-        origem: "venda",
-      }, tenantId);
+      await movimentacoesEstoqueService.create(
+        {
+          produtoId: item.produtoId,
+          tipo: "saida",
+          quantidade: item.quantidade,
+          motivo: `Venda direta${item.imei ? ` IMEI ${item.imei}` : ""}`,
+          origem: "venda",
+        },
+        tenantId,
+      );
     }
 
     return this.repository.create({

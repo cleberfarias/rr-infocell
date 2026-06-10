@@ -192,14 +192,17 @@ export class OrdensServicoService {
     const deltas = this.calculatePecasDeltas(ordem.pecasUsadas, current);
 
     for (const delta of deltas) {
-      await movimentacoesEstoqueService.create({
-        produtoId: delta.produtoId,
-        tipo: "saida",
-        quantidade: delta.quantidade,
-        motivo: `Baixa automatica OS-${ordem.numero}`,
-        origem: "ordem_servico",
-        ordemServicoId: ordem.id,
-      }, ordem.tenantId);
+      await movimentacoesEstoqueService.create(
+        {
+          produtoId: delta.produtoId,
+          tipo: "saida",
+          quantidade: delta.quantidade,
+          motivo: `Baixa automatica OS-${ordem.numero}`,
+          origem: "ordem_servico",
+          ordemServicoId: ordem.id,
+        },
+        ordem.tenantId,
+      );
       await this.registrarEvento(
         ordem.id,
         "peca",

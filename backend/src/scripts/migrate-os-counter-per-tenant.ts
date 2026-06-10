@@ -52,7 +52,9 @@ async function main() {
   }
 
   const globalNextNumero = Number(globalSnap.data()?.nextNumero ?? 1);
-  console.log(`\nCounter global atual: counters/${GLOBAL_COUNTER_DOC}.nextNumero = ${globalNextNumero}`);
+  console.log(
+    `\nCounter global atual: counters/${GLOBAL_COUNTER_DOC}.nextNumero = ${globalNextNumero}`,
+  );
 
   // 2. Descobre qual o maior numero de OS real do tenant rr-infocell
   console.log("\nVerificando maior numero de OS do tenant rr-infocell...");
@@ -61,9 +63,7 @@ async function main() {
     .where("tenantId", "==", "rr-infocell")
     .get();
 
-  const numeros = snapshot.docs
-    .map((d) => Number(d.data().numero ?? 0))
-    .filter((n) => n > 0);
+  const numeros = snapshot.docs.map((d) => Number(d.data().numero ?? 0)).filter((n) => n > 0);
 
   const maxNumeroRR = numeros.length > 0 ? Math.max(...numeros) : 0;
   // Usa o maior entre o counter global e o maior numero real (segurança extra)
@@ -77,7 +77,9 @@ async function main() {
   const rrSnap = await rrRef.get();
 
   if (rrSnap.exists) {
-    console.log(`\n  counters/rr-infocell ja existe (nextNumero=${rrSnap.data()?.nextNumero}) — skipped`);
+    console.log(
+      `\n  counters/rr-infocell ja existe (nextNumero=${rrSnap.data()?.nextNumero}) — skipped`,
+    );
   } else {
     await rrRef.set({ nextNumero: nextNumeroRR });
     console.log(`\n  counters/rr-infocell criado com nextNumero=${nextNumeroRR}`);
@@ -88,7 +90,9 @@ async function main() {
   const demoSnap = await demoRef.get();
 
   if (demoSnap.exists) {
-    console.log(`  counters/nextassist-demo ja existe (nextNumero=${demoSnap.data()?.nextNumero}) — skipped`);
+    console.log(
+      `  counters/nextassist-demo ja existe (nextNumero=${demoSnap.data()?.nextNumero}) — skipped`,
+    );
   } else {
     await demoRef.set({ nextNumero: 1 });
     console.log(`  counters/nextassist-demo criado com nextNumero=1`);

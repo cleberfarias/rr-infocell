@@ -1,7 +1,4 @@
-export type KiwifyEventType =
-  | "order_approved"
-  | "subscription_canceled"
-  | "subscription_renewed";
+export type KiwifyEventType = "order_approved" | "subscription_canceled" | "subscription_renewed";
 
 export type KiwifyCustomer = {
   full_name: string;

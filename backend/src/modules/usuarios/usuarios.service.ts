@@ -76,16 +76,19 @@ export class UsuariosService {
 
     if (db) {
       const agora = Timestamp.now();
-      await db.collection("usuarios").doc(user.uid).set({
-        uid: user.uid,
-        email: input.email,
-        nome: input.displayName ?? "",
-        tenantId,
-        role: input.role,
-        status: "ativo",
-        createdAt: agora,
-        updatedAt: agora,
-      });
+      await db
+        .collection("usuarios")
+        .doc(user.uid)
+        .set({
+          uid: user.uid,
+          email: input.email,
+          nome: input.displayName ?? "",
+          tenantId,
+          role: input.role,
+          status: "ativo",
+          createdAt: agora,
+          updatedAt: agora,
+        });
     }
 
     return mapUser(await client.getUser(user.uid));

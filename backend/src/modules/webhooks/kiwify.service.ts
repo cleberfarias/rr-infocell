@@ -108,19 +108,22 @@ export class KiwifyService {
     const agora = Timestamp.now();
 
     // Criar tenant no Firestore
-    await db.collection("tenants").doc(slug).set({
-      id: slug,
-      slug,
-      name,
-      productName: "NextAssist",
-      plan,
-      whiteLabel: false,
-      status: "active",
-      ownerEmail: email,
-      kiwifySubscriptionId: subscriptionId ?? null,
-      createdAt: agora,
-      updatedAt: agora,
-    });
+    await db
+      .collection("tenants")
+      .doc(slug)
+      .set({
+        id: slug,
+        slug,
+        name,
+        productName: "NextAssist",
+        plan,
+        whiteLabel: false,
+        status: "active",
+        ownerEmail: email,
+        kiwifySubscriptionId: subscriptionId ?? null,
+        createdAt: agora,
+        updatedAt: agora,
+      });
 
     // Criar usuário admin no Firebase Auth
     let uid: string;
@@ -177,11 +180,7 @@ export class KiwifyService {
     if (!db) return;
 
     const email = payload.Customer.email;
-    const snap = await db
-      .collection("tenants")
-      .where("ownerEmail", "==", email)
-      .limit(1)
-      .get();
+    const snap = await db.collection("tenants").where("ownerEmail", "==", email).limit(1).get();
 
     if (snap.empty) return;
 
@@ -193,11 +192,7 @@ export class KiwifyService {
     if (!db) return;
 
     const email = payload.Customer.email;
-    const snap = await db
-      .collection("tenants")
-      .where("ownerEmail", "==", email)
-      .limit(1)
-      .get();
+    const snap = await db.collection("tenants").where("ownerEmail", "==", email).limit(1).get();
 
     if (snap.empty) return;
 
