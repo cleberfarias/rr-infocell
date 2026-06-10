@@ -10,6 +10,7 @@ import {
   MessageCircle,
   MoreVertical,
   Plus,
+  RotateCcw,
   Search,
   Trash2,
   Wrench,
@@ -61,6 +62,7 @@ import { listClientes, type Cliente } from "@/services/clientes";
 import {
   deleteOrdemServico,
   listOrdensServico,
+  reabrirOrdemServico,
   updateOrdemServico,
   type OrdemServico,
   type OrdemServicoStatus,
@@ -240,6 +242,21 @@ const Ordens = () => {
     onError: () => toast.error("Não foi possível atualizar o status."),
   });
 
+  const reabrirOsMutation = useMutation({
+    mutationFn: (id: string) => reabrirOrdemServico(id),
+    onSuccess: (ordem) => {
+      queryClient.invalidateQueries({ queryKey: ["ordens-servico"] });
+      toast.success(`OS-${ordem.numero} reaberta em analise.`);
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Nao foi possivel reabrir a OS.",
+      );
+    },
+  });
+
   const excluirOsMutation = useMutation({
     mutationFn: (id: string) => deleteOrdemServico(id),
     onSuccess: () => {
@@ -349,6 +366,25 @@ const Ordens = () => {
   const paginatedOrdens = ordens.slice(pageStart, pageEnd);
 
   const StatusDropdown = ({ ordem }: { ordem: OrdemServico }) => {
+    if (ordem.status === "cancelado") {
+      return (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          title="Reabrir OS"
+          disabled={reabrirOsMutation.isPending}
+          onClick={() => reabrirOsMutation.mutate(ordem.id)}
+        >
+          {reabrirOsMutation.isPending ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <RotateCcw className="h-3.5 w-3.5" />
+          )}
+        </Button>
+      );
+    }
+
     const proximos = STATUS_NEXT[ordem.status] ?? [];
     if (proximos.length === 0) return null;
     return (

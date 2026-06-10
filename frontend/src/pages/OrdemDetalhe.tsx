@@ -9,6 +9,7 @@ import {
   Loader2,
   PackagePlus,
   Printer,
+  RotateCcw,
   ShieldCheck,
   Trash2,
 } from "lucide-react";
@@ -67,6 +68,7 @@ import { getCliente } from "@/services/clientes";
 import {
   deleteOrdemServico,
   getOrdemServico,
+  reabrirOrdemServico,
   updateOrdemServico,
   type OrdemServicoPecaInput,
 } from "@/services/ordens-servico";
@@ -91,6 +93,7 @@ const OrdemDetalhe = () => {
   const [previewOsViaInterna, setPreviewOsViaInterna] = useState(false);
   const [previewGarantiaOpen, setPreviewGarantiaOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [reabrirDialogOpen, setReabrirDialogOpen] = useState(false);
   const [editTermoOpen, setEditTermoOpen] = useState(false);
   const [garantiaDiasTexto, setGarantiaDiasTexto] = useState("");
   const [garantiaObservacoesTexto, setGarantiaObservacoesTexto] = useState("");
@@ -159,6 +162,25 @@ const OrdemDetalhe = () => {
       navigate("/app/ordens");
     },
     onError: () => toast.error("Não foi possível excluir a OS."),
+  });
+
+  const reabrirOsMutation = useMutation({
+    mutationFn: () => reabrirOrdemServico(ordemId ?? ""),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["ordem-servico", ordemId] }),
+        queryClient.invalidateQueries({ queryKey: ["ordens-servico"] }),
+      ]);
+      setReabrirDialogOpen(false);
+      toast.success(`OS-${ordem?.numero} reaberta em analise.`);
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Nao foi possivel reabrir a OS.",
+      );
+    },
   });
 
   const garantiaMutation = useMutation({
@@ -1105,6 +1127,48 @@ const OrdemDetalhe = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Dialog: confirmar reabertura */}
+      <Dialog open={reabrirDialogOpen} onOpenChange={setReabrirDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Reabrir ordem de servico</DialogTitle>
+            <DialogDescription>
+              A OS cancelada voltara para o status Em analise.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-1">
+            <p className="text-sm text-muted-foreground">
+              Tem certeza que deseja reabrir a{" "}
+              <span className="font-semibold text-foreground">
+                OS-{ordem.numero}
+              </span>
+              ?
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setReabrirDialogOpen(false)}
+                disabled={reabrirOsMutation.isPending}
+              >
+                Cancelar
+              </Button>
+              <Button
+                className="bg-gradient-primary text-primary-foreground shadow-glow"
+                disabled={reabrirOsMutation.isPending}
+                onClick={() => reabrirOsMutation.mutate()}
+              >
+                {reabrirOsMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-4 w-4" />
+                )}
+                Reabrir OS
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <PrintPreviewDialog
         open={previewOsOpen}
         onOpenChange={setPreviewOsOpen}
@@ -1339,6 +1403,14 @@ const OrdemDetalhe = () => {
               <Button onClick={() => setPreviewOsViaInterna(true)}>
                 <Printer className="h-4 w-4" /> Via interna
               </Button>
+              {ordem.status === "cancelado" && (
+                <Button
+                  className="bg-gradient-primary text-primary-foreground shadow-glow"
+                  onClick={() => setReabrirDialogOpen(true)}
+                >
+                  <RotateCcw className="h-4 w-4" /> Reabrir OS
+                </Button>
+              )}
               <Button
                 variant="outline"
                 className="text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"

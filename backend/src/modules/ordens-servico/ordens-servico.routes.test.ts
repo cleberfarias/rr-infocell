@@ -159,6 +159,40 @@ describe("ordens-servico routes", () => {
     expect(updateResponse.body.error.code).toBe("ordem_servico_locked");
   });
 
+  it("reopens only canceled ordens de servico", async () => {
+    const createCanceledResponse = await request(app).post("/api/ordens-servico").send({
+      clienteId: "cli_marcos_almeida",
+      aparelhoId: "apa_iphone_11_marcos",
+      defeitoRelatado: "Teste de reabertura cancelada",
+      status: "cancelado",
+    });
+
+    expect(createCanceledResponse.status).toBe(201);
+
+    const reopenResponse = await request(app).patch(
+      `/api/ordens-servico/${createCanceledResponse.body.data.id}/reabrir`,
+    );
+
+    expect(reopenResponse.status).toBe(200);
+    expect(reopenResponse.body.data.status).toBe("em_analise");
+
+    const createActiveResponse = await request(app).post("/api/ordens-servico").send({
+      clienteId: "cli_marcos_almeida",
+      aparelhoId: "apa_iphone_11_marcos",
+      defeitoRelatado: "Teste de reabertura ativa",
+      status: "recebido",
+    });
+
+    expect(createActiveResponse.status).toBe(201);
+
+    const blockedResponse = await request(app).patch(
+      `/api/ordens-servico/${createActiveResponse.body.data.id}/reabrir`,
+    );
+
+    expect(blockedResponse.status).toBe(400);
+    expect(blockedResponse.body.error.code).toBe("ordem_servico_reopen_not_allowed");
+  });
+
   it("deducts stock when adding pecas usadas to ordem", async () => {
     const produtoResponse = await request(app).post("/api/produtos").send({
       sku: "OS-FLX-01",

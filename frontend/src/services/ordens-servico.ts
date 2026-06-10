@@ -231,6 +231,17 @@ export const updateOrdemServico = async (
   return response.data;
 };
 
+export const reabrirOrdemServico = async (id: string) => {
+  const response = await apiRequest<ApiResponse<OrdemServico>>(
+    `/ordens-servico/${id}/reabrir`,
+    {
+      method: "PATCH",
+    },
+  );
+
+  return response.data;
+};
+
 export const deleteOrdemServico = async (id: string) => {
   await apiRequest<void>(`/ordens-servico/${id}`, {
     method: "DELETE",

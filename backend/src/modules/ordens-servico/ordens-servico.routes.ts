@@ -112,6 +112,18 @@ ordensServicoRoutes.put(
   }),
 );
 
+ordensServicoRoutes.patch(
+  "/:id/reabrir",
+  asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
+    const id = String(request.params.id);
+
+    response.status(httpStatus.ok).json({
+      data: await ordensServicoService.reabrirCancelada(id, tenantId),
+    });
+  }),
+);
+
 ordensServicoRoutes.delete(
   "/:id",
   asyncHandler(async (request, response) => {

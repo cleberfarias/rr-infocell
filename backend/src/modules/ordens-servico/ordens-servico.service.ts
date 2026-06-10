@@ -104,6 +104,72 @@ export class OrdensServicoService {
     return ordem;
   }
 
+  async reabrirCancelada(id: string, tenantId?: string) {
+    const current = await this.getById(id, tenantId);
+
+    if (current.status !== "cancelado") {
+      throw new AppError(
+        "ordem_servico_reopen_not_allowed",
+        "Apenas ordens de servico canceladas podem ser reabertas.",
+        httpStatus.badRequest,
+      );
+    }
+
+    const ordem = await this.repository.update(id, {
+      clienteId: current.clienteId,
+      aparelhoId: current.aparelhoId,
+      checklistId: current.checklistId,
+      defeitoRelatado: current.defeitoRelatado,
+      diagnostico: current.diagnostico,
+      tipoSenha: current.tipoSenha,
+      senhaAparelho: current.senhaAparelho,
+      padraoDeSenha: current.padraoDeSenha,
+      status: "em_analise",
+      prioridade: current.prioridade,
+      tecnicoResponsavel: current.tecnicoResponsavel,
+      pecasUsadas: current.pecasUsadas.map((peca) => ({
+        produtoId: peca.produtoId,
+        quantidade: peca.quantidade,
+        valorUnitario: peca.valorUnitario,
+      })),
+      valorMaoObra: current.valorMaoObra,
+      maoObraInclusaNaPeca: current.maoObraInclusaNaPeca,
+      desconto: current.desconto,
+      entradaEm: current.entradaEm,
+      previsaoEntregaEm: current.previsaoEntregaEm,
+      prazoPrometidoEm: current.prazoPrometidoEm,
+      garantiaDias: current.garantiaDias,
+      garantiaObservacoes: current.garantiaObservacoes,
+      aprovadoPor: current.aprovadoPor,
+      aprovadoEm: current.aprovadoEm,
+      canalAprovacao: current.canalAprovacao,
+      mensagemAprovacao: current.mensagemAprovacao,
+      valorAdiantado: current.valorAdiantado,
+      formaPagamentoAdiantamento: current.formaPagamentoAdiantamento,
+      formaPagamento: current.formaPagamento,
+      valorRecebido: current.valorRecebido,
+    });
+
+    if (!ordem) {
+      throw new AppError(
+        "ordem_servico_not_found",
+        "Ordem de servico nao encontrada.",
+        httpStatus.notFound,
+      );
+    }
+
+    await this.registrarEvento(
+      ordem.id,
+      "status",
+      "OS reaberta",
+      `${current.status} -> ${ordem.status}`,
+      ordem.tecnicoResponsavel,
+    );
+    await automacoesAtendimentoService.aoAtualizarOrdem(current, ordem);
+
+    return ordem;
+  }
+
   async delete(id: string) {
     const deleted = await this.repository.delete(id);
 
