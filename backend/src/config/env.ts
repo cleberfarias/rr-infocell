@@ -20,6 +20,12 @@ const envSchema = z.object({
   WHATSAPP_AUTH_DIR: z.string().default("./whatsapp-auth"),
   OBSERVABILIDADE_ALLOWED_EMAILS: z.string().default("cleber.super@rrinfocell.com.br"),
   OBSERVABILIDADE_ALLOWED_UIDS: z.string().optional(),
+  KIWIFY_WEBHOOK_TOKEN: z.string().default("gzowchq4hd8"),
+  APP_URL: z.string().default("https://rr-infocell.web.app"),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
 });
 
 export const env = envSchema.parse(process.env);

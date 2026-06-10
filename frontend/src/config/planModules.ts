@@ -13,12 +13,12 @@ export const moduleKeys = [
 
 export type ModuleKey = (typeof moduleKeys)[number];
 
-export type PlanKey = "basico" | "profissional" | "premium";
+export type PlanKey = "starter" | "profissional" | "empresarial";
 
 export type PlanModules = Record<ModuleKey, boolean>;
 
 export const planModules: Record<PlanKey, PlanModules> = {
-  basico: {
+  starter: {
     dashboard: true,
     clientes: true,
     ordensServico: true,
@@ -42,7 +42,7 @@ export const planModules: Record<PlanKey, PlanModules> = {
     multiUsuarios: true,
     multiUnidades: false,
   },
-  premium: {
+  empresarial: {
     dashboard: true,
     clientes: true,
     ordensServico: true,

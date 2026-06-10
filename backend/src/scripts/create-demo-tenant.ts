@@ -47,7 +47,7 @@ const DEMO_TENANT = {
   slug: "nextassist-demo",
   name: "NextAssist Demo",
   productName: "NextAssist",
-  plan: "premium",
+  plan: "empresarial",
   whiteLabel: true,
   status: "active",
   createdAt: new Date().toISOString(),

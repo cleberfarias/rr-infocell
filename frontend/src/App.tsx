@@ -27,6 +27,7 @@ import Atendimento from "./pages/Atendimento";
 import Treinamento from "./pages/Treinamento";
 import Observabilidade from "./pages/Observabilidade";
 import TenantSettings from "./pages/TenantSettings";
+import Planos from "./pages/Planos";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/planos" element={<Planos />} />
               <Route path="/app" element={<AppLayout />}>
                 <Route index element={<Dashboard />} />
                 <Route path="ordens" element={<Ordens />} />

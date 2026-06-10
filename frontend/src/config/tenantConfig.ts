@@ -3,9 +3,11 @@ import type { PlanKey } from "@/config/planModules";
 
 const fallbackTenantId = "rr-infocell";
 const fallbackProductName = "NextAssist";
-const fallbackPlan: PlanKey = "premium";
+const fallbackSystemName = "RR Infocell";
+const fallbackTenantName = "RR Infocell";
+const fallbackPlan: PlanKey = "empresarial";
 
-const planKeys: PlanKey[] = ["basico", "profissional", "premium"];
+const planKeys: PlanKey[] = ["starter", "profissional", "empresarial"];
 
 const getEnvValue = (value: string | undefined, fallback: string) => {
   const trimmed = value?.trim();
@@ -22,16 +24,18 @@ const getEnvPlan = (value: string | undefined, fallback: PlanKey): PlanKey => {
   return planKeys.includes(value as PlanKey) ? (value as PlanKey) : fallback;
 };
 
+const getLogoSrc = (envUrl: string | undefined, fallback: string): string => {
+  const trimmed = envUrl?.trim();
+  return trimmed || fallback;
+};
+
 export const tenantConfig = {
   appEnv: getEnvValue(import.meta.env.VITE_APP_ENV, "production"),
   tenantId: getEnvValue(import.meta.env.VITE_TENANT_ID, fallbackTenantId),
-  productName: getEnvValue(
-    import.meta.env.VITE_PRODUCT_NAME,
-    fallbackProductName,
-  ),
-  systemName: "RR Infocell",
-  tenantName: "RR Infocell",
-  logo: logoRrInfocell,
+  productName: getEnvValue(import.meta.env.VITE_PRODUCT_NAME, fallbackProductName),
+  systemName: getEnvValue(import.meta.env.VITE_SYSTEM_NAME, fallbackSystemName),
+  tenantName: getEnvValue(import.meta.env.VITE_TENANT_NAME, fallbackTenantName),
+  logo: getLogoSrc(import.meta.env.VITE_LOGO_URL, logoRrInfocell),
   primaryColor: "205 95% 55%",
   secondaryColor: "220 12% 14%",
   plan: getEnvPlan(import.meta.env.VITE_DEFAULT_PLAN, fallbackPlan),

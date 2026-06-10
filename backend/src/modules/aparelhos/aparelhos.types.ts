@@ -8,6 +8,7 @@ export type Aparelho = {
   estadoFisico?: string;
   acessorios?: string;
   observacoes?: string;
+  tenantId?: string;
   createdAt: string;
   updatedAt: string;
 };

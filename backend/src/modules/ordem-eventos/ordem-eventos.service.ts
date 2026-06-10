@@ -14,12 +14,15 @@ export class OrdemEventosService {
     private readonly repository: OrdemEventosRepository = createOrdemEventosRepository(db),
   ) {}
 
-  async list(filters?: { ordemServicoId?: string; tipo?: OrdemEventoTipo | "" }) {
-    return this.repository.list(filters);
+  async list(
+    filters?: { ordemServicoId?: string; tipo?: OrdemEventoTipo | "" },
+    tenantId = DEFAULT_TENANT_ID,
+  ) {
+    return this.repository.list(filters, tenantId);
   }
 
-  async create(input: OrdemEventoInput) {
-    await ordensServicoService.getById(input.ordemServicoId);
+  async create(input: OrdemEventoInput, tenantId = DEFAULT_TENANT_ID) {
+    await ordensServicoService.getById(input.ordemServicoId, tenantId);
 
     return this.repository.create({
       ordemServicoId: input.ordemServicoId,
@@ -27,7 +30,7 @@ export class OrdemEventosService {
       titulo: input.titulo,
       descricao: input.descricao,
       criadoPor: input.criadoPor,
-      tenantId: DEFAULT_TENANT_ID,
+      tenantId,
       createdAt: now(),
     });
   }

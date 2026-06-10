@@ -95,11 +95,11 @@ export default function Contact() {
                     <h4>WhatsApp</h4>
                     <p>
                       <a
-                        href="https://wa.me/5511917600022"
+                        href="https://wa.me/5548999019525"
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        +55 (11) 91760-0022
+                        +55 (48) 99901-9525
                       </a>
                     </p>
                   </div>

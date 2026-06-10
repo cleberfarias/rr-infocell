@@ -40,7 +40,7 @@ import { canAccessObservabilidade } from "@/lib/observabilidade";
 import { canAccess, roleLabels, roleHome, type Role } from "@/lib/roles";
 import { listOrdensServico } from "@/services/ordens-servico";
 import { listProdutos } from "@/services/produtos";
-import { tenantConfig } from "@/config/tenantConfig";
+import { useTenant } from "@/contexts/TenantContext";
 import { canUseModule, type ModuleKey } from "@/config/planModules";
 
 type NavItem = {
@@ -74,7 +74,7 @@ const allNav: NavItem[] = [
 ];
 
 const canShowNavItemForPlan = (moduleKey?: ModuleKey) => {
-  return !moduleKey || canUseModule(moduleKey, tenantConfig.plan);
+  return !moduleKey || canUseModule(moduleKey, "empresarial");
 };
 
 const navOrder: Record<string, number> = {
@@ -99,6 +99,7 @@ export const AppLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchValue, setSearchValue] = useState("");
+  const { tenant } = useTenant();
   const {
     displayName: nome,
     isAuthenticated,
@@ -324,12 +325,12 @@ export const AppLayout = () => {
           <div className="flex items-center gap-3 md:hidden">
             <Logo className="h-12" />
             <span className="font-display text-sm font-semibold">
-              {current?.label ?? tenantConfig.tenantName}
+              {current?.label ?? tenant.tenantName}
             </span>
           </div>
           <div className="hidden md:flex flex-col">
             <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
-              {tenantConfig.tenantName} • {roleLabels[role]}
+              {tenant.tenantName} • {roleLabels[role]}
             </p>
             <h1 className="font-display text-lg font-semibold leading-none">
               {current?.label ?? "Painel"}

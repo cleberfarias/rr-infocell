@@ -1,5 +1,11 @@
-export type TenantPlan = "free" | "starter" | "premium" | "enterprise";
+export type TenantPlan = "starter" | "profissional" | "empresarial";
 export type TenantStatus = "active" | "inactive" | "suspended";
+
+export type TenantBranding = {
+  logoUrl?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+};
 
 export type Tenant = {
   id: string;
@@ -9,6 +15,7 @@ export type Tenant = {
   plan: TenantPlan;
   whiteLabel: boolean;
   status: TenantStatus;
+  branding?: TenantBranding;
   createdAt: string;
   updatedAt: string;
 };

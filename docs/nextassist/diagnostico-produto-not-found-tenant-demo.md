@@ -1,9 +1,9 @@
 # Diagnóstico — `produto_not_found` em OS/Venda no Tenant Demo
 
 **Fase:** 9.16.2 — Diagnóstico de bug em fluxos complexos
-**Data:** 2026-05-29
+**Data:** 2026-05-29 → atualizado 2026-06-02
 **Branch:** nextassist-saas
-**Status:** 🔍 Em investigação
+**Status:** ✅ Causa raiz confirmada — pronto para correção
 
 ---
 
@@ -37,28 +37,41 @@ O produto `NqiT2gKmpsXUK0D4ya4z` existe no Firestore com `tenantId: "nextassist-
 
 ---
 
-## 4. Hipótese principal
+## 4. Causa raiz confirmada (2026-06-02)
 
-`produtosService.getById(produtoId, tenantId)` é chamado com `tenantId` diferente nos fluxos de OS/venda vs movimentação.
+### Evidência nos logs (`DEBUG_TENANT_LOOKUP=true`)
 
-No `FirestoreProdutosRepository.findById`, o guard bloqueia quando:
-```typescript
-if (tenantId && produto.tenantId && produto.tenantId !== tenantId) {
-    return null;
-}
+```
+# Movimentação manual — OK
+[TENANT_LOOKUP] movimentacao.create produtoId=NqiT2gKmpsXUK0D4ya4z tenantId=nextassist-demo
+[TENANT_LOOKUP] findById id=NqiT2gKmpsXUK0D4ya4z tenantId_received=nextassist-demo tenantId_doc=nextassist-demo result=found
+
+# OS com peça — lookup inicial OK, movimentação interna ERRADA
+[TENANT_LOOKUP] enrichPecasInput tenantId=nextassist-demo pecas=NqiT2gKmpsXUK0D4ya4z
+[TENANT_LOOKUP] findById id=NqiT2gKmpsXUK0D4ya4z tenantId_received=nextassist-demo tenantId_doc=nextassist-demo result=found
+[TENANT_LOOKUP] findById id=NqiT2gKmpsXUK0D4ya4z tenantId_received=nextassist-demo tenantId_doc=nextassist-demo result=found
+[TENANT_LOOKUP] movimentacao.create produtoId=NqiT2gKmpsXUK0D4ya4z tenantId=rr-infocell  ← BUG
+[TENANT_LOOKUP] findById id=NqiT2gKmpsXUK0D4ya4z tenantId_received=rr-infocell tenantId_doc=nextassist-demo result=tenant_mismatch
+
+# Venda direta — lookup inicial OK, movimentação interna ERRADA
+[TENANT_LOOKUP] createVendaDireta tenantId=nextassist-demo itens=NqiT2gKmpsXUK0D4ya4z
+[TENANT_LOOKUP] findById id=NqiT2gKmpsXUK0D4ya4z tenantId_received=nextassist-demo tenantId_doc=nextassist-demo result=found
+[TENANT_LOOKUP] movimentacao.create produtoId=NqiT2gKmpsXUK0D4ya4z tenantId=rr-infocell  ← BUG
+[TENANT_LOOKUP] findById id=NqiT2gKmpsXUK0D4ya4z tenantId_received=rr-infocell tenantId_doc=nextassist-demo result=tenant_mismatch
 ```
 
-Se `tenantId = "rr-infocell"` e `produto.tenantId = "nextassist-demo"` → bloqueado → `produto_not_found`.
-Se `tenantId = "nextassist-demo"` e `produto.tenantId = "nextassist-demo"` → passa → produto encontrado.
+### O que os logs provam
 
-**Por que tenantId poderia ser "rr-infocell" em OS/venda mas "nextassist-demo" em movimentação?**
+- `enrichPecasInput` recebe `tenantId=nextassist-demo` ✅ — o request chega com tenant correto
+- O produto é encontrado corretamente no lookup inicial ✅
+- Quando `applyPecasDeltas` (OS) ou o equivalente em vendas dispara a movimentação de estoque como efeito colateral, **o `tenantId` passado para `movimentacoes-estoque.create` é `rr-infocell`** ❌
+- `movimentacoes-estoque.create` valida o produto com `tenantId=rr-infocell`, encontra `tenant_mismatch`, retorna `produto_not_found`
 
-Hipóteses secundárias:
-1. `resolveTenant` define `request.tenantId = "nextassist-demo"` mas algum middleware posterior reseta para `DEFAULT_TENANT_ID`
-2. Diferença na ordem de execução dos middlewares entre as rotas
-3. `DEFAULT_TENANT_ID` sendo usado como valor default em vez do tenantId resolvido
-4. Circular import fazendo o `produtosService` em OS/venda ter uma instância diferente
-5. `getRequestTenantId` retornando diferente para OS/venda vs movimentação
+### Causa raiz
+
+O `tenantId` do usuário logado (`nextassist-demo`) **não está sendo propagado** para a chamada interna de `movimentacoesEstoqueService.create` dentro dos fluxos de OS e venda. Esses serviços provavelmente usam `DEFAULT_TENANT_ID = "rr-infocell"` ou uma instância hardcoded ao criar a movimentação interna.
+
+O problema **não está** no lookup do produto — está na criação da movimentação de estoque como efeito colateral.
 
 ---
 
@@ -159,14 +172,43 @@ gcloud logging read \
 
 ## 8. Critérios para corrigir
 
-Só implementar correção após confirmar via logs:
+### ✅ Diagnóstico confirmado — causa raiz identificada
 
-| Diagnóstico | Correção |
-|------------|---------|
-| `tenantId = rr-infocell` em enrichPecasInput | Verificar por que `getRequestTenantId` retorna DEFAULT para OS |
-| `tenantId = undefined` | Verificar se `resolveTenant` está sendo executado para OS |
-| `not_found_in_firestore` | Problema diferente — verificar se o produto foi salvo na coleção correta |
-| `found` mas ainda falha | Bug em outro ponto — verificar `ensurePositiveDeltasStock` |
+| Log observado | Interpretação |
+|--------------|--------------|
+| `movimentacao.create tenantId=rr-infocell` após `enrichPecasInput tenantId=nextassist-demo` | O `tenantId` do request não é propagado para a movimentação interna |
+
+### Correção aplicada (2026-06-02 — fase 9.16.3)
+
+**`ordens-servico.service.ts`** — `applyPecasDeltas`:
+```typescript
+// antes
+await movimentacoesEstoqueService.create({ ... });
+// depois
+await movimentacoesEstoqueService.create({ ... }, ordem.tenantId);
+```
+`ordem.tenantId` já estava disponível no objeto — apenas não estava sendo propagado.
+
+**`vendas.service.ts`** — `createVendaDireta`:
+```typescript
+// antes
+await movimentacoesEstoqueService.create({ ... });
+// depois
+await movimentacoesEstoqueService.create({ ... }, tenantId);
+```
+`tenantId` já era parâmetro de `createVendaDireta` — apenas não estava sendo repassado.
+
+**Mono-tenant `rr-infocell`:** sem impacto. `DEFAULT_TENANT_ID` continua como fallback quando `tenantId` é `undefined`.
+
+### Cenários a revalidar
+
+| Cenário | Esperado após fix |
+|---------|------------------|
+| Movimentação manual com produto demo | 201 ✅ (já funcionava) |
+| OS com peça usando produto demo | 201 ✅ (corrigido) |
+| Venda direta com produto demo | 201 ✅ (corrigido) |
+| Movimentação automática tem `tenantId: nextassist-demo` | ✅ |
+| Fluxos rr-infocell inalterados | ✅ |
 
 ---
 

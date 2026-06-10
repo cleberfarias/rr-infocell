@@ -1,13 +1,17 @@
 import { Router } from "express";
 
 import { httpStatus } from "../../shared/http-status.js";
+import { resolveTenant, getRequestTenantId, type TenantRequest } from "../../middlewares/tenant.js";
 import { usuariosService } from "./usuarios.service.js";
 
 export const usuariosTecnicosRoutes = Router();
 
-usuariosTecnicosRoutes.get("/", async (_request, response, next) => {
+usuariosTecnicosRoutes.use(resolveTenant);
+
+usuariosTecnicosRoutes.get("/", async (request, response, next) => {
   try {
-    const tecnicos = await usuariosService.listByRole("tecnico");
+    const tenantId = getRequestTenantId(request as TenantRequest);
+    const tecnicos = await usuariosService.listByRole("tecnico", tenantId);
 
     response.status(httpStatus.ok).json({
       data: tecnicos.map((tecnico) => ({

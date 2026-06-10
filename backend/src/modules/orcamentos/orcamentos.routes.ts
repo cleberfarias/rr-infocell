@@ -3,10 +3,13 @@ import { ZodError } from "zod";
 
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
+import { resolveTenant, getRequestTenantId, type TenantRequest } from "../../middlewares/tenant.js";
 import { orcamentoInputSchema, orcamentoSearchSchema } from "./orcamentos.schemas.js";
 import { orcamentosService } from "./orcamentos.service.js";
 
 export const orcamentosRoutes = Router();
+
+orcamentosRoutes.use(resolveTenant);
 
 type AsyncRouteHandler = (
   request: Request,
@@ -34,8 +37,9 @@ const parseOrThrow = <T>(parse: () => T) => {
 orcamentosRoutes.get(
   "/",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const filters = parseOrThrow(() => orcamentoSearchSchema.parse(request.query));
-    const orcamentos = await orcamentosService.list(filters);
+    const orcamentos = await orcamentosService.list(filters, tenantId);
 
     response.status(httpStatus.ok).json({
       data: orcamentos,
@@ -51,10 +55,11 @@ orcamentosRoutes.get(
 orcamentosRoutes.post(
   "/",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const input = parseOrThrow(() => orcamentoInputSchema.parse(request.body));
 
     response.status(httpStatus.created).json({
-      data: await orcamentosService.upsert(input),
+      data: await orcamentosService.upsert(input, tenantId),
     });
   }),
 );

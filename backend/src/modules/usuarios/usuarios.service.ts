@@ -1,8 +1,10 @@
 import type { UserRecord } from "firebase-admin/auth";
+import { Timestamp } from "firebase-admin/firestore";
 
-import { auth } from "../../firebase/admin.js";
+import { auth, db } from "../../firebase/admin.js";
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
 import type { Usuario, UsuarioInput, UsuarioRole, UsuarioUpdateInput } from "./usuarios.types.js";
 
 const mapUser = (user: UserRecord): Usuario => ({
@@ -28,20 +30,37 @@ export class UsuariosService {
     return auth;
   }
 
-  async list() {
-    const client = this.getAuth();
-    const result = await client.listUsers(100);
+  async list(tenantId = DEFAULT_TENANT_ID) {
+    if (!db) {
+      // fallback para ambiente sem Firestore (testes/dev)
+      const client = this.getAuth();
+      const result = await client.listUsers(100);
+      return result.users.map(mapUser);
+    }
 
-    return result.users.map(mapUser);
+    const snapshot = await db
+      .collection("usuarios")
+      .where("tenantId", "==", tenantId)
+      .where("status", "==", "ativo")
+      .get();
+
+    if (snapshot.empty) return [];
+
+    const client = this.getAuth();
+    const users = await Promise.all(
+      snapshot.docs.map((doc) => client.getUser(doc.id).catch(() => null)),
+    );
+
+    return users.filter((u): u is UserRecord => u !== null).map(mapUser);
   }
 
-  async listByRole(role: UsuarioRole) {
-    const usuarios = await this.list();
+  async listByRole(role: UsuarioRole, tenantId = DEFAULT_TENANT_ID) {
+    const usuarios = await this.list(tenantId);
 
     return usuarios.filter((usuario) => usuario.role === role && !usuario.disabled);
   }
 
-  async create(input: UsuarioInput) {
+  async create(input: UsuarioInput, tenantId = DEFAULT_TENANT_ID) {
     const client = this.getAuth();
     const user = await client.createUser({
       disabled: input.disabled ?? false,
@@ -55,12 +74,33 @@ export class UsuariosService {
       role: input.role,
     });
 
+    if (db) {
+      const agora = Timestamp.now();
+      await db
+        .collection("usuarios")
+        .doc(user.uid)
+        .set({
+          uid: user.uid,
+          email: input.email,
+          nome: input.displayName ?? "",
+          tenantId,
+          role: input.role,
+          status: "ativo",
+          createdAt: agora,
+          updatedAt: agora,
+        });
+    }
+
     return mapUser(await client.getUser(user.uid));
   }
 
   async delete(uid: string) {
     const client = this.getAuth();
     await client.deleteUser(uid);
+
+    if (db) {
+      await db.collection("usuarios").doc(uid).delete();
+    }
   }
 
   async update(uid: string, input: UsuarioUpdateInput) {
@@ -76,6 +116,13 @@ export class UsuariosService {
       ...(current.customClaims ?? {}),
       role: input.role,
     });
+
+    if (db) {
+      await db
+        .collection("usuarios")
+        .doc(uid)
+        .set({ role: input.role, updatedAt: Timestamp.now() }, { merge: true });
+    }
 
     return mapUser(await client.getUser(user.uid));
   }

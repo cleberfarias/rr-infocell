@@ -52,9 +52,9 @@
 | OS com peça (demo produto) | 201 | `produto_not_found` |
 | Venda direta (demo produto) | 201 | `produto_not_found` |
 
-**Padrão:** `produtosService.getById(demo_produtoId, "nextassist-demo")` falha quando chamado de dentro de `enrichPecasInput` (OS) e `createVendaDireta` (vendas), mas FUNCIONA quando chamado de `movimentacoesEstoqueService.create`. O produto existe no Firestore com `tenantId: "nextassist-demo"` (confirmado por `GET /api/produtos/:id`).
+**Causa raiz confirmada e corrigida (2026-06-02 — fase 9.16.3):**
 
-**Hipótese:** possível diferença no `tenantId` efetivamente passado para o `findById` nessas rotas específicas. Requer debug com logs do Cloud Run ou breakpoint local.
+O `enrichPecasInput` e `createVendaDireta` recebem `tenantId=nextassist-demo` e encontram o produto corretamente. O bug estava no efeito colateral: `applyPecasDeltas` (OS) e `createVendaDireta` (vendas) chamavam `movimentacoesEstoqueService.create` sem passar `tenantId`, caindo no default `rr-infocell`. Correção: passar `ordem.tenantId` e `tenantId` respectivamente. Ver `docs/nextassist/diagnostico-produto-not-found-tenant-demo.md`.
 
 **Não bloqueia isolamento:** a separação entre tenants está funcionando corretamente em todas as listagens e guards.
 

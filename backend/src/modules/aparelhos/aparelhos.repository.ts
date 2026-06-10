@@ -1,12 +1,14 @@
 import { randomUUID } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
 import type { Aparelho, AparelhoInput } from "./aparelhos.types.js";
 
 const now = () => new Date().toISOString();
 const aparelhosCollection = "aparelhos";
 const withoutUndefined = <T extends Record<string, unknown>>(data: T) =>
   Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as T;
+const getAparelhoTenantId = (a: Aparelho) => a.tenantId ?? DEFAULT_TENANT_ID;
 
 const seedAparelhos: Aparelho[] = [
   {
@@ -34,11 +36,11 @@ const seedAparelhos: Aparelho[] = [
 ];
 
 export interface AparelhosRepository {
-  list(filters?: { search?: string; clienteId?: string }): Promise<Aparelho[]>;
-  findById(id: string): Promise<Aparelho | null>;
-  create(input: AparelhoInput): Promise<Aparelho>;
-  update(id: string, input: AparelhoInput): Promise<Aparelho | null>;
-  delete(id: string): Promise<boolean>;
+  list(filters?: { search?: string; clienteId?: string }, tenantId?: string): Promise<Aparelho[]>;
+  findById(id: string, tenantId?: string): Promise<Aparelho | null>;
+  create(input: AparelhoInput, tenantId?: string): Promise<Aparelho>;
+  update(id: string, input: AparelhoInput, tenantId?: string): Promise<Aparelho | null>;
+  delete(id: string, tenantId?: string): Promise<boolean>;
 }
 
 const filterAparelhos = (
@@ -65,7 +67,7 @@ export class MemoryAparelhosRepository implements AparelhosRepository {
     seedAparelhos.map((aparelho) => [aparelho.id, aparelho]),
   );
 
-  async list(filters: { search?: string; clienteId?: string } = {}) {
+  async list(filters: { search?: string; clienteId?: string } = {}, _tenantId?: string) {
     const aparelhos = Array.from(this.aparelhos.values()).sort((a, b) =>
       `${a.marca} ${a.modelo}`.localeCompare(`${b.marca} ${b.modelo}`, "pt-BR"),
     );
@@ -73,15 +75,16 @@ export class MemoryAparelhosRepository implements AparelhosRepository {
     return filterAparelhos(aparelhos, filters);
   }
 
-  async findById(id: string) {
+  async findById(id: string, _tenantId?: string) {
     return this.aparelhos.get(id) ?? null;
   }
 
-  async create(input: AparelhoInput) {
+  async create(input: AparelhoInput, tenantId?: string) {
     const timestamp = now();
     const aparelho: Aparelho = {
       id: randomUUID(),
       ...input,
+      tenantId,
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -91,7 +94,7 @@ export class MemoryAparelhosRepository implements AparelhosRepository {
     return aparelho;
   }
 
-  async update(id: string, input: AparelhoInput) {
+  async update(id: string, input: AparelhoInput, _tenantId?: string) {
     const current = await this.findById(id);
 
     if (!current) {
@@ -109,7 +112,7 @@ export class MemoryAparelhosRepository implements AparelhosRepository {
     return aparelho;
   }
 
-  async delete(id: string) {
+  async delete(id: string, _tenantId?: string) {
     return this.aparelhos.delete(id);
   }
 }
@@ -117,37 +120,49 @@ export class MemoryAparelhosRepository implements AparelhosRepository {
 export class FirestoreAparelhosRepository implements AparelhosRepository {
   constructor(private readonly firestore: Firestore) {}
 
-  async list(filters: { search?: string; clienteId?: string } = {}) {
-    const snapshot = filters.clienteId
-      ? await this.firestore
-          .collection(aparelhosCollection)
-          .where("clienteId", "==", filters.clienteId)
-          .get()
-      : await this.firestore.collection(aparelhosCollection).get();
+  async list(filters: { search?: string; clienteId?: string } = {}, tenantId = DEFAULT_TENANT_ID) {
+    let query: FirebaseFirestore.Query = this.firestore.collection(aparelhosCollection);
 
+    if (tenantId !== DEFAULT_TENANT_ID) {
+      query = query.where("tenantId", "==", tenantId);
+    }
+
+    if (filters.clienteId) {
+      query = query.where("clienteId", "==", filters.clienteId);
+    }
+
+    const snapshot = await query.get();
     const aparelhos = snapshot.docs
       .map((document) => this.fromDocument(document.id, document.data()))
+      .filter((a) => getAparelhoTenantId(a) === tenantId)
       .sort((a, b) => `${a.marca} ${a.modelo}`.localeCompare(`${b.marca} ${b.modelo}`, "pt-BR"));
 
     return filterAparelhos(aparelhos, filters);
   }
 
-  async findById(id: string) {
+  async findById(id: string, tenantId?: string) {
     const document = await this.firestore.collection(aparelhosCollection).doc(id).get();
 
     if (!document.exists) {
       return null;
     }
 
-    return this.fromDocument(document.id, document.data() ?? {});
+    const aparelho = this.fromDocument(document.id, document.data() ?? {});
+
+    if (tenantId && getAparelhoTenantId(aparelho) !== tenantId) {
+      return null;
+    }
+
+    return aparelho;
   }
 
-  async create(input: AparelhoInput) {
+  async create(input: AparelhoInput, tenantId = DEFAULT_TENANT_ID) {
     const timestamp = now();
     const document = this.firestore.collection(aparelhosCollection).doc();
     const aparelho: Aparelho = {
       id: document.id,
       ...input,
+      tenantId,
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -157,8 +172,8 @@ export class FirestoreAparelhosRepository implements AparelhosRepository {
     return aparelho;
   }
 
-  async update(id: string, input: AparelhoInput) {
-    const current = await this.findById(id);
+  async update(id: string, input: AparelhoInput, tenantId?: string) {
+    const current = await this.findById(id, tenantId);
 
     if (!current) {
       return null;
@@ -175,8 +190,8 @@ export class FirestoreAparelhosRepository implements AparelhosRepository {
     return aparelho;
   }
 
-  async delete(id: string) {
-    const current = await this.findById(id);
+  async delete(id: string, tenantId?: string) {
+    const current = await this.findById(id, tenantId);
 
     if (!current) {
       return false;
@@ -198,6 +213,7 @@ export class FirestoreAparelhosRepository implements AparelhosRepository {
       estadoFisico: data.estadoFisico ? String(data.estadoFisico) : undefined,
       acessorios: data.acessorios ? String(data.acessorios) : undefined,
       observacoes: data.observacoes ? String(data.observacoes) : undefined,
+      tenantId: data.tenantId ? String(data.tenantId) : undefined,
       createdAt: String(data.createdAt ?? ""),
       updatedAt: String(data.updatedAt ?? ""),
     };

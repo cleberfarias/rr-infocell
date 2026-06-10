@@ -1,6 +1,7 @@
 import { db } from "../../firebase/admin.js";
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
+import { DEFAULT_TENANT_ID } from "../tenants/tenant.config.js";
 import { clientesService } from "../clientes/clientes.service.js";
 import { createOrdensServicoRepository } from "../ordens-servico/ordens-servico.repository.js";
 import { createAparelhosRepository, type AparelhosRepository } from "./aparelhos.repository.js";
@@ -9,12 +10,12 @@ import type { AparelhoInput } from "./aparelhos.types.js";
 export class AparelhosService {
   constructor(private readonly repository: AparelhosRepository = createAparelhosRepository(db)) {}
 
-  async list(filters?: { search?: string; clienteId?: string }) {
-    return this.repository.list(filters);
+  async list(filters?: { search?: string; clienteId?: string }, tenantId = DEFAULT_TENANT_ID) {
+    return this.repository.list(filters, tenantId);
   }
 
-  async getById(id: string) {
-    const aparelho = await this.repository.findById(id);
+  async getById(id: string, tenantId?: string) {
+    const aparelho = await this.repository.findById(id, tenantId);
 
     if (!aparelho) {
       throw new AppError("aparelho_not_found", "Aparelho nao encontrado.", httpStatus.notFound);
@@ -23,16 +24,16 @@ export class AparelhosService {
     return aparelho;
   }
 
-  async create(input: AparelhoInput) {
-    await this.ensureClienteExists(input.clienteId);
+  async create(input: AparelhoInput, tenantId = DEFAULT_TENANT_ID) {
+    await this.ensureClienteExists(input.clienteId, tenantId);
 
-    return this.repository.create(input);
+    return this.repository.create(input, tenantId);
   }
 
-  async update(id: string, input: AparelhoInput) {
-    await this.ensureClienteExists(input.clienteId);
+  async update(id: string, input: AparelhoInput, tenantId = DEFAULT_TENANT_ID) {
+    await this.ensureClienteExists(input.clienteId, tenantId);
 
-    const aparelho = await this.repository.update(id, input);
+    const aparelho = await this.repository.update(id, input, tenantId);
 
     if (!aparelho) {
       throw new AppError("aparelho_not_found", "Aparelho nao encontrado.", httpStatus.notFound);
@@ -41,8 +42,8 @@ export class AparelhosService {
     return aparelho;
   }
 
-  async delete(id: string) {
-    const ordens = await createOrdensServicoRepository(db).list({ aparelhoId: id });
+  async delete(id: string, tenantId = DEFAULT_TENANT_ID) {
+    const ordens = await createOrdensServicoRepository(db).list({ aparelhoId: id }, tenantId);
 
     if (ordens.length > 0) {
       throw new AppError(
@@ -52,16 +53,16 @@ export class AparelhosService {
       );
     }
 
-    const deleted = await this.repository.delete(id);
+    const deleted = await this.repository.delete(id, tenantId);
 
     if (!deleted) {
       throw new AppError("aparelho_not_found", "Aparelho nao encontrado.", httpStatus.notFound);
     }
   }
 
-  private async ensureClienteExists(clienteId: string) {
+  private async ensureClienteExists(clienteId: string, tenantId: string) {
     try {
-      await clientesService.getById(clienteId);
+      await clientesService.getById(clienteId, tenantId);
     } catch (error) {
       if (error instanceof AppError && error.code === "cliente_not_found") {
         throw new AppError(

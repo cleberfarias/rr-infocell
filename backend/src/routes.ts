@@ -20,6 +20,7 @@ import { ordensServicoRoutes } from "./modules/ordens-servico/ordens-servico.rou
 import { produtosRoutes } from "./modules/produtos/produtos.routes.js";
 import { usuariosRoutes } from "./modules/usuarios/usuarios.routes.js";
 import { usuariosTecnicosRoutes } from "./modules/usuarios/usuarios-tecnicos.routes.js";
+import { tenantsRoutes } from "./modules/tenants/tenants.routes.js";
 import { vendasRoutes } from "./modules/vendas/vendas.routes.js";
 import { whatsappRoutes } from "./modules/whatsapp/whatsapp.router.js";
 
@@ -55,3 +56,4 @@ routes.use("/marcas", requireRole("admin", "atendente", "tecnico"), marcasRoutes
 routes.use("/fornecedores", requireRole("admin", "atendente", "tecnico"), fornecedoresRoutes);
 routes.use("/terceirizados", requireRole("admin", "atendente"), terceirizadosRoutes);
 routes.use("/contas", requireRole("admin", "atendente"), contasRoutes);
+routes.use("/tenants", requireRole("admin", "atendente", "tecnico"), tenantsRoutes);

@@ -4,6 +4,8 @@ import { ZodError } from "zod";
 import { auth } from "../../firebase/admin.js";
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
+import { resolveTenant, getRequestTenantId, type TenantRequest } from "../../middlewares/tenant.js";
+import type { AuthenticatedRequest } from "../../middlewares/auth.js";
 import { usuarioInputSchema, usuarioUpdateSchema } from "./usuarios.schemas.js";
 import { usuariosService } from "./usuarios.service.js";
 
@@ -53,6 +55,7 @@ const requireAdmin = asyncHandler(async (request, _response, next) => {
   }
 
   const decodedToken = await auth.verifyIdToken(token);
+  (request as AuthenticatedRequest).user = decodedToken;
 
   if (decodedToken.role !== "admin") {
     throw new AppError(
@@ -66,11 +69,13 @@ const requireAdmin = asyncHandler(async (request, _response, next) => {
 });
 
 usuariosRoutes.use(requireAdmin);
+usuariosRoutes.use(resolveTenant);
 
 usuariosRoutes.get(
   "/",
-  asyncHandler(async (_request, response) => {
-    const usuarios = await usuariosService.list();
+  asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
+    const usuarios = await usuariosService.list(tenantId);
 
     response.status(httpStatus.ok).json({
       data: usuarios,
@@ -84,10 +89,11 @@ usuariosRoutes.get(
 usuariosRoutes.post(
   "/",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const input = parseOrThrow(() => usuarioInputSchema.parse(request.body));
 
     response.status(httpStatus.created).json({
-      data: await usuariosService.create(input),
+      data: await usuariosService.create(input, tenantId),
     });
   }),
 );
