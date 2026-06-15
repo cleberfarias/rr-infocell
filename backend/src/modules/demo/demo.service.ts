@@ -123,20 +123,23 @@ export class DemoService {
     const agora = Timestamp.now();
 
     // Criar tenant trial no Firestore
-    await db.collection("tenants").doc(slug).set({
-      id: slug,
-      slug,
-      name: empresa,
-      productName: "NextAssist",
-      plan: DEMO_PLAN,
-      whiteLabel: false,
-      status: "trial",
-      ownerEmail: email,
-      ownerName: nome,
-      trialEndsAt: Timestamp.fromDate(trialEndsAt),
-      createdAt: agora,
-      updatedAt: agora,
-    });
+    await db
+      .collection("tenants")
+      .doc(slug)
+      .set({
+        id: slug,
+        slug,
+        name: empresa,
+        productName: "NextAssist",
+        plan: DEMO_PLAN,
+        whiteLabel: false,
+        status: "trial",
+        ownerEmail: email,
+        ownerName: nome,
+        trialEndsAt: Timestamp.fromDate(trialEndsAt),
+        createdAt: agora,
+        updatedAt: agora,
+      });
 
     // Criar usuário no Firebase Auth
     let uid: string;
