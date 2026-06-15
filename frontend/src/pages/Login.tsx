@@ -16,6 +16,7 @@ import {
   Check,
 } from "lucide-react";
 import { useState } from "react";
+import { useTenant } from "@/contexts/TenantContext";
 
 type Role = "admin" | "atendente" | "tecnico";
 
@@ -66,6 +67,7 @@ const roles: Record<
 const Login = () => {
   const navigate = useNavigate();
   const { isDevelopmentMode, login } = useAuth();
+  const { tenant } = useTenant();
   const [role, setRole] = useState<Role>("admin");
   const [email, setEmail] = useState(OWNER_LOGIN);
   const [password, setPassword] = useState("");
@@ -162,7 +164,7 @@ const Login = () => {
               Acessar o painel
             </h1>
             <p className="text-sm text-muted-foreground">
-              Selecione seu perfil de acesso e entre no sistema RR Infocell.
+              Selecione seu perfil de acesso e entre no sistema {tenant.systemName}.
             </p>
           </div>
 

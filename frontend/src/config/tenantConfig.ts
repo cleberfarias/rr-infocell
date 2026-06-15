@@ -1,10 +1,17 @@
 import logoRrInfocell from "@/assets/logo-rrinfocell.png";
+import logoNextAssist from "@/assets/logo-nextassist.svg";
 import type { PlanKey } from "@/config/planModules";
 
-const fallbackTenantId = "rr-infocell";
+const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+const isNextAssistDomain = hostname.includes("nextassist");
+
+const fallbackTenantId = isNextAssistDomain ? "nextassist" : "rr-infocell";
 const fallbackProductName = "NextAssist";
-const fallbackSystemName = "RR Infocell";
-const fallbackTenantName = "RR Infocell";
+const fallbackSystemName = isNextAssistDomain ? "NextAssist" : "RR Infocell";
+const fallbackTenantName = isNextAssistDomain ? "NextAssist" : "RR Infocell";
+const fallbackLogo = isNextAssistDomain
+  ? (logoNextAssist as string)
+  : logoRrInfocell;
 const fallbackPlan: PlanKey = "empresarial";
 
 const planKeys: PlanKey[] = ["starter", "profissional", "empresarial"];
@@ -35,7 +42,8 @@ export const tenantConfig = {
   productName: getEnvValue(import.meta.env.VITE_PRODUCT_NAME, fallbackProductName),
   systemName: getEnvValue(import.meta.env.VITE_SYSTEM_NAME, fallbackSystemName),
   tenantName: getEnvValue(import.meta.env.VITE_TENANT_NAME, fallbackTenantName),
-  logo: getLogoSrc(import.meta.env.VITE_LOGO_URL, logoRrInfocell),
+  logo: getLogoSrc(import.meta.env.VITE_LOGO_URL, fallbackLogo),
+  isNextAssistDomain,
   primaryColor: "205 95% 55%",
   secondaryColor: "220 12% 14%",
   plan: getEnvPlan(import.meta.env.VITE_DEFAULT_PLAN, fallbackPlan),

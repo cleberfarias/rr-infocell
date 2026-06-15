@@ -37,9 +37,14 @@ type TenantContextValue = {
 
 const TenantContext = createContext<TenantContextValue | null>(null);
 
+const updatePageTitle = (systemName: string) => {
+  document.title = `${systemName} – Sistema de Assistência Técnica`;
+};
+
 const buildStaticValue = (): TenantContextValue => {
   const tenant = getCurrentTenant();
   const plan = getCurrentTenantPlan();
+  updatePageTitle(tenant.systemName);
   return {
     tenant,
     tenantId: getCurrentTenantId(),
@@ -72,13 +77,15 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
 
       applyCssColors(branding.primaryColor, branding.secondaryColor);
 
+      const systemName = remote.name ?? getCurrentTenant().systemName;
+      updatePageTitle(systemName);
       setValue((prev) => ({
         ...prev,
         tenant: {
           ...prev.tenant,
           id: (remote.id as TenantId) ?? prev.tenant.id,
           productName: remote.productName ?? prev.tenant.productName,
-          systemName: remote.name ?? prev.tenant.systemName,
+          systemName,
           tenantName: remote.name ?? prev.tenant.tenantName,
         },
         branding: {
