@@ -16,7 +16,7 @@ export default function Hero() {
               🚀 Testar grátis por 14 dias
             </a>
             <a
-              href="https://rr-infocell.web.app"
+              href="https://nextassist.web.app"
               target="_blank"
               rel="noopener noreferrer"
               className="btn-secondary"

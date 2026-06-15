@@ -117,11 +117,11 @@ export default function Contact() {
                     <h4>Demo ao vivo</h4>
                     <p>
                       <a
-                        href="https://rr-infocell.web.app"
+                        href="https://nextassist.web.app"
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        rr-infocell.web.app
+                        nextassist.web.app
                       </a>
                     </p>
                   </div>

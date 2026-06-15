@@ -17,7 +17,7 @@ export default function CtaSection() {
         >
           🚀 Começar teste gratuito
         </a>
-        <a href="https://rr-infocell.web.app" target="_blank" rel="noopener noreferrer" className="btn-secondary">
+        <a href="https://nextassist.web.app" target="_blank" rel="noopener noreferrer" className="btn-secondary">
           👁 Ver demonstração
         </a>
       </div>
