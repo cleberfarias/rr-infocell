@@ -6,7 +6,7 @@ import Link from "next/link";
 type Estado = "form" | "enviando" | "sucesso" | "erro" | "ja-existe";
 
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "https://rr-infocell-api-571694775952.southamerica-east1.run.app";
+  process.env.NEXT_PUBLIC_API_URL ?? "https://rr-infocell-api-91248386036.southamerica-east1.run.app";
 
 export default function DemoPage() {
   const [estado, setEstado] = useState<Estado>("form");
