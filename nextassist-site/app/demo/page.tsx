@@ -48,25 +48,42 @@ export default function DemoPage() {
     return (
       <div className="demo-page">
         <div className="demo-card">
-          <div className="demo-success-icon">✅</div>
+          <div className="demo-success-icon">🎉</div>
           <h1>Conta criada!</h1>
           <p>
-            Enviamos um e-mail para <strong>{email}</strong> com o link para você definir sua
-            senha e acessar o sistema.
+            Enviamos um e-mail para <strong>{email}</strong> com o link para definir
+            sua senha. Verifique sua caixa de entrada (e a pasta de spam).
           </p>
-          <p className="demo-trial-note">⏳ Seu teste gratuito dura 7 dias a partir de agora.</p>
+          <p className="demo-trial-note">⏳ Seu teste gratuito de 7 dias começa agora.</p>
+
+          <div className="demo-steps">
+            <div className="demo-step">
+              <span className="demo-step-num">1</span>
+              <span>Abra o e-mail de <strong>NextAssist</strong> e clique em "Definir senha"</span>
+            </div>
+            <div className="demo-step">
+              <span className="demo-step-num">2</span>
+              <span>Escolha uma senha e acesse o sistema</span>
+            </div>
+            <div className="demo-step">
+              <span className="demo-step-num">3</span>
+              <span>Configure sua assistência técnica e comece a usar!</span>
+            </div>
+          </div>
+
           <a
             href="https://nextassist.web.app"
             target="_blank"
             rel="noopener noreferrer"
             className="btn-primary"
-            style={{ display: "inline-block", marginTop: "1.5rem" }}
+            style={{ display: "inline-block", marginTop: "1.5rem", textAlign: "center", width: "100%" }}
           >
-            Ir para o NextAssist →
+            Acessar o NextAssist →
           </a>
           <p className="demo-help">
-            Não recebeu o e-mail? Verifique a caixa de spam ou{" "}
-            <a href="https://wa.me/5548999019525">fale conosco pelo WhatsApp</a>.
+            Não recebeu o e-mail? No login clique em{" "}
+            <strong>"Esqueci a senha"</strong> ou{" "}
+            <a href="https://wa.me/5548999019525">fale pelo WhatsApp</a>.
           </p>
         </div>
       </div>

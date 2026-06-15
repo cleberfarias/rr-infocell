@@ -16,6 +16,8 @@ import {
   Check,
 } from "lucide-react";
 import { useState } from "react";
+import { sendPasswordResetEmail } from "firebase/auth";
+import { firebaseAuth } from "@/lib/firebase";
 import { useTenant } from "@/contexts/TenantContext";
 
 type Role = "admin" | "atendente" | "tecnico";
@@ -73,8 +75,23 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resetMode, setResetMode] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetStatus, setResetStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const config = roles[role];
   const RoleIcon = config.icon;
+
+  const handleReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!firebaseAuth) return;
+    setResetStatus("sending");
+    try {
+      await sendPasswordResetEmail(firebaseAuth, resetEmail);
+      setResetStatus("sent");
+    } catch {
+      setResetStatus("error");
+    }
+  };
 
   const handleRoleChange = (nextRole: Role) => {
     setRole(nextRole);
@@ -240,6 +257,7 @@ const Login = () => {
                 <button
                   type="button"
                   className="text-xs text-primary hover:underline"
+                  onClick={() => { setResetMode(true); setResetEmail(email); setResetStatus("idle"); }}
                 >
                   Esqueci a senha
                 </button>
@@ -275,6 +293,38 @@ const Login = () => {
               {isSubmitting ? "Entrando..." : `Entrar como ${config.titulo}`}
             </Button>
           </form>
+
+          {resetMode && (
+            <div className="rounded-md border border-border bg-card/60 p-4 space-y-3">
+              <p className="font-display text-sm font-semibold">Redefinir senha</p>
+              {resetStatus === "sent" ? (
+                <p className="text-xs text-success">
+                  E-mail de redefinição enviado para <strong>{resetEmail}</strong>. Verifique sua caixa de entrada.
+                </p>
+              ) : (
+                <form onSubmit={handleReset} className="space-y-3">
+                  <Input
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    required
+                  />
+                  {resetStatus === "error" && (
+                    <p className="text-xs text-destructive">Não foi possível enviar. Verifique o e-mail e tente novamente.</p>
+                  )}
+                  <div className="flex gap-2">
+                    <Button type="submit" disabled={resetStatus === "sending"} className="flex-1 bg-gradient-primary text-primary-foreground shadow-glow">
+                      {resetStatus === "sending" ? "Enviando..." : "Enviar link"}
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => setResetMode(false)}>
+                      Cancelar
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
 
           <p className="text-center text-xs text-muted-foreground">
             Problemas de acesso?{" "}

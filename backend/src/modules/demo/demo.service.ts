@@ -89,6 +89,30 @@ function trialWelcomeEmailHtml(params: {
 </html>`;
 }
 
+async function enviarEmailResetFirebase(email: string): Promise<void> {
+  const apiKey = env.FIREBASE_WEB_API_KEY;
+  if (!apiKey) {
+    console.warn("[Demo] FIREBASE_WEB_API_KEY não configurada — reset via Firebase ignorado.");
+    return;
+  }
+
+  const res = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ requestType: "PASSWORD_RESET", email }),
+    },
+  );
+
+  if (!res.ok) {
+    const body = (await res.json()) as { error?: { message?: string } };
+    throw new Error(body.error?.message ?? "Falha ao enviar e-mail de reset");
+  }
+
+  console.info(`[Demo] E-mail de reset enviado para ${email} via Firebase Auth`);
+}
+
 export interface DemoRegistroInput {
   nome: string;
   email: string;
@@ -164,7 +188,14 @@ export class DemoService {
       updatedAt: agora,
     });
 
-    // Enviar e-mail de boas-vindas
+    // Enviar e-mail de redefinição de senha via Firebase Auth (não requer SMTP)
+    try {
+      await enviarEmailResetFirebase(email);
+    } catch (err) {
+      console.error("[Demo] Falha ao enviar e-mail de reset:", err);
+    }
+
+    // Enviar e-mail de boas-vindas adicional via SMTP (opcional)
     if (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS) {
       try {
         const resetUrl = await auth.generatePasswordResetLink(email);
@@ -175,12 +206,10 @@ export class DemoService {
           subject: `Seu teste gratuito do NextAssist está ativo — ${TRIAL_DAYS} dias`,
           html: trialWelcomeEmailHtml({ nome, email, empresa, trialEndsAt, resetUrl }),
         });
-        console.info(`[Demo] E-mail de boas-vindas enviado para ${email}`);
+        console.info(`[Demo] E-mail de boas-vindas (SMTP) enviado para ${email}`);
       } catch (err) {
-        console.error("[Demo] Falha ao enviar e-mail:", err);
+        console.error("[Demo] Falha ao enviar e-mail SMTP:", err);
       }
-    } else {
-      console.warn("[Demo] SMTP não configurado — e-mail não enviado.");
     }
 
     console.info(`[Demo] Trial criado: ${slug} | ${email}`);

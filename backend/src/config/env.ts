@@ -22,6 +22,7 @@ const envSchema = z.object({
   OBSERVABILIDADE_ALLOWED_UIDS: z.string().optional(),
   KIWIFY_WEBHOOK_TOKEN: z.string().default("gzowchq4hd8"),
   APP_URL: z.string().default("https://rr-infocell.web.app"),
+  FIREBASE_WEB_API_KEY: z.string().optional(),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().int().positive().default(587),
   SMTP_USER: z.string().optional(),
