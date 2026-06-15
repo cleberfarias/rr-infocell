@@ -104,7 +104,10 @@ async function enviarEmailResetFirebase(email: string): Promise<void> {
       body: JSON.stringify({
         requestType: "PASSWORD_RESET",
         email,
-        continueUrl: "https://nextassist.web.app",
+        // continueUrl requer que o domínio esteja autorizado em:
+        // Firebase Console → Authentication → Settings → Authorized domains
+        // Adicione nextassist.web.app lá e descomente a linha abaixo:
+        // continueUrl: "https://nextassist.web.app",
       }),
     },
   );
