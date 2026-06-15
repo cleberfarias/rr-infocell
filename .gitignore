@@ -17,7 +17,6 @@ dist-ssr
 !.env.example
 !.env.production.example
 !.env.staging.example
-.firebaserc
 !.firebaserc.example
 .firebase/
 *service-account*.json

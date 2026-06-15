@@ -155,11 +155,21 @@ jobs:
           name: frontend-dist
           path: frontend/dist
 
-      - name: Deploy to Firebase Hosting
+      - name: Deploy → rr-infocell.web.app
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RR_INFOCELL }}
           channelId: live
           projectId: rr-infocell
+          target: rr-infocell
+
+      - name: Deploy → nextassist.web.app
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RR_INFOCELL }}
+          channelId: live
+          projectId: rr-infocell
+          target: nextassist
 

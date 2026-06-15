@@ -1,0 +1,13 @@
+{
+  "projects": {
+    "default": "rr-infocell"
+  },
+  "targets": {
+    "rr-infocell": {
+      "hosting": {
+        "rr-infocell": ["rr-infocell"],
+        "nextassist": ["nextassist"]
+      }
+    }
+  }
+}
