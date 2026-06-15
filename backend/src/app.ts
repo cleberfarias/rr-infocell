@@ -24,7 +24,7 @@ export const createApp = () => {
   app.use(limiter);
   app.use(observabilidadeRequestLogger);
   app.use("/webhook", kiwifyWebhookRoutes);
-  app.use("/demo", demoRoutes);
+  app.use("/demo", cors({ origin: "*", methods: ["POST", "OPTIONS"] }), demoRoutes);
   app.use("/api", routes);
   app.use(notFoundHandler);
   app.use(errorHandler);
