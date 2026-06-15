@@ -1,5 +1,5 @@
 import logoRrInfocell from "@/assets/logo-rrinfocell.png";
-import logoNextAssist from "@/assets/logo-nextassist.svg";
+import logoNextAssist from "@/assets/logo-nextassist-white.svg";
 import type { PlanKey } from "@/config/planModules";
 
 const hostname = typeof window !== "undefined" ? window.location.hostname : "";

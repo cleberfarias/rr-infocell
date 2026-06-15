@@ -1,9 +1,9 @@
 export default function Footer() {
   return (
     <footer>
-      <div className="footer-logo">
-        Next<span>Assist</span>
-      </div>
+      <a href="#" className="footer-logo-img" aria-label="NextAssist">
+        <img src="/logo-nextassist-white.svg" alt="NextAssist" height={48} />
+      </a>
       <div className="footer-links">
         <a href="#funcionalidades">Funcionalidades</a>
         <a href="#planos">Planos</a>

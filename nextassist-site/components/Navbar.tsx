@@ -1,9 +1,9 @@
 export default function Navbar() {
   return (
     <nav>
-      <div className="nav-logo">
-        Next<span>Assist</span>
-      </div>
+      <a href="#" className="nav-logo-img" aria-label="NextAssist">
+        <img src="/logo-nextassist-white.svg" alt="NextAssist" height={36} />
+      </a>
       <div className="nav-links">
         <a href="#funcionalidades">Funcionalidades</a>
         <a href="#como-funciona">Como funciona</a>
