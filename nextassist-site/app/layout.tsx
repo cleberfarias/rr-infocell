@@ -11,7 +11,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "NextAssist — Sistema de Gestão para Assistência Técnica de Celular",
   description:
-    "Gerencie ordens de serviço, estoque, PDV e financeiro em uma única plataforma web. O sistema mais completo para assistências técnicas de celular. Teste grátis por 14 dias.",
+    "Gerencie ordens de serviço, estoque, PDV e financeiro em uma única plataforma web. O sistema mais completo para assistências técnicas de celular. Teste grátis por 7 dias.",
   keywords:
     "sistema assistência técnica celular, software ordem de serviço, gestão assistência técnica, programa para loja de celular, OS celular sistema, PDV assistência técnica, NextAssist",
   robots: "index, follow",
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     siteName: "NextAssist",
     title: "NextAssist — Da entrada do aparelho ao recibo final",
     description:
-      "Centralize ordens de serviço, estoque, PDV e financeiro em uma única plataforma. Teste 14 dias grátis.",
+      "Centralize ordens de serviço, estoque, PDV e financeiro em uma única plataforma. Teste 7 dias grátis.",
     images: [
       {
         url: "/og-image.png",
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "NextAssist — Sistema para Assistência Técnica de Celular",
-    description: "OS, estoque, PDV e financeiro em um só lugar. Teste grátis por 14 dias.",
+    description: "OS, estoque, PDV e financeiro em um só lugar. Teste grátis por 7 dias.",
     images: ["/og-image.png"],
   },
 };
@@ -83,7 +83,7 @@ const jsonLd = {
           name: "Posso testar antes de contratar?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Sim. Oferecemos 14 dias de teste gratuito sem necessidade de cartão de crédito.",
+            text: "Sim. Oferecemos 7 dias de teste gratuito sem necessidade de cartão de crédito.",
           },
         },
         {

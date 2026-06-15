@@ -127,7 +127,7 @@ export default function Contact() {
                   </div>
                 </div>
                 <div className="contact-guarantee">
-                  <h4>✅ Garantia de 14 dias</h4>
+                  <h4>✅ Teste gratuito de 7 dias</h4>
                   <p>
                     Teste sem compromisso. Se não se adaptar, cancele dentro do período de teste
                     sem pagar nada.

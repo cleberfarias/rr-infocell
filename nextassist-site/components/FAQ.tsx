@@ -7,7 +7,7 @@ const FAQS = [
   },
   {
     q: "Posso testar antes de contratar?",
-    a: "Sim. Oferecemos 14 dias de teste gratuito sem necessidade de cartão de crédito.",
+    a: "Sim. Oferecemos 7 dias de teste gratuito sem necessidade de cartão de crédito.",
   },
   {
     q: "O que é o plano White Label?",

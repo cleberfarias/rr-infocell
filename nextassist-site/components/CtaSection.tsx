@@ -6,15 +6,10 @@ export default function CtaSection() {
       </h2>
       <p>
         Junte-se a centenas de técnicos que já trocaram planilha e caderno pelo NextAssist.
-        14 dias grátis, sem cartão.
+        7 dias grátis, sem cartão.
       </p>
       <div className="cta-actions">
-        <a
-          href="https://wa.me/5548999019525?text=Ol%C3%A1!%20Quero%20conhecer%20o%20NextAssist."
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-primary"
-        >
+        <a href="/demo" className="btn-primary">
           🚀 Começar teste gratuito
         </a>
         <a href="https://nextassist.web.app" target="_blank" rel="noopener noreferrer" className="btn-secondary">

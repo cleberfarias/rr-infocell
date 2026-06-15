@@ -64,7 +64,7 @@ export default function Pricing() {
             Preço justo, sem <em>surpresas</em>
           </h2>
           <p className="section-sub">
-            14 dias de teste gratuito em qualquer plano. Sem cartão de crédito. Cancele quando
+            7 dias de teste gratuito em qualquer plano. Sem cartão de crédito. Cancele quando
             quiser.
           </p>
         </ScrollReveal>

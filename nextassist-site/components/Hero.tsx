@@ -12,8 +12,8 @@ export default function Hero() {
             pensada para a rotina real da assistência técnica de celular.
           </p>
           <div className="hero-actions">
-            <a href="#planos" className="btn-primary">
-              🚀 Testar grátis por 14 dias
+            <a href="/demo" className="btn-primary">
+              🚀 Testar grátis por 7 dias
             </a>
             <a
               href="https://nextassist.web.app"
