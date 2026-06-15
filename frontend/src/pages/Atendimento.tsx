@@ -16,6 +16,7 @@ import {
   QrCode,
   Search,
   Send,
+  Settings,
   Smile,
   Square,
   Wifi,
@@ -23,6 +24,8 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ROUTES } from "@/constants/routes";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -659,6 +662,13 @@ export default function Atendimento() {
               {naoLidasTotal > 0 && (
                 <Badge className="ml-auto h-5 px-1.5 text-[10px]">{naoLidasTotal}</Badge>
               )}
+              <Link
+                to={ROUTES.configuracoesMensagens}
+                title="Configurar mensagens automáticas"
+                className="ml-auto rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              >
+                <Settings className="h-3.5 w-3.5" />
+              </Link>
             </div>
             <div className="flex items-center gap-2 rounded-lg border border-input bg-secondary/30 px-3 py-1.5">
               <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />

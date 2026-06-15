@@ -8,6 +8,12 @@ import { createOrdensServicoRepository } from "../ordens-servico/ordens-servico.
 import type { OrdemServico, OrdemServicoStatus } from "../ordens-servico/ordens-servico.types.js";
 import { conexaoService } from "./conexao.service.js";
 import { mensagemService } from "./mensagem.service.js";
+import {
+  configuracoesService,
+  renderTemplate,
+  buildPixInfo,
+  buildPixRetiradaInfo,
+} from "./configuracoes.service.js";
 
 const clientesRepo = createClientesRepository(db);
 const aparelhosRepo = createAparelhosRepository(db);
@@ -21,123 +27,26 @@ const addHours = (date: string, hours: number) =>
 const addDays = (date: string, days: number) =>
   new Date(new Date(date).getTime() + days * 24 * 60 * 60 * 1000);
 
-type MensagemOrdemContext = {
-  aparelhoNome: string;
-};
-
-const linhaAparelho = (context: MensagemOrdemContext) => `Aparelho: ${context.aparelhoNome}`;
-
-const statusMensagens: Partial<
-  Record<OrdemServicoStatus, (os: OrdemServico, context: MensagemOrdemContext) => string>
-> = {
-  em_analise: (os, context) =>
-    [
-      `*RR Infocell - OS #${os.numero}*`,
-      linhaAparelho(context),
-      "Seu aparelho entrou em analise tecnica.",
-      "Assim que tivermos o diagnostico, avisaremos por aqui.",
-    ].join("\n"),
-  aguardando_peca: (os, context) =>
-    [
-      `*RR Infocell - OS #${os.numero}*`,
-      linhaAparelho(context),
-      "Seu atendimento esta aguardando peca.",
-      "Vamos avisar assim que a manutencao puder continuar.",
-    ].join("\n"),
-  em_manutencao: (os, context) =>
-    [
-      `*RR Infocell - OS #${os.numero}*`,
-      linhaAparelho(context),
-      "O servico foi iniciado e seu aparelho esta em manutencao.",
-    ].join("\n"),
-  pronto_para_retirada: (os, context) => mensagemProntoRetirada(os, context),
-  sem_conserto: (os, context) =>
-    [
-      `*RR Infocell - OS #${os.numero}*`,
-      linhaAparelho(context),
-      "Apos a analise tecnica, nao foi possivel realizar o conserto do aparelho.",
-      "Seu aparelho esta disponivel para retirada. Se tiver duvidas, responda esta mensagem.",
-    ].join("\n"),
-};
-
 function formatBRL(value: number) {
   return value.toLocaleString("pt-BR", { currency: "BRL", style: "currency" });
 }
 
-function mensagemProntoRetirada(os: OrdemServico, context: MensagemOrdemContext) {
-  const linhas = [
-    `*RR Infocell - Aparelho pronto!*`,
-    `OS #${os.numero}`,
-    linhaAparelho(context),
-    `Seu aparelho ja pode ser retirado.`,
-    `Valor total: ${formatBRL(os.valorTotal)}`,
-  ];
-
-  if (env.ATENDIMENTO_PIX_CHAVE) {
-    linhas.push("");
-    linhas.push("*Pagamento via PIX*");
-    if (env.ATENDIMENTO_PIX_NOME) linhas.push(`Favorecido: ${env.ATENDIMENTO_PIX_NOME}`);
-    linhas.push(`Chave PIX: ${env.ATENDIMENTO_PIX_CHAVE}`);
-  }
-
-  linhas.push("");
-  linhas.push("Se preferir pagar na retirada, responda: PIX, CARTAO ou DINHEIRO.");
-  linhas.push("Horario: seg-sex 9h-18h, sab 9h-13h.");
-
-  return linhas.join("\n");
+function formatBRLRaw(value: number) {
+  return value.toFixed(2).replace(".", ",");
 }
 
-function mensagemAbertura(os: OrdemServico, context: MensagemOrdemContext) {
-  return [
-    `*RR Infocell - OS #${os.numero} aberta*`,
-    linhaAparelho(context),
-    "Recebemos seu aparelho.",
-    "Vamos iniciar a analise tecnica e avisaremos por aqui quando houver atualizacao.",
-  ].join("\n");
+async function getAparelhoNome(os: OrdemServico): Promise<string> {
+  const aparelho = await aparelhosRepo.findById(os.aparelhoId);
+  return aparelho ? `${aparelho.marca} ${aparelho.modelo}`.trim() : os.aparelhoId;
 }
 
-function mensagemOrcamentoPendente(os: OrdemServico, context: MensagemOrdemContext) {
-  return [
-    `*RR Infocell - Orcamento pendente*`,
-    `A OS #${os.numero} ainda aguarda sua aprovacao.`,
-    linhaAparelho(context),
-    "Para autorizar responda: SIM",
-    "Para recusar responda: NAO",
-  ].join("\n");
-}
-
-function mensagemRetiradaPendente(os: OrdemServico, context: MensagemOrdemContext) {
-  return [
-    `*RR Infocell - Retirada pendente*`,
-    `Sua OS #${os.numero} esta pronta para retirada.`,
-    linhaAparelho(context),
-    `Valor total: ${formatBRL(os.valorTotal)}`,
-    env.ATENDIMENTO_PIX_CHAVE
-      ? `Chave PIX: ${env.ATENDIMENTO_PIX_CHAVE}`
-      : "Voce pode confirmar a forma de pagamento por aqui.",
-  ].join("\n");
-}
-
-function mensagemChecklist(os: OrdemServico, checklist: Checklist, context: MensagemOrdemContext) {
-  const itensComDefeito = checklist.itens.filter((item) => item.status === "com_defeito");
-  const linhas = [
-    `*RR Infocell - Checklist da OS #${os.numero}*`,
-    linhaAparelho(context),
-    `Checklist de ${checklist.tipo === "saida" ? "saida" : "entrada"} registrado${checklist.criadoPor ? ` por ${checklist.criadoPor}` : ""}.`,
-    itensComDefeito.length > 0
-      ? `Itens com defeito: ${itensComDefeito.map((item) => item.nome).join(", ")}.`
-      : "Itens com defeito: nenhum informado.",
-    `Fotos anexadas: ${checklist.fotos.length}.`,
-  ];
-
-  if (checklist.observacoesGerais) {
-    linhas.push(`Observacoes: ${checklist.observacoesGerais}`);
-  }
-
-  linhas.push("Vamos seguir com a analise tecnica e avisaremos por aqui.");
-
-  return linhas.join("\n");
-}
+const STATUS_TEMPLATE_MAP: Partial<Record<OrdemServicoStatus, string>> = {
+  em_analise: "status_em_analise",
+  aguardando_peca: "status_aguardando_peca",
+  em_manutencao: "status_em_manutencao",
+  pronto_para_retirada: "status_pronto_para_retirada",
+  sem_conserto: "status_sem_conserto",
+};
 
 class AutomacoesAtendimentoService {
   private timer: NodeJS.Timeout | null = null;
@@ -159,8 +68,17 @@ class AutomacoesAtendimentoService {
 
   async aoCriarOrdem(os: OrdemServico) {
     if (env.NODE_ENV === "test") return;
-    const context = await this.getMensagemContext(os);
-    const enviada = await this.enviarAutomacaoOrdem(os, mensagemAbertura(os, context), "status");
+
+    const tpl = await configuracoesService.getTemplate("abertura");
+    if (!tpl?.ativo) return;
+
+    const aparelhoNome = await getAparelhoNome(os);
+    const texto = renderTemplate(tpl.mensagem, {
+      numero: String(os.numero),
+      aparelho: aparelhoNome,
+    });
+
+    const enviada = await this.enviarAutomacaoOrdem(os, texto, "status");
     if (enviada) {
       await this.marcarAutomacaoOrdem(os.id, { "automacoes.aberturaEnviadaEm": now() });
     }
@@ -170,16 +88,27 @@ class AutomacoesAtendimentoService {
     if (env.NODE_ENV === "test") return;
     if (current.status === next.status) return;
 
-    const mensagemStatus = statusMensagens[next.status];
-    const context = await this.getMensagemContext(next);
-    const textoStatus = mensagemStatus?.(next, context);
-    if (textoStatus && !next.automacoes?.statusNotificados?.[next.status]) {
-      const enviada = await this.enviarAutomacaoOrdem(next, textoStatus, "status");
-      if (enviada) {
-        await this.marcarAutomacaoOrdem(next.id, {
-          [`automacoes.statusNotificados.${next.status}`]: now(),
-        });
-      }
+    const templateId = STATUS_TEMPLATE_MAP[next.status];
+    if (!templateId) return;
+
+    const tpl = await configuracoesService.getTemplate(templateId);
+    if (!tpl?.ativo) return;
+    if (next.automacoes?.statusNotificados?.[next.status]) return;
+
+    const aparelhoNome = await getAparelhoNome(next);
+    const texto = renderTemplate(tpl.mensagem, {
+      numero: String(next.numero),
+      aparelho: aparelhoNome,
+      valor: formatBRL(next.valorTotal),
+      valorRaw: formatBRLRaw(next.valorTotal),
+      pixInfo: buildPixInfo(),
+    });
+
+    const enviada = await this.enviarAutomacaoOrdem(next, texto, "status");
+    if (enviada) {
+      await this.marcarAutomacaoOrdem(next.id, {
+        [`automacoes.statusNotificados.${next.status}`]: now(),
+      });
     }
 
     if (
@@ -197,8 +126,31 @@ class AutomacoesAtendimentoService {
     const os = await ordensRepo.findById(checklist.ordemServicoId);
     if (!os) return;
 
-    const context = await this.getMensagemContext(os);
-    await this.enviarAutomacaoOrdem(os, mensagemChecklist(os, checklist, context), "status");
+    const tpl = await configuracoesService.getTemplate("checklist");
+    if (!tpl?.ativo) return;
+
+    const aparelhoNome = await getAparelhoNome(os);
+    const itensComDefeito = checklist.itens.filter((item) => item.status === "com_defeito");
+    const defeitosItens =
+      itensComDefeito.length > 0
+        ? `Itens com defeito: ${itensComDefeito.map((item) => item.nome).join(", ")}.`
+        : "Itens com defeito: nenhum informado.";
+    const observacoesLinha = checklist.observacoesGerais
+      ? `\nObservacoes: ${checklist.observacoesGerais}`
+      : "";
+    const criadoPorSufixo = checklist.criadoPor ? ` por ${checklist.criadoPor}` : "";
+
+    const texto = renderTemplate(tpl.mensagem, {
+      numero: String(os.numero),
+      aparelho: aparelhoNome,
+      tipoChecklist: checklist.tipo === "saida" ? "saida" : "entrada",
+      criadoPorSufixo,
+      defeitosItens,
+      fotos: String(checklist.fotos.length),
+      observacoesLinha,
+    });
+
+    await this.enviarAutomacaoOrdem(os, texto, "status");
   }
 
   async processarPendencias() {
@@ -220,17 +172,21 @@ class AutomacoesAtendimentoService {
     const ordens = await ordensRepo.list({ status: "aguardando_aprovacao" });
     const limite = new Date();
 
+    const tpl = await configuracoesService.getTemplate("lembrete_orcamento");
+    if (!tpl?.ativo) return;
+
     for (const os of ordens) {
       if (os.automacoes?.lembreteOrcamentoEnviadoEm) continue;
       const base = os.updatedAt || os.createdAt;
       if (addHours(base, env.ATENDIMENTO_LEMBRETE_ORCAMENTO_HORAS) > limite) continue;
 
-      const context = await this.getMensagemContext(os);
-      const enviada = await this.enviarAutomacaoOrdem(
-        os,
-        mensagemOrcamentoPendente(os, context),
-        "orcamento",
-      );
+      const aparelhoNome = await getAparelhoNome(os);
+      const texto = renderTemplate(tpl.mensagem, {
+        numero: String(os.numero),
+        aparelho: aparelhoNome,
+      });
+
+      const enviada = await this.enviarAutomacaoOrdem(os, texto, "orcamento");
       if (enviada) {
         await this.marcarAutomacaoOrdem(os.id, { "automacoes.lembreteOrcamentoEnviadoEm": now() });
       }
@@ -241,17 +197,23 @@ class AutomacoesAtendimentoService {
     const ordens = await ordensRepo.list({ status: "pronto_para_retirada" });
     const limite = new Date();
 
+    const tpl = await configuracoesService.getTemplate("lembrete_retirada");
+    if (!tpl?.ativo) return;
+
     for (const os of ordens) {
       if (os.automacoes?.lembreteRetiradaEnviadoEm) continue;
       const base = os.concluidaEm || os.updatedAt || os.createdAt;
       if (addDays(base, env.ATENDIMENTO_LEMBRETE_RETIRADA_DIAS) > limite) continue;
 
-      const context = await this.getMensagemContext(os);
-      const enviada = await this.enviarAutomacaoOrdem(
-        os,
-        mensagemRetiradaPendente(os, context),
-        "status",
-      );
+      const aparelhoNome = await getAparelhoNome(os);
+      const texto = renderTemplate(tpl.mensagem, {
+        numero: String(os.numero),
+        aparelho: aparelhoNome,
+        valor: formatBRL(os.valorTotal),
+        pixRetiradaInfo: buildPixRetiradaInfo(),
+      });
+
+      const enviada = await this.enviarAutomacaoOrdem(os, texto, "status");
       if (enviada) {
         await this.marcarAutomacaoOrdem(os.id, { "automacoes.lembreteRetiradaEnviadoEm": now() });
       }
@@ -314,13 +276,6 @@ class AutomacoesAtendimentoService {
       console.warn("[WhatsApp] Automacao nao enviada:", err instanceof Error ? err.message : err);
       return false;
     }
-  }
-
-  private async getMensagemContext(os: OrdemServico): Promise<MensagemOrdemContext> {
-    const aparelho = await aparelhosRepo.findById(os.aparelhoId);
-    const aparelhoNome = aparelho ? `${aparelho.marca} ${aparelho.modelo}`.trim() : os.aparelhoId;
-
-    return { aparelhoNome };
   }
 
   private async finalizarConversa(os: OrdemServico) {

@@ -1,9 +1,12 @@
-import { CheckCircle2, CircleSlash, Palette, ShieldCheck } from "lucide-react";
+import { CheckCircle2, CircleSlash, Palette, ShieldCheck, ChevronRight } from "lucide-react";
+import { Link } from "react-router-dom";
+import { FaWhatsapp } from "react-icons/fa";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { moduleKeys, planModules, type ModuleKey } from "@/config/planModules";
 import { useTenant } from "@/contexts/TenantContext";
+import { ROUTES } from "@/constants/routes";
 
 const moduleLabels: Record<ModuleKey, string> = {
   dashboard: "Dashboard",
@@ -113,6 +116,24 @@ export default function TenantSettings() {
           <ColorPreview label="Primary color" value={branding.primaryColor} />
           <ColorPreview label="Secondary color" value={branding.secondaryColor} />
         </div>
+      </Card>
+
+      <Card className="surface-panel p-0 overflow-hidden">
+        <Link
+          to={ROUTES.configuracoesMensagens}
+          className="flex items-center gap-4 p-5 hover:bg-secondary/40 transition-colors group"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-400 shrink-0">
+            <FaWhatsapp className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-display font-semibold text-sm">Mensagens Automáticas do WhatsApp</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Edite os textos enviados em cada etapa do atendimento e ative ou desative mensagens individuais.
+            </p>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
+        </Link>
       </Card>
 
       <Card className="surface-panel p-5">

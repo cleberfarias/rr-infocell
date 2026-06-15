@@ -3,6 +3,7 @@ import { conexaoService } from "./conexao.service.js";
 import { mensagemService } from "./mensagem.service.js";
 import { acoesService } from "./acoes.service.js";
 import { automacoesAtendimentoService } from "./automacoes.service.js";
+import { configuracoesService } from "./configuracoes.service.js";
 import { vincularCliente } from "./vinculo.service.js";
 import { normalizarTelefone } from "../../shared/normalizar-telefone.js";
 import type { TipoMensagem } from "./mensagem.service.js";
@@ -213,6 +214,31 @@ whatsappRoutes.post("/acoes/enviar-status", async (req, res, next) => {
   try {
     const { osId } = req.body as { osId: string };
     await acoesService.enviarStatus(osId);
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+whatsappRoutes.get("/configuracoes/mensagens", async (_req, res, next) => {
+  try {
+    const templates = await configuracoesService.getTemplates();
+    res.json(templates);
+  } catch (err) {
+    next(err);
+  }
+});
+
+whatsappRoutes.put("/configuracoes/mensagens", async (req, res, next) => {
+  try {
+    const { templates } = req.body as {
+      templates: { id: string; ativo: boolean; mensagem: string }[];
+    };
+    if (!Array.isArray(templates)) {
+      res.status(400).json({ error: "templates deve ser um array" });
+      return;
+    }
+    await configuracoesService.saveTemplates(templates);
     res.json({ ok: true });
   } catch (err) {
     next(err);

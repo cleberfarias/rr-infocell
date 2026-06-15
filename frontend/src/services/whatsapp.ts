@@ -128,3 +128,24 @@ export const enviarStatus = (osId: string) =>
     method: "POST",
     body: JSON.stringify({ osId }),
   });
+
+export type MensagemTemplate = {
+  id: string;
+  nome: string;
+  descricao: string;
+  ativo: boolean;
+  mensagem: string;
+  variaveis: string[];
+  tipo: "automatica" | "manual";
+};
+
+export const getConfiguracoesMensagens = () =>
+  apiRequest<MensagemTemplate[]>("/whatsapp/configuracoes/mensagens");
+
+export const saveConfiguracoesMensagens = (
+  templates: Pick<MensagemTemplate, "id" | "ativo" | "mensagem">[],
+) =>
+  apiRequest<{ ok: boolean }>("/whatsapp/configuracoes/mensagens", {
+    method: "PUT",
+    body: JSON.stringify({ templates }),
+  });
