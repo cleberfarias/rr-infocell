@@ -19,12 +19,16 @@ export const createApp = () => {
   const app = express();
 
   app.disable("x-powered-by");
+
+  // Preflight para rota pública de demo — deve vir antes do CORS global
+  app.options("/demo/registrar", cors({ origin: "*" }));
+
   app.use(cors(corsOptions));
   app.use(express.json({ limit: "25mb" }));
   app.use(limiter);
   app.use(observabilidadeRequestLogger);
   app.use("/webhook", kiwifyWebhookRoutes);
-  app.use("/demo", cors({ origin: "*", methods: ["POST", "OPTIONS"] }), demoRoutes);
+  app.use("/demo", cors({ origin: "*" }), demoRoutes);
   app.use("/api", routes);
   app.use(notFoundHandler);
   app.use(errorHandler);
