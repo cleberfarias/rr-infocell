@@ -86,7 +86,9 @@ const Login = () => {
     if (!firebaseAuth) return;
     setResetStatus("sending");
     try {
-      await sendPasswordResetEmail(firebaseAuth, resetEmail);
+      await sendPasswordResetEmail(firebaseAuth, resetEmail, {
+        url: window.location.origin,
+      });
       setResetStatus("sent");
     } catch {
       setResetStatus("error");

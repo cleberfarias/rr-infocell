@@ -101,7 +101,11 @@ async function enviarEmailResetFirebase(email: string): Promise<void> {
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ requestType: "PASSWORD_RESET", email }),
+      body: JSON.stringify({
+        requestType: "PASSWORD_RESET",
+        email,
+        continueUrl: "https://nextassist.web.app",
+      }),
     },
   );
 
