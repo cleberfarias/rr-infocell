@@ -119,7 +119,13 @@ export const TEMPLATES_DEFAULT: MensagemTemplate[] = [
     descricao: "Enviada manualmente pelo atendente ao encaminhar orçamento para aprovação",
     ativo: true,
     tipo: "manual",
-    variaveis: ["{{numero}}", "{{aparelho}}", "{{defeito}}", "{{diagnosticoLinha}}", "{{valorRaw}}"],
+    variaveis: [
+      "{{numero}}",
+      "{{aparelho}}",
+      "{{defeito}}",
+      "{{diagnosticoLinha}}",
+      "{{valorRaw}}",
+    ],
     mensagem:
       "*RR Infocell — Orcamento OS #{{numero}}*\nAparelho: {{aparelho}}\nDefeito: {{defeito}}\n{{diagnosticoLinha}}Valor total: R$ {{valorRaw}}\n\nPara *AUTORIZAR* responda: SIM\nPara *RECUSAR* responda: NAO",
   },
@@ -150,8 +156,7 @@ export const TEMPLATES_DEFAULT: MensagemTemplate[] = [
     ativo: true,
     tipo: "manual",
     variaveis: ["{{numero}}", "{{status}}", "{{previsaoLinha}}"],
-    mensagem:
-      "*RR Infocell — Status da OS #{{numero}}*\nStatus: {{status}}{{previsaoLinha}}",
+    mensagem: "*RR Infocell — Status da OS #{{numero}}*\nStatus: {{status}}{{previsaoLinha}}",
   },
 ];
 
@@ -202,7 +207,9 @@ class ConfiguracoesService {
     return all.find((t) => t.id === id);
   }
 
-  async saveTemplates(templates: Pick<MensagemTemplate, "id" | "ativo" | "mensagem">[]): Promise<void> {
+  async saveTemplates(
+    templates: Pick<MensagemTemplate, "id" | "ativo" | "mensagem">[],
+  ): Promise<void> {
     if (!db) throw new Error("Firestore indisponivel");
     await db.collection(COL).doc(DOC).set({ templates }, { merge: false });
   }

@@ -56,24 +56,27 @@ class AcoesService {
     const tpl = await configuracoesService.getTemplate("acao_orcamento");
     const diagnosticoLinha = os.diagnostico ? `Diagnostico: ${os.diagnostico}\n` : "";
 
-    const texto = tpl?.ativo === false
-      ? [
-          `*RR Infocell — Orcamento OS #${os.numero}*`,
-          `Aparelho: ${nomeAparelho}`,
-          `Defeito: ${os.defeitoRelatado}`,
-          os.diagnostico ? `Diagnostico: ${os.diagnostico}` : null,
-          `Valor total: R$ ${formatBRLRaw(os.valorTotal)}`,
-          "",
-          "Para *AUTORIZAR* responda: SIM",
-          "Para *RECUSAR* responda: NAO",
-        ].filter((l) => l !== null).join("\n")
-      : renderTemplate(tpl?.mensagem ?? "", {
-          numero: String(os.numero),
-          aparelho: nomeAparelho,
-          defeito: os.defeitoRelatado,
-          diagnosticoLinha,
-          valorRaw: formatBRLRaw(os.valorTotal),
-        });
+    const texto =
+      tpl?.ativo === false
+        ? [
+            `*RR Infocell — Orcamento OS #${os.numero}*`,
+            `Aparelho: ${nomeAparelho}`,
+            `Defeito: ${os.defeitoRelatado}`,
+            os.diagnostico ? `Diagnostico: ${os.diagnostico}` : null,
+            `Valor total: R$ ${formatBRLRaw(os.valorTotal)}`,
+            "",
+            "Para *AUTORIZAR* responda: SIM",
+            "Para *RECUSAR* responda: NAO",
+          ]
+            .filter((l) => l !== null)
+            .join("\n")
+        : renderTemplate(tpl?.mensagem ?? "", {
+            numero: String(os.numero),
+            aparelho: nomeAparelho,
+            defeito: os.defeitoRelatado,
+            diagnosticoLinha,
+            valorRaw: formatBRLRaw(os.valorTotal),
+          });
 
     await conexaoService.enviarTexto(contato.telefone, texto);
 
@@ -111,23 +114,26 @@ class AcoesService {
     const nomeAparelho = aparelho ? `${aparelho.marca} ${aparelho.modelo}` : os.aparelhoId;
 
     const tpl = await configuracoesService.getTemplate("acao_pronto");
-    const texto = tpl?.ativo === false
-      ? [
-          `*RR Infocell — Aparelho pronto!* ✅`,
-          `OS #${os.numero}`,
-          `Aparelho: ${nomeAparelho}`,
-          `Seu aparelho ja pode ser retirado.`,
-          `Valor total: R$ ${formatBRLRaw(os.valorTotal)}`,
-          buildPixChaveLinha() || null,
-          `Se preferir pagar na retirada, responda: PIX, CARTAO ou DINHEIRO.`,
-          `Horario: seg-sex 9h-18h, sab 9h-13h.`,
-        ].filter((linha) => linha !== null).join("\n")
-      : renderTemplate(tpl?.mensagem ?? "", {
-          numero: String(os.numero),
-          aparelho: nomeAparelho,
-          valorRaw: formatBRLRaw(os.valorTotal),
-          pixChaveLinha: buildPixChaveLinha(),
-        });
+    const texto =
+      tpl?.ativo === false
+        ? [
+            `*RR Infocell — Aparelho pronto!* ✅`,
+            `OS #${os.numero}`,
+            `Aparelho: ${nomeAparelho}`,
+            `Seu aparelho ja pode ser retirado.`,
+            `Valor total: R$ ${formatBRLRaw(os.valorTotal)}`,
+            buildPixChaveLinha() || null,
+            `Se preferir pagar na retirada, responda: PIX, CARTAO ou DINHEIRO.`,
+            `Horario: seg-sex 9h-18h, sab 9h-13h.`,
+          ]
+            .filter((linha) => linha !== null)
+            .join("\n")
+        : renderTemplate(tpl?.mensagem ?? "", {
+            numero: String(os.numero),
+            aparelho: nomeAparelho,
+            valorRaw: formatBRLRaw(os.valorTotal),
+            pixChaveLinha: buildPixChaveLinha(),
+          });
 
     await conexaoService.enviarTexto(contato.telefone, texto);
     await mensagemService.salvarMensagemSaida(
@@ -161,18 +167,19 @@ class AcoesService {
       formaPagamento === "pix" ? "PIX" : formaPagamento === "cartao" ? "Cartao" : "Dinheiro";
 
     const tpl = await configuracoesService.getTemplate("acao_pagamento");
-    const texto = tpl?.ativo === false
-      ? [
-          `*RR Infocell — Pagamento confirmado* ✅`,
-          `OS #${os.numero}`,
-          `Valor: R$ ${formatBRLRaw(os.valorTotal)} | ${formaLabel}`,
-          `Obrigado pela preferencia!`,
-        ].join("\n")
-      : renderTemplate(tpl?.mensagem ?? "", {
-          numero: String(os.numero),
-          valorRaw: formatBRLRaw(os.valorTotal),
-          formaPagamento: formaLabel,
-        });
+    const texto =
+      tpl?.ativo === false
+        ? [
+            `*RR Infocell — Pagamento confirmado* ✅`,
+            `OS #${os.numero}`,
+            `Valor: R$ ${formatBRLRaw(os.valorTotal)} | ${formaLabel}`,
+            `Obrigado pela preferencia!`,
+          ].join("\n")
+        : renderTemplate(tpl?.mensagem ?? "", {
+            numero: String(os.numero),
+            valorRaw: formatBRLRaw(os.valorTotal),
+            formaPagamento: formaLabel,
+          });
 
     await conexaoService.enviarTexto(contato.telefone, texto);
     await mensagemService.salvarMensagemSaida(
@@ -196,19 +203,20 @@ class AcoesService {
       : "";
 
     const tpl = await configuracoesService.getTemplate("acao_status");
-    const texto = tpl?.ativo === false
-      ? [
-          `*RR Infocell — Status da OS #${os.numero}*`,
-          `Status: ${statusLabel[os.status] ?? os.status}`,
-          ...(os.previsaoEntregaEm
-            ? [`Previsao: ${new Date(os.previsaoEntregaEm).toLocaleDateString("pt-BR")}`]
-            : []),
-        ].join("\n")
-      : renderTemplate(tpl?.mensagem ?? "", {
-          numero: String(os.numero),
-          status: statusLabel[os.status] ?? os.status,
-          previsaoLinha,
-        });
+    const texto =
+      tpl?.ativo === false
+        ? [
+            `*RR Infocell — Status da OS #${os.numero}*`,
+            `Status: ${statusLabel[os.status] ?? os.status}`,
+            ...(os.previsaoEntregaEm
+              ? [`Previsao: ${new Date(os.previsaoEntregaEm).toLocaleDateString("pt-BR")}`]
+              : []),
+          ].join("\n")
+        : renderTemplate(tpl?.mensagem ?? "", {
+            numero: String(os.numero),
+            status: statusLabel[os.status] ?? os.status,
+            previsaoLinha,
+          });
 
     await conexaoService.enviarTexto(contato.telefone, texto);
     await mensagemService.salvarMensagemSaida(
