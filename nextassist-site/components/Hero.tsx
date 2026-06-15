@@ -1,6 +1,9 @@
+import FloatingBrands from "./FloatingBrands";
+
 export default function Hero() {
   return (
     <section className="hero">
+      <FloatingBrands />
       <div className="hero-grid">
         <div>
           <div className="hero-tag">🔧 Sistema Operacional para Assistências Técnicas</div>

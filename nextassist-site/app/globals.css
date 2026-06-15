@@ -70,9 +70,34 @@ nav {
 }
 .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
 
+/* ── FLOATING BRANDS ── */
+.brands-bg {
+  position: absolute; inset: 0;
+  overflow: hidden; pointer-events: none; z-index: 0;
+}
+.brands-item {
+  position: absolute;
+  font-family: var(--font-inter), 'Inter', sans-serif;
+  font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--accent); white-space: nowrap; user-select: none;
+  animation-timing-function: ease-in-out; animation-iteration-count: infinite;
+}
+.brands-item-a { animation-name: brand-float-a; }
+.brands-item-b { animation-name: brand-float-b; }
+@keyframes brand-float-a {
+  0%, 100% { transform: translateY(0px)   translateX(0px)  rotate(var(--rot, 0deg)); }
+  35%       { transform: translateY(-22px) translateX(7px)  rotate(var(--rot, 0deg)); }
+  70%       { transform: translateY(-9px)  translateX(-5px) rotate(var(--rot, 0deg)); }
+}
+@keyframes brand-float-b {
+  0%, 100% { transform: translateY(0px)  translateX(0px)  rotate(var(--rot, 0deg)); }
+  40%       { transform: translateY(18px) translateX(-8px) rotate(var(--rot, 0deg)); }
+  75%       { transform: translateY(7px)  translateX(4px)  rotate(var(--rot, 0deg)); }
+}
+
 /* ── HERO ── */
 .hero {
-  min-height: 100vh;
+  min-height: 100vh; position: relative; overflow: hidden;
   display: flex; align-items: center;
   padding: 100px 5% 60px;
   background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,180,245,.13), transparent);
@@ -81,6 +106,7 @@ nav {
   display: grid; grid-template-columns: 1fr 1fr;
   gap: 60px; align-items: center;
   max-width: 1200px; margin: 0 auto; width: 100%;
+  position: relative; z-index: 1;
 }
 .hero-tag {
   display: inline-flex; align-items: center; gap: .5rem;
