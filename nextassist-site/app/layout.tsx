@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import FloatingBrands from "@/components/FloatingBrands";
 import "./globals.css";
 
 const inter = Inter({
@@ -135,7 +136,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <meta name="theme-color" content="#00b4f5" />
       </head>
-      <body>{children}</body>
+      <body>
+        <FloatingBrands />
+        {children}
+      </body>
     </html>
   );
 }

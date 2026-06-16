@@ -72,8 +72,8 @@ nav {
 
 /* ── FLOATING BRANDS ── */
 .brands-bg {
-  position: absolute; inset: 0;
-  overflow: hidden; pointer-events: none; z-index: 0;
+  position: fixed; inset: 0;
+  overflow: hidden; pointer-events: none; z-index: 1;
 }
 .brands-item {
   position: absolute;
@@ -97,7 +97,7 @@ nav {
 
 /* ── HERO ── */
 .hero {
-  min-height: 100vh; position: relative; overflow: hidden;
+  min-height: 100vh;
   display: flex; align-items: center;
   padding: 100px 5% 60px;
   background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,180,245,.13), transparent);
@@ -106,7 +106,7 @@ nav {
   display: grid; grid-template-columns: 1fr 1fr;
   gap: 60px; align-items: center;
   max-width: 1200px; margin: 0 auto; width: 100%;
-  position: relative; z-index: 1;
+  position: relative; z-index: 2;
 }
 .hero-tag {
   display: inline-flex; align-items: center; gap: .5rem;
