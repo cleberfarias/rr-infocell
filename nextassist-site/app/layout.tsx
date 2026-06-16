@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import FloatingBrands from "@/components/FloatingBrands";
+import LenisScroll from "@/components/LenisScroll";
+import BackgroundSceneWrapper from "@/components/three/BackgroundSceneWrapper";
 import "./globals.css";
 
 const inter = Inter({
@@ -137,7 +138,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#00b4f5" />
       </head>
       <body>
-        <FloatingBrands />
+        <BackgroundSceneWrapper />
+        <LenisScroll />
         {children}
       </body>
     </html>

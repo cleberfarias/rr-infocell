@@ -1,8 +1,14 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
-export default function ScrollReveal({ children }: { children: React.ReactNode }) {
+export default function ScrollReveal({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -15,14 +21,14 @@ export default function ScrollReveal({ children }: { children: React.ReactNode }
           observer.disconnect();
         }
       },
-      { threshold: 0.12 }
+      { threshold: 0.12 },
     );
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
 
   return (
-    <div ref={ref} className="reveal">
+    <div ref={ref} className={`reveal ${className}`}>
       {children}
     </div>
   );
