@@ -47,23 +47,10 @@ jobs:
             --format 'value(status.url)')
           echo "✅ NextAssist Site deployed: $URL"
 
-      - name: Grant Firebase SA Cloud Run Viewer access
+      - name: Map custom domain to Cloud Run
         run: |
-          FIREBASE_SA=$(echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_RR_INFOCELL }}' | jq -r '.client_email')
-          gcloud projects add-iam-policy-binding rr-infocell \
-            --member="serviceAccount:$FIREBASE_SA" \
-            --role="roles/run.viewer" \
-            --quiet --no-user-output-enabled || true
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Deploy Firebase Hosting (rewrite → Cloud Run)
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RR_INFOCELL }}
-          channelId: live
-          projectId: rr-infocell
-          entryPoint: nextassist-site
+          gcloud beta run domain-mappings create \
+            --service nextassist-site \
+            --domain www.nextassist-app.com.br \
+            --region southamerica-east1 \
+            --quiet 2>/dev/null || echo "Domain mapping already exists or requires manual DNS setup"
