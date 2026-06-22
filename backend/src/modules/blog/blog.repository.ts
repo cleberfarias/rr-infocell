@@ -16,10 +16,7 @@ function toSlug(text: string): string {
 export const blogRepository = {
   async listPublished(): Promise<BlogPost[]> {
     const db = getFirestore();
-    const snap = await db
-      .collection(COLLECTION)
-      .where("publicado", "==", true)
-      .get();
+    const snap = await db.collection(COLLECTION).where("publicado", "==", true).get();
 
     return snap.docs
       .map((doc) => ({ id: doc.id, ...(doc.data() as Omit<BlogPost, "id">) }))
