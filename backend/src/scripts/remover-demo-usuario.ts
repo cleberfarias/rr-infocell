@@ -33,10 +33,7 @@ async function main() {
   console.log(`\nProcessando: ${email}\n`);
 
   // 1. Buscar tenant pelo ownerEmail
-  const tenantSnap = await db
-    .collection("tenants")
-    .where("ownerEmail", "==", email)
-    .get();
+  const tenantSnap = await db.collection("tenants").where("ownerEmail", "==", email).get();
 
   if (tenantSnap.empty) {
     console.log("Nenhum tenant encontrado para este e-mail.");
