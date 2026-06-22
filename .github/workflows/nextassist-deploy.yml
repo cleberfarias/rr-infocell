@@ -47,15 +47,10 @@ jobs:
             --format 'value(status.url)')
           echo "✅ NextAssist Site deployed: $URL"
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
       - name: Deploy Firebase Hosting (rewrite → Cloud Run)
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RR_INFOCELL }}
-          channelId: live
-          projectId: rr-infocell
-          entryPoint: nextassist-site
+        run: |
+          npx firebase-tools@latest deploy \
+            --only hosting:nextassist-site \
+            --project rr-infocell \
+            --non-interactive
+        working-directory: nextassist-site
