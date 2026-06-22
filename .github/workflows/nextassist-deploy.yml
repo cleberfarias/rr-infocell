@@ -47,10 +47,11 @@ jobs:
             --format 'value(status.url)')
           echo "✅ NextAssist Site deployed: $URL"
 
-      - name: Map custom domain to Cloud Run
-        run: |
-          gcloud beta run domain-mappings create \
-            --service nextassist-site \
-            --domain www.nextassist-app.com.br \
-            --region southamerica-east1 \
-            --quiet 2>/dev/null || echo "Domain mapping already exists or requires manual DNS setup"
+      - name: Deploy Firebase Hosting (rewrite → Cloud Run)
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RR_INFOCELL }}
+          channelId: live
+          projectId: rr-infocell
+          entryPoint: nextassist-site
