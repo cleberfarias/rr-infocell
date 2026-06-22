@@ -1,11 +1,33 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getPostBySlug, getPublishedPosts } from "@/lib/blog-api";
+import { getPostBySlug } from "@/lib/blog-api";
 
 type Props = {
   params: Promise<{ slug: string }>;
 };
+
+function getPostKeywords(post: {
+  titulo: string;
+  slug: string;
+  tags: string[];
+}): string[] {
+  const slugTerms = post.slug
+    .split("-")
+    .filter((term) => term.length > 2)
+    .join(" ");
+
+  return Array.from(
+    new Set([
+      post.titulo,
+      ...post.tags,
+      slugTerms,
+      `${post.titulo} NextAssist`,
+      "sistema para ordem de servico assistencia tecnica",
+      "software para assistencia tecnica de celular",
+    ]),
+  ).filter(Boolean);
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -17,10 +39,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title = post.metaTitle || `${post.titulo} — NextAssist Blog`;
   const description = post.metaDescription || post.resumo;
+  const keywords = getPostKeywords(post);
 
   return {
     title,
     description,
+    keywords,
     alternates: { canonical: `/blog/${post.slug}` },
     openGraph: {
       title,
