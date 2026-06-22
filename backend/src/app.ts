@@ -21,8 +21,11 @@ export const createApp = () => {
 
   app.disable("x-powered-by");
 
-  // Preflight para rota pública de demo — deve vir antes do CORS global
+  // Preflight para rotas públicas — deve vir antes do CORS global
   app.options("/demo/registrar", cors({ origin: "*" }));
+  app.options("/blog/*", cors({ origin: "*" }));
+
+  app.use("/blog", express.json({ limit: "25mb" }), blogRoutes);
 
   app.use(cors(corsOptions));
   app.use(express.json({ limit: "25mb" }));
@@ -30,7 +33,6 @@ export const createApp = () => {
   app.use(observabilidadeRequestLogger);
   app.use("/webhook", kiwifyWebhookRoutes);
   app.use("/demo", cors({ origin: "*" }), demoRoutes);
-  app.use("/blog", blogRoutes);
   app.use("/api", routes);
   app.use(notFoundHandler);
   app.use(errorHandler);
