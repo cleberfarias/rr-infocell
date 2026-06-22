@@ -18,11 +18,11 @@ export const metadata: Metadata = {
     "sistema assistência técnica celular, software ordem de serviço, gestão assistência técnica, programa para loja de celular, OS celular sistema, PDV assistência técnica, NextAssist",
   robots: "index, follow",
   authors: [{ name: "NextAssist" }],
-  metadataBase: new URL("https://www.nextassist.com.br"),
+  metadataBase: new URL("https://www.nextassist-app.com.br"),
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
-    url: "https://www.nextassist.com.br/",
+    url: "https://www.nextassist-app.com.br/",
     siteName: "NextAssist",
     title: "NextAssist — Da entrada do aparelho ao recibo final",
     description:
@@ -51,7 +51,7 @@ const jsonLd = {
     {
       "@type": "SoftwareApplication",
       name: "NextAssist",
-      url: "https://www.nextassist.com.br",
+      url: "https://www.nextassist-app.com.br",
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web",
       description:
@@ -66,8 +66,8 @@ const jsonLd = {
     {
       "@type": "Organization",
       name: "NextAssist",
-      url: "https://www.nextassist.com.br",
-      logo: "https://www.nextassist.com.br/logo.png",
+      url: "https://www.nextassist-app.com.br",
+      logo: "https://www.nextassist-app.com.br/logo.png",
     },
     {
       "@type": "FAQPage",
