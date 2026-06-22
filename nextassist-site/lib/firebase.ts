@@ -8,9 +8,9 @@ function getFirebaseAuth(): Auth {
   if (_auth) return _auth;
 
   _app = initializeApp({
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "rr-infocell.firebaseapp.com",
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "rr-infocell",
+    apiKey: "AIzaSyB8BHL-HpHnNZYIyjasnTdP--Cl_yzAMVw",
+    authDomain: "rr-infocell.firebaseapp.com",
+    projectId: "rr-infocell",
   });
 
   _auth = getAuth(_app);
