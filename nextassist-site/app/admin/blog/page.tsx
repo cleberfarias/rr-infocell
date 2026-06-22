@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut, type User } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { getFirebaseAuth } from "@/lib/firebase";
 
 interface BlogPost {
   id: string;
@@ -52,7 +52,7 @@ function AdminBlogPage() {
   });
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(getFirebaseAuth(), async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
         tokenRef.current = await firebaseUser.getIdToken();
@@ -96,7 +96,7 @@ function AdminBlogPage() {
     setLoginError("");
     setAuthLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
     } catch {
       setLoginError("Email ou senha incorretos.");
     } finally {
@@ -298,7 +298,7 @@ function AdminBlogPage() {
             <button
               className="btn-secondary"
               style={{ fontSize: ".8rem", padding: ".5rem 1rem" }}
-              onClick={() => signOut(auth)}
+              onClick={() => signOut(getFirebaseAuth())}
             >
               Sair
             </button>
