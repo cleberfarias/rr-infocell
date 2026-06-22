@@ -15,7 +15,7 @@ export interface BlogPost {
   metaDescription?: string;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "https://rr-infocell-api-1016213438985.southamerica-east1.run.app";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "https://rr-infocell-api-91248386036.southamerica-east1.run.app";
 
 export async function getPublishedPosts(): Promise<BlogPost[]> {
   const res = await fetch(`${API_URL}/blog/posts`, { next: { revalidate: 60 } });

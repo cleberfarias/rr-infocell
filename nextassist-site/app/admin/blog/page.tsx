@@ -24,7 +24,7 @@ interface BlogPost {
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
-  "https://rr-infocell-api-1016213438985.southamerica-east1.run.app";
+  "https://rr-infocell-api-91248386036.southamerica-east1.run.app";
 
 function AdminBlogPage() {
   const [user, setUser] = useState<User | null>(null);

@@ -19,10 +19,11 @@ export const blogRepository = {
     const snap = await db
       .collection(COLLECTION)
       .where("publicado", "==", true)
-      .orderBy("publicadoEm", "desc")
       .get();
 
-    return snap.docs.map((doc) => ({ id: doc.id, ...(doc.data() as Omit<BlogPost, "id">) }));
+    return snap.docs
+      .map((doc) => ({ id: doc.id, ...(doc.data() as Omit<BlogPost, "id">) }))
+      .sort((a, b) => (b.publicadoEm || "").localeCompare(a.publicadoEm || ""));
   },
 
   async listAll(): Promise<BlogPost[]> {
