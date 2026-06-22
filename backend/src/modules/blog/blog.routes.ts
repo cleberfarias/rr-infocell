@@ -62,7 +62,17 @@ blogRoutes.get("/admin/posts/:id", async (req, res, next) => {
 
 blogRoutes.post("/admin/posts", async (req: AuthenticatedRequest, res, next) => {
   try {
-    const { titulo, resumo, conteudo, imagemCapa, tags, publicado, slug, metaTitle, metaDescription } = req.body;
+    const {
+      titulo,
+      resumo,
+      conteudo,
+      imagemCapa,
+      tags,
+      publicado,
+      slug,
+      metaTitle,
+      metaDescription,
+    } = req.body;
 
     if (!titulo?.trim() || !conteudo?.trim()) {
       res.status(400).json({ error: { message: "Título e conteúdo são obrigatórios." } });
