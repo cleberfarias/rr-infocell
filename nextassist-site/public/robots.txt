@@ -1,3 +1,0 @@
-User-agent: *
-Allow: /
-Sitemap: https://www.nextassist-app.com.br/sitemap.xml
