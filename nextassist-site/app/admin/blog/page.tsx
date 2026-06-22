@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import { signInWithEmailAndPassword, onAuthStateChanged, signOut, type User } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 interface BlogPost {
   id: string;
@@ -25,8 +27,13 @@ const API_URL =
   "https://rr-infocell-api-1016213438985.southamerica-east1.run.app";
 
 function AdminBlogPage() {
-  const [token, setToken] = useState("");
-  const [authenticated, setAuthenticated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [loginError, setLoginError] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const tokenRef = useRef("");
+
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<BlogPost | null>(null);
@@ -44,12 +51,23 @@ function AdminBlogPage() {
     metaDescription: "",
   });
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setUser(firebaseUser);
+      if (firebaseUser) {
+        tokenRef.current = await firebaseUser.getIdToken();
+      }
+      setAuthLoading(false);
+    });
+    return unsubscribe;
+  }, []);
+
   const headers = useCallback(
     () => ({
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${tokenRef.current}`,
     }),
-    [token],
+    [],
   );
 
   const loadPosts = useCallback(async () => {
@@ -63,21 +81,27 @@ function AdminBlogPage() {
       setPosts(json.data ?? []);
     } catch (err) {
       console.error(err);
-      alert("Erro ao carregar artigos. Verifique o token.");
-      setAuthenticated(false);
+      alert("Erro ao carregar artigos.");
     } finally {
       setLoading(false);
     }
   }, [headers]);
 
   useEffect(() => {
-    if (authenticated) loadPosts();
-  }, [authenticated, loadPosts]);
+    if (user) loadPosts();
+  }, [user, loadPosts]);
 
-  function handleLogin(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    if (!token.trim()) return;
-    setAuthenticated(true);
+    setLoginError("");
+    setAuthLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch {
+      setLoginError("Email ou senha incorretos.");
+    } finally {
+      setAuthLoading(false);
+    }
   }
 
   function resetForm() {
@@ -193,7 +217,17 @@ function AdminBlogPage() {
     }
   }
 
-  if (!authenticated) {
+  if (authLoading && !user) {
+    return (
+      <div className="admin-page">
+        <div className="admin-login-card">
+          <p style={{ color: "var(--muted)", textAlign: "center" }}>Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
     return (
       <div className="admin-page">
         <div className="admin-login-card">
@@ -202,18 +236,38 @@ function AdminBlogPage() {
           </Link>
           <h1>Admin Blog</h1>
           <p style={{ color: "var(--muted)", marginBottom: "1.5rem" }}>
-            Cole o token Firebase Auth de um admin para acessar.
+            Entre com seu email e senha para gerenciar o blog.
           </p>
+          {loginError && (
+            <div className="demo-error" style={{ marginBottom: "1rem" }}>
+              {loginError}
+            </div>
+          )}
           <form onSubmit={handleLogin} className="admin-login-form">
-            <textarea
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="Firebase Auth Token (Bearer)"
-              rows={3}
-              className="admin-token-input"
-            />
-            <button type="submit" className="btn-primary" style={{ width: "100%" }}>
-              Entrar
+            <div className="form-group">
+              <label>Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seu@email.com"
+                required
+                autoComplete="email"
+              />
+            </div>
+            <div className="form-group">
+              <label>Senha</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Sua senha"
+                required
+                autoComplete="current-password"
+              />
+            </div>
+            <button type="submit" className="btn-primary" disabled={authLoading} style={{ width: "100%" }}>
+              {authLoading ? "Entrando..." : "Entrar"}
             </button>
           </form>
         </div>
@@ -231,15 +285,24 @@ function AdminBlogPage() {
             </Link>
             <h1>Gerenciar Blog</h1>
           </div>
-          <button
-            className="btn-primary"
-            onClick={() => {
-              resetForm();
-              setShowForm(true);
-            }}
-          >
-            + Novo artigo
-          </button>
+          <div style={{ display: "flex", gap: ".75rem", alignItems: "center" }}>
+            <button
+              className="btn-primary"
+              onClick={() => {
+                resetForm();
+                setShowForm(true);
+              }}
+            >
+              + Novo artigo
+            </button>
+            <button
+              className="btn-secondary"
+              style={{ fontSize: ".8rem", padding: ".5rem 1rem" }}
+              onClick={() => signOut(auth)}
+            >
+              Sair
+            </button>
+          </div>
         </div>
 
         {showForm && (
