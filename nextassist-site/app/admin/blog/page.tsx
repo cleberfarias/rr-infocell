@@ -1,0 +1,443 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+
+interface BlogPost {
+  id: string;
+  titulo: string;
+  slug: string;
+  resumo: string;
+  conteudo: string;
+  imagemCapa?: string;
+  autor: string;
+  tags: string[];
+  publicado: boolean;
+  publicadoEm?: string;
+  criadoEm: string;
+  atualizadoEm: string;
+  metaTitle?: string;
+  metaDescription?: string;
+}
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://rr-infocell-api-1016213438985.southamerica-east1.run.app";
+
+function AdminBlogPage() {
+  const [token, setToken] = useState("");
+  const [authenticated, setAuthenticated] = useState(false);
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [editing, setEditing] = useState<BlogPost | null>(null);
+  const [showForm, setShowForm] = useState(false);
+
+  const [form, setForm] = useState({
+    titulo: "",
+    slug: "",
+    resumo: "",
+    conteudo: "",
+    imagemCapa: "",
+    tags: "",
+    publicado: false,
+    metaTitle: "",
+    metaDescription: "",
+  });
+
+  const headers = useCallback(
+    () => ({
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    }),
+    [token],
+  );
+
+  const loadPosts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/blog/admin/posts`, {
+        headers: headers(),
+      });
+      if (!res.ok) throw new Error("Falha ao carregar posts");
+      const json = await res.json();
+      setPosts(json.data ?? []);
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao carregar artigos. Verifique o token.");
+      setAuthenticated(false);
+    } finally {
+      setLoading(false);
+    }
+  }, [headers]);
+
+  useEffect(() => {
+    if (authenticated) loadPosts();
+  }, [authenticated, loadPosts]);
+
+  function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    if (!token.trim()) return;
+    setAuthenticated(true);
+  }
+
+  function resetForm() {
+    setForm({
+      titulo: "",
+      slug: "",
+      resumo: "",
+      conteudo: "",
+      imagemCapa: "",
+      tags: "",
+      publicado: false,
+      metaTitle: "",
+      metaDescription: "",
+    });
+    setEditing(null);
+    setShowForm(false);
+  }
+
+  function startEdit(post: BlogPost) {
+    setForm({
+      titulo: post.titulo,
+      slug: post.slug,
+      resumo: post.resumo,
+      conteudo: post.conteudo,
+      imagemCapa: post.imagemCapa || "",
+      tags: post.tags.join(", "),
+      publicado: post.publicado,
+      metaTitle: post.metaTitle || "",
+      metaDescription: post.metaDescription || "",
+    });
+    setEditing(post);
+    setShowForm(true);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+
+    const body = {
+      titulo: form.titulo,
+      slug: form.slug,
+      resumo: form.resumo,
+      conteudo: form.conteudo,
+      imagemCapa: form.imagemCapa || undefined,
+      tags: form.tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean),
+      publicado: form.publicado,
+      metaTitle: form.metaTitle || undefined,
+      metaDescription: form.metaDescription || undefined,
+    };
+
+    try {
+      const url = editing
+        ? `${API_URL}/blog/admin/posts/${editing.id}`
+        : `${API_URL}/blog/admin/posts`;
+
+      const res = await fetch(url, {
+        method: editing ? "PUT" : "POST",
+        headers: headers(),
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.error?.message || "Erro ao salvar");
+      }
+
+      resetForm();
+      await loadPosts();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Erro ao salvar artigo");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Excluir este artigo?")) return;
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API_URL}/blog/admin/posts/${id}`, {
+        method: "DELETE",
+        headers: headers(),
+      });
+
+      if (!res.ok) throw new Error("Erro ao excluir");
+      await loadPosts();
+    } catch {
+      alert("Erro ao excluir artigo");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function togglePublish(post: BlogPost) {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/blog/admin/posts/${post.id}`, {
+        method: "PUT",
+        headers: headers(),
+        body: JSON.stringify({ publicado: !post.publicado }),
+      });
+
+      if (!res.ok) throw new Error("Erro ao atualizar");
+      await loadPosts();
+    } catch {
+      alert("Erro ao alterar publicação");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (!authenticated) {
+    return (
+      <div className="admin-page">
+        <div className="admin-login-card">
+          <Link href="/" className="blog-back">
+            ← Voltar ao site
+          </Link>
+          <h1>Admin Blog</h1>
+          <p style={{ color: "var(--muted)", marginBottom: "1.5rem" }}>
+            Cole o token Firebase Auth de um admin para acessar.
+          </p>
+          <form onSubmit={handleLogin} className="admin-login-form">
+            <textarea
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              placeholder="Firebase Auth Token (Bearer)"
+              rows={3}
+              className="admin-token-input"
+            />
+            <button type="submit" className="btn-primary" style={{ width: "100%" }}>
+              Entrar
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="admin-page">
+      <div className="admin-container">
+        <div className="admin-header">
+          <div>
+            <Link href="/" className="blog-back">
+              ← Voltar ao site
+            </Link>
+            <h1>Gerenciar Blog</h1>
+          </div>
+          <button
+            className="btn-primary"
+            onClick={() => {
+              resetForm();
+              setShowForm(true);
+            }}
+          >
+            + Novo artigo
+          </button>
+        </div>
+
+        {showForm && (
+          <form onSubmit={handleSubmit} className="admin-form">
+            <h2>{editing ? "Editar artigo" : "Novo artigo"}</h2>
+
+            <div className="admin-form-grid">
+              <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+                <label>Título *</label>
+                <input
+                  value={form.titulo}
+                  onChange={(e) => setForm({ ...form, titulo: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Slug (gerado automaticamente se vazio)</label>
+                <input
+                  value={form.slug}
+                  onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                  placeholder="como-organizar-ordens-de-servico"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Tags (separadas por vírgula)</label>
+                <input
+                  value={form.tags}
+                  onChange={(e) => setForm({ ...form, tags: e.target.value })}
+                  placeholder="gestão, estoque, dicas"
+                />
+              </div>
+
+              <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+                <label>Resumo</label>
+                <textarea
+                  value={form.resumo}
+                  onChange={(e) => setForm({ ...form, resumo: e.target.value })}
+                  rows={2}
+                  placeholder="Breve descrição do artigo para listagem e SEO"
+                />
+              </div>
+
+              <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+                <label>Conteúdo (HTML) *</label>
+                <textarea
+                  value={form.conteudo}
+                  onChange={(e) =>
+                    setForm({ ...form, conteudo: e.target.value })
+                  }
+                  rows={15}
+                  required
+                  placeholder="<h2>Subtítulo</h2><p>Conteúdo do artigo...</p>"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>URL da imagem de capa</label>
+                <input
+                  value={form.imagemCapa}
+                  onChange={(e) =>
+                    setForm({ ...form, imagemCapa: e.target.value })
+                  }
+                  placeholder="https://..."
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Meta Title (SEO)</label>
+                <input
+                  value={form.metaTitle}
+                  onChange={(e) =>
+                    setForm({ ...form, metaTitle: e.target.value })
+                  }
+                  placeholder="Título customizado para Google"
+                />
+              </div>
+
+              <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+                <label>Meta Description (SEO)</label>
+                <input
+                  value={form.metaDescription}
+                  onChange={(e) =>
+                    setForm({ ...form, metaDescription: e.target.value })
+                  }
+                  placeholder="Descrição customizada para Google (até 160 caracteres)"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="admin-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={form.publicado}
+                    onChange={(e) =>
+                      setForm({ ...form, publicado: e.target.checked })
+                    }
+                  />
+                  <span>Publicar imediatamente</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="admin-form-actions">
+              <button type="button" className="btn-secondary" onClick={resetForm}>
+                Cancelar
+              </button>
+              <button type="submit" className="btn-primary" disabled={loading}>
+                {loading ? "Salvando..." : editing ? "Salvar alterações" : "Criar artigo"}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {loading && !showForm && (
+          <p style={{ color: "var(--muted)", textAlign: "center", padding: "2rem" }}>
+            Carregando...
+          </p>
+        )}
+
+        {!loading && posts.length === 0 && !showForm && (
+          <div className="blog-empty">
+            <p>Nenhum artigo criado. Clique em &quot;+ Novo artigo&quot; para começar.</p>
+          </div>
+        )}
+
+        {posts.length > 0 && (
+          <div className="admin-posts-list">
+            {posts.map((post) => (
+              <div key={post.id} className="admin-post-item">
+                <div className="admin-post-info">
+                  <div className="admin-post-status">
+                    <span
+                      className={`admin-status-dot ${post.publicado ? "published" : "draft"}`}
+                    />
+                    <span className="admin-status-text">
+                      {post.publicado ? "Publicado" : "Rascunho"}
+                    </span>
+                  </div>
+                  <h3>{post.titulo}</h3>
+                  <p>{post.resumo}</p>
+                  {post.tags.length > 0 && (
+                    <div className="blog-card-tags" style={{ marginTop: ".5rem" }}>
+                      {post.tags.map((tag) => (
+                        <span key={tag} className="blog-tag">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="admin-post-actions">
+                  {post.publicado && (
+                    <a
+                      href={`/blog/${post.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-secondary"
+                      style={{ fontSize: ".8rem", padding: ".4rem .8rem" }}
+                    >
+                      Ver
+                    </a>
+                  )}
+                  <button
+                    className="btn-secondary"
+                    style={{ fontSize: ".8rem", padding: ".4rem .8rem" }}
+                    onClick={() => togglePublish(post)}
+                  >
+                    {post.publicado ? "Despublicar" : "Publicar"}
+                  </button>
+                  <button
+                    className="btn-secondary"
+                    style={{ fontSize: ".8rem", padding: ".4rem .8rem" }}
+                    onClick={() => startEdit(post)}
+                  >
+                    Editar
+                  </button>
+                  <button
+                    className="btn-secondary"
+                    style={{
+                      fontSize: ".8rem",
+                      padding: ".4rem .8rem",
+                      borderColor: "#ef4444",
+                      color: "#ef4444",
+                    }}
+                    onClick={() => handleDelete(post.id)}
+                  >
+                    Excluir
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default AdminBlogPage;

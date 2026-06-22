@@ -1,8 +1,17 @@
 {
   "hosting": {
     "site": "nextassist-site",
-    "public": "out",
+    "public": "public",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-    "cleanUrls": true
+    "cleanUrls": true,
+    "rewrites": [
+      {
+        "source": "**",
+        "run": {
+          "serviceId": "nextassist-site",
+          "region": "southamerica-east1"
+        }
+      }
+    ]
   }
 }

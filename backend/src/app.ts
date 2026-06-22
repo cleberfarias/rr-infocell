@@ -8,6 +8,7 @@ import { notFoundHandler } from "./middlewares/not-found.js";
 import { routes } from "./routes.js";
 import { kiwifyWebhookRoutes } from "./modules/webhooks/kiwify.routes.js";
 import { demoRoutes } from "./modules/demo/demo.routes.js";
+import { blogRoutes } from "./modules/blog/blog.routes.js";
 import { observabilidadeRequestLogger } from "./modules/observabilidade/observabilidade.middleware.js";
 import { observabilidadeService } from "./modules/observabilidade/observabilidade.service.js";
 import { conexaoService } from "./modules/whatsapp/conexao.service.js";
@@ -29,6 +30,7 @@ export const createApp = () => {
   app.use(observabilidadeRequestLogger);
   app.use("/webhook", kiwifyWebhookRoutes);
   app.use("/demo", cors({ origin: "*" }), demoRoutes);
+  app.use("/blog", blogRoutes);
   app.use("/api", routes);
   app.use(notFoundHandler);
   app.use(errorHandler);

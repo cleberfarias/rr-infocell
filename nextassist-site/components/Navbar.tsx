@@ -10,6 +10,7 @@ export default function Navbar() {
         <a href="#planos">Planos</a>
         <a href="#depoimentos">Depoimentos</a>
         <a href="#contato">Contato</a>
+        <a href="/blog">Blog</a>
       </div>
       <a href="#planos" className="nav-cta">
         Começar agora →
