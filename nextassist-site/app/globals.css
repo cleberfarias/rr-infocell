@@ -524,6 +524,29 @@ footer {
   margin-bottom: 1.25rem; transition: color .2s;
 }
 .blog-back:hover { color: var(--text); }
+.blog-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+.blog-hero-actions .blog-back { margin-bottom: 0; }
+.blog-admin-link {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: .8rem;
+  font-weight: 700;
+  padding: .35rem .8rem;
+  transition: border-color .2s, color .2s;
+}
+.blog-admin-link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 
 .blog-list-section { padding: 0 5% 80px; }
 

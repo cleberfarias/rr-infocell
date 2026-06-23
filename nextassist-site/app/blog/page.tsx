@@ -31,9 +31,14 @@ export default async function BlogPage() {
     <>
       <section className="blog-hero">
         <div className="section-center">
-          <Link href="/" className="blog-back">
-            ← Voltar ao site
-          </Link>
+          <div className="blog-hero-actions">
+            <Link href="/" className="blog-back">
+              ← Voltar ao site
+            </Link>
+            <Link href="/admin/blog" className="blog-admin-link">
+              Admin blog
+            </Link>
+          </div>
           <span className="section-tag">Blog</span>
           <h1>
             Dicas para sua <em>assistência técnica</em>
