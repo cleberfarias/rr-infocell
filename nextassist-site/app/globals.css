@@ -600,6 +600,13 @@ footer {
   max-width: 100%; border-radius: var(--radius);
   border: 1px solid var(--border); margin: 1.5rem 0;
 }
+.blog-article-content figure { margin: 2rem 0; }
+.blog-article-content figure img { margin-bottom: .65rem; }
+.blog-article-content figcaption {
+  color: var(--muted);
+  font-size: .82rem;
+  text-align: center;
+}
 .blog-article-content a { color: var(--accent); }
 .blog-article-content a:hover { text-decoration: underline; }
 .blog-article-content code {
@@ -674,6 +681,12 @@ footer {
 .admin-form .form-group input:focus { border-color: var(--accent); }
 .admin-form .form-group textarea { resize: vertical; font-family: 'JetBrains Mono', monospace; font-size: .85rem; }
 .admin-form .form-group label { font-size: .8rem; font-weight: 600; color: var(--muted); display: block; margin-bottom: .4rem; }
+.admin-image-insert-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;
+  gap: .75rem;
+}
+@media(max-width:768px) { .admin-image-insert-row { grid-template-columns: 1fr; } }
 .admin-checkbox {
   display: flex; align-items: center; gap: .5rem; cursor: pointer;
   font-size: .9rem !important; color: var(--text) !important;

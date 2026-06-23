@@ -38,6 +38,8 @@ function AdminBlogPage() {
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<BlogPost | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [contentImageUrl, setContentImageUrl] = useState("");
+  const [contentImageAlt, setContentImageAlt] = useState("");
 
   const [form, setForm] = useState({
     titulo: "",
@@ -116,6 +118,8 @@ function AdminBlogPage() {
       metaTitle: "",
       metaDescription: "",
     });
+    setContentImageUrl("");
+    setContentImageAlt("");
     setEditing(null);
     setShowForm(false);
   }
@@ -132,8 +136,29 @@ function AdminBlogPage() {
       metaTitle: post.metaTitle || "",
       metaDescription: post.metaDescription || "",
     });
+    setContentImageUrl("");
+    setContentImageAlt("");
     setEditing(post);
     setShowForm(true);
+  }
+
+  function insertContentImage() {
+    const url = contentImageUrl.trim();
+    if (!url) {
+      alert("Informe a URL da imagem.");
+      return;
+    }
+
+    const alt = (contentImageAlt.trim() || form.titulo || "Imagem do artigo")
+      .replace(/"/g, "&quot;");
+    const imageHtml = `\n<figure><img src="${url}" alt="${alt}" /><figcaption>${alt}</figcaption></figure>\n`;
+
+    setForm((current) => ({
+      ...current,
+      conteudo: `${current.conteudo.trimEnd()}${imageHtml}`,
+    }));
+    setContentImageUrl("");
+    setContentImageAlt("");
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -360,15 +385,57 @@ function AdminBlogPage() {
                 />
               </div>
 
-              <div className="form-group">
-                <label>URL da imagem de capa</label>
+              <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+                <label>Imagem de capa do artigo</label>
                 <input
                   value={form.imagemCapa}
                   onChange={(e) =>
                     setForm({ ...form, imagemCapa: e.target.value })
                   }
-                  placeholder="https://..."
+                  placeholder="https://exemplo.com/imagem-capa.jpg"
                 />
+                {form.imagemCapa && (
+                  <div style={{ marginTop: ".75rem" }}>
+                    <img
+                      src={form.imagemCapa}
+                      alt="Preview da imagem de capa"
+                      style={{
+                        width: "100%",
+                        maxHeight: "220px",
+                        objectFit: "cover",
+                        borderRadius: "10px",
+                        border: "1px solid var(--border)",
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+                <label>Inserir imagem no conteÃºdo</label>
+                <div className="admin-image-insert-row">
+                  <input
+                    value={contentImageUrl}
+                    onChange={(e) => setContentImageUrl(e.target.value)}
+                    placeholder="https://exemplo.com/imagem-do-artigo.jpg"
+                  />
+                  <input
+                    value={contentImageAlt}
+                    onChange={(e) => setContentImageAlt(e.target.value)}
+                    placeholder="DescriÃ§Ã£o da imagem"
+                  />
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    style={{ padding: ".75rem 1rem", whiteSpace: "nowrap" }}
+                    onClick={insertContentImage}
+                  >
+                    Inserir
+                  </button>
+                </div>
+                <p style={{ color: "var(--muted)", fontSize: ".78rem", marginTop: ".5rem" }}>
+                  A imagem serÃ¡ adicionada ao final do HTML como figure/img.
+                </p>
               </div>
 
               <div className="form-group">
