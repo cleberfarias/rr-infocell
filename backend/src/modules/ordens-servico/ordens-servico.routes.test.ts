@@ -245,6 +245,63 @@ describe("ordens-servico routes", () => {
     expect(movimentacoesResponse.body.data[0].ordemServicoId).toBe(ordem.id);
   });
 
+  it("returns stock when removing pecas usadas from ordem", async () => {
+    const produtoResponse = await request(app).post("/api/produtos").send({
+      sku: "OS-BAT-RET",
+      nome: "Bateria retorno OS",
+      categoria: "peca",
+      estoqueAtual: 3,
+      estoqueMinimo: 1,
+      custo: 30,
+      precoVenda: 90,
+    });
+    const produto = produtoResponse.body.data;
+    const createResponse = await request(app).post("/api/ordens-servico").send({
+      clienteId: "cli_marcos_almeida",
+      aparelhoId: "apa_iphone_11_marcos",
+      defeitoRelatado: "Bateria nao segura carga",
+      status: "em_manutencao",
+      valorMaoObra: 80,
+      pecasUsadas: [
+        {
+          produtoId: produto.id,
+          quantidade: 2,
+        },
+      ],
+    });
+    const ordem = createResponse.body.data;
+
+    const produtoAfterCreateResponse = await request(app).get(`/api/produtos/${produto.id}`);
+    expect(produtoAfterCreateResponse.body.data.estoqueAtual).toBe(1);
+
+    const updateResponse = await request(app)
+      .put(`/api/ordens-servico/${ordem.id}`)
+      .send({
+        clienteId: ordem.clienteId,
+        aparelhoId: ordem.aparelhoId,
+        defeitoRelatado: ordem.defeitoRelatado,
+        status: ordem.status,
+        valorMaoObra: ordem.valorMaoObra,
+        pecasUsadas: [],
+      });
+
+    expect(updateResponse.status).toBe(200);
+    expect(updateResponse.body.data.pecasUsadas).toHaveLength(0);
+    expect(updateResponse.body.data.valorPecas).toBe(0);
+    expect(updateResponse.body.data.valorTotal).toBe(80);
+
+    const produtoAfterRemoveResponse = await request(app).get(`/api/produtos/${produto.id}`);
+    expect(produtoAfterRemoveResponse.body.data.estoqueAtual).toBe(3);
+
+    const movimentacoesResponse = await request(app).get(
+      `/api/movimentacoes-estoque?produtoId=${produto.id}`,
+    );
+    expect(movimentacoesResponse.body.data[0].tipo).toBe("entrada");
+    expect(movimentacoesResponse.body.data[0].quantidade).toBe(2);
+    expect(movimentacoesResponse.body.data[0].origem).toBe("ordem_servico");
+    expect(movimentacoesResponse.body.data[0].ordemServicoId).toBe(ordem.id);
+  });
+
   it("registers payment when delivering ordem", async () => {
     const createResponse = await request(app).post("/api/ordens-servico").send({
       clienteId: "cli_marcos_almeida",

@@ -92,6 +92,19 @@ const parseDespesaMes = (vencimento: string): { mes: number; ano: number | null 
   return { mes, ano };
 };
 
+const getMesOffsetFromVencimento = (vencimento: string) => {
+  const parsed = parseDespesaMes(vencimento);
+
+  if (!parsed) {
+    return null;
+  }
+
+  const hoje = new Date();
+  const ano = parsed.ano ?? hoje.getFullYear();
+
+  return (ano - hoje.getFullYear()) * 12 + (parsed.mes - hoje.getMonth());
+};
+
 const Despesas = () => {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -138,8 +151,14 @@ const Despesas = () => {
 
   const createMutation = useMutation({
     mutationFn: createDespesa,
-    onSuccess: async () => {
+    onSuccess: async (despesa) => {
       await invalidateDespesas();
+      const nextMesOffset = getMesOffsetFromVencimento(despesa.vencimento);
+
+      if (nextMesOffset !== null) {
+        setMesOffset(nextMesOffset);
+      }
+
       toast({ title: "Despesa cadastrada" });
       setOpen(false);
     },
@@ -293,7 +312,7 @@ const Despesas = () => {
             <span className="min-w-[110px] text-center text-sm font-medium capitalize">
               {mesRef.toLocaleDateString("pt-BR", { month: "short", year: "numeric" })}
             </span>
-            <Button size="icon" variant="ghost" className="h-8 w-8" disabled={mesOffset >= 0} onClick={() => setMesOffset((m) => m + 1)}>
+            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setMesOffset((m) => m + 1)}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>

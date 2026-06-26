@@ -258,12 +258,18 @@ export class OrdensServicoService {
     const deltas = this.calculatePecasDeltas(ordem.pecasUsadas, current);
 
     for (const delta of deltas) {
+      const tipo = delta.quantidade > 0 ? "saida" : "entrada";
+      const quantidade = Math.abs(delta.quantidade);
+
       await movimentacoesEstoqueService.create(
         {
           produtoId: delta.produtoId,
-          tipo: "saida",
-          quantidade: delta.quantidade,
-          motivo: `Baixa automatica OS-${ordem.numero}`,
+          tipo,
+          quantidade,
+          motivo:
+            tipo === "saida"
+              ? `Baixa automatica OS-${ordem.numero}`
+              : `Retorno automatico OS-${ordem.numero}`,
           origem: "ordem_servico",
           ordemServicoId: ordem.id,
         },
@@ -272,8 +278,10 @@ export class OrdensServicoService {
       await this.registrarEvento(
         ordem.id,
         "peca",
-        "Peca adicionada",
-        `${delta.quantidade} un. adicionada(s) e baixada(s) do estoque.`,
+        tipo === "saida" ? "Peca adicionada" : "Peca removida",
+        tipo === "saida"
+          ? `${quantidade} un. adicionada(s) e baixada(s) do estoque.`
+          : `${quantidade} un. removida(s) da OS e retornada(s) ao estoque.`,
         ordem.tecnicoResponsavel,
       );
     }
@@ -342,19 +350,27 @@ export class OrdensServicoService {
     nextPecas: { produtoId: string; quantidade: number }[],
     current?: OrdemServico,
   ) {
-    return nextPecas
-      .map((peca) => {
-        const currentQuantidade =
-          current?.pecasUsadas.find((currentPeca) => currentPeca.produtoId === peca.produtoId)
-            ?.quantidade ?? 0;
-        const quantidade = peca.quantidade - currentQuantidade;
+    const nextQuantidades = this.sumPecasQuantidades(nextPecas);
+    const currentQuantidades = this.sumPecasQuantidades(current?.pecasUsadas ?? []);
+    const produtoIds = new Set([...nextQuantidades.keys(), ...currentQuantidades.keys()]);
 
+    return Array.from(produtoIds)
+      .map((produtoId) => {
+        const quantidade =
+          (nextQuantidades.get(produtoId) ?? 0) - (currentQuantidades.get(produtoId) ?? 0);
         return {
-          produtoId: peca.produtoId,
+          produtoId,
           quantidade,
         };
       })
-      .filter((delta) => delta.quantidade > 0);
+      .filter((delta) => delta.quantidade !== 0);
+  }
+
+  private sumPecasQuantidades(pecas: { produtoId: string; quantidade: number }[]) {
+    return pecas.reduce((acc, peca) => {
+      acc.set(peca.produtoId, (acc.get(peca.produtoId) ?? 0) + peca.quantidade);
+      return acc;
+    }, new Map<string, number>());
   }
 }
 

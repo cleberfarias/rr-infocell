@@ -438,7 +438,7 @@ const Financeiro = () => {
               <span className="min-w-[130px] text-center text-sm font-medium capitalize">
                 {mesNavegado.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
               </span>
-              <Button size="icon" variant="ghost" className="h-8 w-8" disabled={mesOffset >= 0} onClick={() => setMesOffset((m) => m + 1)}>
+              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setMesOffset((m) => m + 1)}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
