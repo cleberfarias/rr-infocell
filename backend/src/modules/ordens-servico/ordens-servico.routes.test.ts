@@ -256,34 +256,34 @@ describe("ordens-servico routes", () => {
       precoVenda: 90,
     });
     const produto = produtoResponse.body.data;
-    const createResponse = await request(app).post("/api/ordens-servico").send({
-      clienteId: "cli_marcos_almeida",
-      aparelhoId: "apa_iphone_11_marcos",
-      defeitoRelatado: "Bateria nao segura carga",
-      status: "em_manutencao",
-      valorMaoObra: 80,
-      pecasUsadas: [
-        {
-          produtoId: produto.id,
-          quantidade: 2,
-        },
-      ],
-    });
+    const createResponse = await request(app)
+      .post("/api/ordens-servico")
+      .send({
+        clienteId: "cli_marcos_almeida",
+        aparelhoId: "apa_iphone_11_marcos",
+        defeitoRelatado: "Bateria nao segura carga",
+        status: "em_manutencao",
+        valorMaoObra: 80,
+        pecasUsadas: [
+          {
+            produtoId: produto.id,
+            quantidade: 2,
+          },
+        ],
+      });
     const ordem = createResponse.body.data;
 
     const produtoAfterCreateResponse = await request(app).get(`/api/produtos/${produto.id}`);
     expect(produtoAfterCreateResponse.body.data.estoqueAtual).toBe(1);
 
-    const updateResponse = await request(app)
-      .put(`/api/ordens-servico/${ordem.id}`)
-      .send({
-        clienteId: ordem.clienteId,
-        aparelhoId: ordem.aparelhoId,
-        defeitoRelatado: ordem.defeitoRelatado,
-        status: ordem.status,
-        valorMaoObra: ordem.valorMaoObra,
-        pecasUsadas: [],
-      });
+    const updateResponse = await request(app).put(`/api/ordens-servico/${ordem.id}`).send({
+      clienteId: ordem.clienteId,
+      aparelhoId: ordem.aparelhoId,
+      defeitoRelatado: ordem.defeitoRelatado,
+      status: ordem.status,
+      valorMaoObra: ordem.valorMaoObra,
+      pecasUsadas: [],
+    });
 
     expect(updateResponse.status).toBe(200);
     expect(updateResponse.body.data.pecasUsadas).toHaveLength(0);
