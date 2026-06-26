@@ -1,4 +1,4 @@
-name: CI / CD # nextassist.web.app site criado
+name: CI / CD
 
 on:
   push:
@@ -16,9 +16,8 @@ on:
       - "infra/**"
 
 jobs:
-  # ── Backend: lint + typecheck + tests ──────────────────────────────────
   backend:
-    name: Backend — lint, typecheck, test
+    name: Backend - lint, typecheck, test
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -51,9 +50,8 @@ jobs:
           NODE_ENV: test
           PORT: 3334
 
-  # ── Frontend: typecheck + build ────────────────────────────────────────
   frontend:
-    name: Frontend — typecheck, build
+    name: Frontend - typecheck, build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -93,9 +91,8 @@ jobs:
           path: frontend/dist
           retention-days: 1
 
-  # ── Deploy Backend → Cloud Run (apenas na main) ────────────────────────
   deploy-backend:
-    name: Deploy Backend → Cloud Run
+    name: Deploy Backend to Cloud Run
     needs: [backend, frontend]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
@@ -137,12 +134,11 @@ jobs:
           URL=$(gcloud run services describe rr-infocell-api \
             --region southamerica-east1 \
             --format 'value(status.url)')
-          echo "✅ Backend deployed: $URL"
-          echo "CLOUD_RUN_URL=$URL" >> $GITHUB_ENV
+          echo "Backend deployed: $URL"
+          echo "CLOUD_RUN_URL=$URL" >> "$GITHUB_ENV"
 
-  # ── Deploy Frontend → Firebase Hosting (apenas na main) ───────────────
   deploy-frontend:
-    name: Deploy Frontend → Firebase Hosting
+    name: Deploy Frontend to Firebase Hosting
     needs: [backend, frontend]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
@@ -156,21 +152,43 @@ jobs:
           name: frontend-dist
           path: frontend/dist
 
-      - name: Deploy → rr-infocell.web.app
-        uses: FirebaseExtended/action-hosting-deploy@v0
+      - name: Authenticate to Firebase
+        uses: google-github-actions/auth@v2
         with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RR_INFOCELL }}
-          channelId: live
-          projectId: rr-infocell
-          target: rr-infocell
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RR_INFOCELL }}
 
-      - name: Deploy → nextassist.web.app
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RR_INFOCELL }}
-          channelId: live
-          projectId: rr-infocell
-          target: nextassist
+      - name: Deploy rr-infocell.web.app
+        run: |
+          set +e
+          npx firebase-tools@15.22.3 deploy \
+            --only hosting:rr-infocell \
+            --project rr-infocell \
+            --non-interactive 2>&1 | tee "$RUNNER_TEMP/firebase-hosting-rr-infocell.log"
+          status=${PIPESTATUS[0]}
+          set -e
 
+          if [ "$status" -ne 0 ]; then
+            if grep -q "is the current active version" "$RUNNER_TEMP/firebase-hosting-rr-infocell.log"; then
+              echo "::warning::Firebase Hosting reported the deployed version is already active; treating deploy as successful."
+            else
+              exit "$status"
+            fi
+          fi
+
+      - name: Deploy nextassist.web.app
+        run: |
+          set +e
+          npx firebase-tools@15.22.3 deploy \
+            --only hosting:nextassist \
+            --project rr-infocell \
+            --non-interactive 2>&1 | tee "$RUNNER_TEMP/firebase-hosting-nextassist.log"
+          status=${PIPESTATUS[0]}
+          set -e
+
+          if [ "$status" -ne 0 ]; then
+            if grep -q "is the current active version" "$RUNNER_TEMP/firebase-hosting-nextassist.log"; then
+              echo "::warning::Firebase Hosting reported the deployed version is already active; treating deploy as successful."
+            else
+              exit "$status"
+            fi
+          fi

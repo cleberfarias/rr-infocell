@@ -1,4 +1,4 @@
-name: NextAssist Site — Deploy
+name: NextAssist Site - Deploy
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   deploy:
-    name: Build e Deploy → Cloud Run
+    name: Build and deploy to Cloud Run
     runs-on: ubuntu-latest
 
     steps:
@@ -46,13 +46,28 @@ jobs:
           URL=$(gcloud run services describe nextassist-site \
             --region southamerica-east1 \
             --format 'value(status.url)')
-          echo "✅ NextAssist Site deployed: $URL"
+          echo "NextAssist Site deployed: $URL"
 
-      - name: Deploy Firebase Hosting (rewrite → Cloud Run)
-        uses: FirebaseExtended/action-hosting-deploy@v0
+      - name: Authenticate to Firebase
+        uses: google-github-actions/auth@v2
         with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RR_INFOCELL }}
-          channelId: live
-          projectId: rr-infocell
-          entryPoint: nextassist-site
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RR_INFOCELL }}
+
+      - name: Deploy Firebase Hosting rewrite to Cloud Run
+        working-directory: nextassist-site
+        run: |
+          set +e
+          npx firebase-tools@15.22.3 deploy \
+            --only hosting \
+            --project rr-infocell \
+            --non-interactive 2>&1 | tee "$RUNNER_TEMP/firebase-hosting-nextassist-site.log"
+          status=${PIPESTATUS[0]}
+          set -e
+
+          if [ "$status" -ne 0 ]; then
+            if grep -q "is the current active version" "$RUNNER_TEMP/firebase-hosting-nextassist-site.log"; then
+              echo "::warning::Firebase Hosting reported the deployed version is already active; treating deploy as successful."
+            else
+              exit "$status"
+            fi
+          fi
