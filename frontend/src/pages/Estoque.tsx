@@ -1313,7 +1313,7 @@ const Estoque = () => {
         />
 
         <div className="grid gap-5 xl:grid-cols-[1fr_260px]">
-          <div className="space-y-5">
+          <div className="min-w-0 space-y-5">
             {/* Cards de métricas */}
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
               <Card className="surface-panel p-4">
