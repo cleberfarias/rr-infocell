@@ -111,16 +111,20 @@ export const AppLayout = () => {
   } = useAuth();
 
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const canFetchAuthenticatedData =
+    isDevelopmentMode || (!isLoading && isAuthenticated);
 
   const notifQuery = useQuery({
     queryKey: ["ordens-servico", "notif"],
     queryFn: () => listOrdensServico(),
+    enabled: canFetchAuthenticatedData,
     staleTime: 60_000,
   });
 
   const produtosNotifQuery = useQuery({
     queryKey: ["produtos", "notif-baixo"],
     queryFn: () => listProdutos({ ativo: true }),
+    enabled: canFetchAuthenticatedData,
     staleTime: 5 * 60_000,
   });
 
