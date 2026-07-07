@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FormField } from "@/components/design-system";
 import { toast } from "@/components/ui/sonner";
+import { calcularDespesasPorVencimento, endOfDay } from "@/lib/financeiro";
 import { formatBRL } from "@/lib/formatters";
 import { listDespesas } from "@/services/despesas";
 import { listOrdensServico } from "@/services/ordens-servico";
@@ -37,72 +38,6 @@ const toDateKey = (value?: string) => {
   }
 
   return date.toISOString().slice(0, 10);
-};
-
-const startOfDay = (date: Date) =>
-  new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
-const endOfDay = (date: Date) =>
-  new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
-
-const parseVencimento = (value: string, referenceYear: number) => {
-  const trimmed = value.trim();
-  const brDate = trimmed.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2}|\d{4}))?$/);
-
-  if (brDate) {
-    const day = Number(brDate[1]);
-    const month = Number(brDate[2]) - 1;
-    const yearText = brDate[3];
-    const year = yearText
-      ? Number(yearText.length === 2 ? `20${yearText}` : yearText)
-      : referenceYear;
-    const date = new Date(year, month, day);
-
-    if (
-      date.getFullYear() === year &&
-      date.getMonth() === month &&
-      date.getDate() === day
-    ) {
-      return date;
-    }
-  }
-
-  const isoDate = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
-
-  if (isoDate) {
-    const year = Number(isoDate[1]);
-    const month = Number(isoDate[2]) - 1;
-    const day = Number(isoDate[3]);
-    const date = new Date(year, month, day);
-
-    if (
-      date.getFullYear() === year &&
-      date.getMonth() === month &&
-      date.getDate() === day
-    ) {
-      return date;
-    }
-  }
-
-  return null;
-};
-
-const countDespesaOccurrences = (
-  despesa: { vencimento: string },
-  periodStart: Date,
-  periodEnd: Date,
-) => {
-  const dueDate = parseVencimento(despesa.vencimento, periodStart.getFullYear());
-
-  if (!dueDate) {
-    return 0;
-  }
-
-  const normalizedStart = startOfDay(periodStart);
-  const normalizedEnd = endOfDay(periodEnd);
-  const normalizedDueDate = startOfDay(dueDate);
-
-  return normalizedDueDate >= normalizedStart && normalizedDueDate <= normalizedEnd ? 1 : 0;
 };
 
 const TIPO_LABEL: Record<ContaTipo, string> = {
@@ -302,11 +237,7 @@ const Financeiro = () => {
       );
 
     const custoPecas = custoPecasOS + custoPecasVendasDiretas;
-    const despesasFixas = despesas.reduce(
-      (sum, despesa) =>
-        sum + despesa.valor * countDespesaOccurrences(despesa, dataInicio, dataFim),
-      0,
-    );
+    const despesasFixas = calcularDespesasPorVencimento(despesas, dataInicio, dataFim);
     const lucroBruto = receitaServicos + receitaProdutos - custoPecas;
     const lucroLiquido = lucroBruto - despesasFixas;
 

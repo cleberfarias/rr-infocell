@@ -1,10 +1,46 @@
+import { onAuthStateChanged, type User } from "firebase/auth";
+
 import { firebaseAuth } from "@/lib/firebase";
 
 export const apiBaseUrl =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3333/api";
 
+const waitForFirebaseUser = () =>
+  new Promise<User | null>((resolve) => {
+    if (!firebaseAuth) {
+      resolve(null);
+      return;
+    }
+
+    const unsubscribe = onAuthStateChanged(
+      firebaseAuth,
+      (user) => {
+        unsubscribe();
+        resolve(user);
+      },
+      () => {
+        unsubscribe();
+        resolve(null);
+      },
+    );
+  });
+
+const getAuthToken = async () => {
+  if (!firebaseAuth) {
+    return null;
+  }
+
+  const user = firebaseAuth.currentUser ?? (await waitForFirebaseUser());
+
+  if (!user) {
+    throw new Error("Sessao Firebase Auth nao encontrada. Faca login novamente.");
+  }
+
+  return user.getIdToken();
+};
+
 export const apiRequest = async <T>(path: string, init?: RequestInit) => {
-  const token = await firebaseAuth?.currentUser?.getIdToken();
+  const token = await getAuthToken();
   const response = await fetch(`${apiBaseUrl}${path}`, {
     headers: {
       "Content-Type": "application/json",

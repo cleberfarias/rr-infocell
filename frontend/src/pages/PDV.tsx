@@ -519,6 +519,7 @@ const PDV = () => {
   const totalComDesconto = selectedOrdem
     ? Math.max(0, selectedOrdem.valorTotal - descontoNum)
     : 0;
+  const descontoOs = selectedOrdem?.desconto ?? 0;
   const adiantado = selectedOrdem?.valorAdiantado ?? 0;
   const saldo = Math.max(0, totalComDesconto - adiantado);
   const troco = selectedOrdem ? Math.max(0, recebido - saldo) : 0;
@@ -1561,6 +1562,20 @@ ${troco}
                     </div>
                   ) : null}
                 </div>
+
+                {descontoOs > 0 && (
+                  <div className="mt-4 flex items-center justify-between rounded-md border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+                    <div>
+                      <p className="font-medium text-amber-600">Desconto aplicado na OS</p>
+                      <p className="text-xs text-amber-600/80">
+                        Abatimento ja registrado no detalhe da ordem
+                      </p>
+                    </div>
+                    <p className="font-mono font-semibold text-amber-600">
+                      - {formatBRL(descontoOs)}
+                    </p>
+                  </div>
+                )}
 
                 <div className="mt-6 flex items-center justify-between border-t border-border pt-5">
                   <p className="font-display text-sm uppercase tracking-wide text-muted-foreground">
