@@ -20,6 +20,7 @@ import {
   X,
   Bug,
   Settings,
+  UserPlus,
 } from "lucide-react";
 import { MdDashboard, MdHandyman, MdInventory2, MdPointOfSale, MdAccountBalance, MdChecklist, MdPhoneAndroid } from "react-icons/md";
 import { FaWhatsapp } from "react-icons/fa";
@@ -68,6 +69,7 @@ const allNav: NavItem[] = [
   { to: "/app/aparelhos", label: "Aparelhos", icon: MdPhoneAndroid, key: "aparelhos" },
   { to: "/app/usuarios", label: "Usuários", icon: UserCog, key: "usuarios", moduleKey: "multiUsuarios" },
   { to: "/app/observabilidade", label: "Observabilidade", icon: Bug, key: "observabilidade" },
+  { to: "/app/leads-trials", label: "Leads / Clientes", icon: UserPlus, key: "leads-trials", roles: ["admin"] },
   { to: "/app/atendimento", label: "Atendimento", icon: FaWhatsapp, key: "atendimento" },
   { to: "/app/treinamento", label: "Treinamento", icon: BookOpen, key: "treinamento" },
   { to: "/app/configuracoes", label: "Configurações da Empresa", icon: Settings, key: "configuracoes", roles: ["admin"] },
@@ -92,7 +94,8 @@ const navOrder: Record<string, number> = {
   despesas: 11,
   usuarios: 12,
   observabilidade: 13,
-  configuracoes: 14,
+  "leads-trials": 14,
+  configuracoes: 15,
 };
 
 export const AppLayout = () => {
@@ -205,7 +208,11 @@ export const AppLayout = () => {
     return <Navigate to={roleHome[role]} replace />;
   }
 
-  if (location.pathname.startsWith("/app/observabilidade") && !podeObservabilidade) {
+  if (
+    (location.pathname.startsWith("/app/observabilidade") ||
+      location.pathname.startsWith("/app/leads-trials")) &&
+    !podeObservabilidade
+  ) {
     return <Navigate to={roleHome[role]} replace />;
   }
 
@@ -213,7 +220,7 @@ export const AppLayout = () => {
     .filter((n) => canAccess(role, n.to) && !n.hidden)
     .filter((n) => !n.roles || n.roles.includes(role))
     .filter((n) => canShowNavItemForPlan(n.moduleKey))
-    .filter((n) => n.key !== "observabilidade" || podeObservabilidade)
+    .filter((n) => !["observabilidade", "leads-trials"].includes(n.key) || podeObservabilidade)
     .sort((a, b) => navOrder[a.key] - navOrder[b.key]);
   const current = allNav.filter((n) => canAccess(role, n.to)).find((n) =>
     n.to === "/app"
