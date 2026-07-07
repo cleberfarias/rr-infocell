@@ -8,6 +8,17 @@ import { env } from "../../config/env.js";
 const TRIAL_DAYS = 7;
 const DEMO_PLAN = "profissional";
 
+type CadastroOrigem = {
+  utmSource?: string;
+  utmCampaign?: string;
+  utmMedium?: string;
+  paginaOrigem?: string;
+  landingPage?: string;
+  userAgent?: string;
+  ipApprox?: string;
+  registeredAt?: Timestamp;
+};
+
 function slugify(text: string): string {
   return text
     .toLowerCase()
@@ -28,6 +39,12 @@ function buildTransporter() {
     secure: env.SMTP_PORT === 465,
     auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
   });
+}
+
+function compactObject<T extends Record<string, unknown>>(value: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, item]) => item !== undefined && item !== ""),
+  ) as Partial<T>;
 }
 
 function trialWelcomeEmailHtml(params: {
@@ -89,6 +106,43 @@ function trialWelcomeEmailHtml(params: {
 </html>`;
 }
 
+function trialNotificationEmailHtml(params: {
+  nome: string;
+  email: string;
+  empresa: string;
+  slug: string;
+  trialEndsAt: Date;
+  origem?: CadastroOrigem;
+}): string {
+  const dataFim = params.trialEndsAt.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+  const origem = params.origem;
+
+  return `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<body style="margin:0;padding:24px;background:#0f1117;font-family:Inter,Arial,sans-serif;color:#e2e8f0">
+  <div style="max-width:560px;margin:0 auto;background:#1a1d27;border:1px solid #2d3148;border-radius:12px;padding:24px">
+    <h1 style="margin:0 0 12px;font-size:22px;color:#fff">Novo trial criado no NextAssist</h1>
+    <p style="margin:0 0 20px;color:#94a3b8">Uma nova conta de teste foi criada pelo site comercial.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:14px">
+      <tr><td style="padding:8px 0;color:#94a3b8">Empresa</td><td style="padding:8px 0;color:#fff">${params.empresa}</td></tr>
+      <tr><td style="padding:8px 0;color:#94a3b8">Nome</td><td style="padding:8px 0;color:#fff">${params.nome}</td></tr>
+      <tr><td style="padding:8px 0;color:#94a3b8">E-mail</td><td style="padding:8px 0;color:#fff">${params.email}</td></tr>
+      <tr><td style="padding:8px 0;color:#94a3b8">Tenant</td><td style="padding:8px 0;color:#fff">${params.slug}</td></tr>
+      <tr><td style="padding:8px 0;color:#94a3b8">Trial ate</td><td style="padding:8px 0;color:#fff">${dataFim}</td></tr>
+      <tr><td style="padding:8px 0;color:#94a3b8">Origem</td><td style="padding:8px 0;color:#fff">${origem?.utmSource ?? "Direto"} / ${origem?.utmMedium ?? "-"}</td></tr>
+      <tr><td style="padding:8px 0;color:#94a3b8">Campanha</td><td style="padding:8px 0;color:#fff">${origem?.utmCampaign ?? "-"}</td></tr>
+      <tr><td style="padding:8px 0;color:#94a3b8">Pagina</td><td style="padding:8px 0;color:#fff">${origem?.landingPage ?? origem?.paginaOrigem ?? "-"}</td></tr>
+    </table>
+  </div>
+</body>
+</html>`;
+}
+
 async function enviarEmailResetFirebase(email: string): Promise<void> {
   const apiKey = env.FIREBASE_WEB_API_KEY;
   if (!apiKey) {
@@ -124,6 +178,13 @@ export interface DemoRegistroInput {
   nome: string;
   email: string;
   empresa: string;
+  utmSource?: string;
+  utmCampaign?: string;
+  utmMedium?: string;
+  paginaOrigem?: string;
+  landingPage?: string;
+  userAgent?: string;
+  ipApprox?: string;
 }
 
 export class DemoService {
@@ -152,6 +213,16 @@ export class DemoService {
 
     const slug = `${slugify(empresa || nome)}-${randomSuffix()}`;
     const agora = Timestamp.now();
+    const origem = compactObject({
+      utmSource: input.utmSource,
+      utmCampaign: input.utmCampaign,
+      utmMedium: input.utmMedium,
+      paginaOrigem: input.paginaOrigem,
+      landingPage: input.landingPage,
+      userAgent: input.userAgent,
+      ipApprox: input.ipApprox,
+      registeredAt: agora,
+    }) as CadastroOrigem;
 
     // Criar tenant trial no Firestore
     await db
@@ -167,6 +238,7 @@ export class DemoService {
         status: "trial",
         ownerEmail: email,
         ownerName: nome,
+        origemCadastro: origem,
         trialEndsAt: Timestamp.fromDate(trialEndsAt),
         createdAt: agora,
         updatedAt: agora,
@@ -216,6 +288,33 @@ export class DemoService {
         console.info(`[Demo] E-mail de boas-vindas (SMTP) enviado para ${email}`);
       } catch (err) {
         console.error("[Demo] Falha ao enviar e-mail SMTP:", err);
+      }
+
+      const notificationEmail =
+        env.TRIAL_NOTIFICATION_EMAIL ??
+        env.OBSERVABILIDADE_ALLOWED_EMAILS.split(",")[0]?.trim() ??
+        env.SMTP_USER;
+
+      if (notificationEmail) {
+        try {
+          const transporter = buildTransporter();
+          await transporter.sendMail({
+            from: `"NextAssist" <${env.SMTP_USER}>`,
+            to: notificationEmail,
+            subject: `Novo trial NextAssist: ${empresa}`,
+            html: trialNotificationEmailHtml({
+              nome,
+              email,
+              empresa,
+              slug,
+              trialEndsAt,
+              origem,
+            }),
+          });
+          console.info(`[Demo] Notificacao de trial enviada para ${notificationEmail}`);
+        } catch (err) {
+          console.error("[Demo] Falha ao enviar notificacao de trial:", err);
+        }
       }
     }
 

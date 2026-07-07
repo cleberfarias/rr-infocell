@@ -5,6 +5,8 @@ import { firebaseAuth } from "@/lib/firebase";
 export const apiBaseUrl =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3333/api";
 
+const isDevelopmentAuthMode = import.meta.env.VITE_AUTH_DEV_MODE === "true";
+
 const waitForFirebaseUser = () =>
   new Promise<User | null>((resolve) => {
     if (!firebaseAuth) {
@@ -26,6 +28,10 @@ const waitForFirebaseUser = () =>
   });
 
 const getAuthToken = async () => {
+  if (isDevelopmentAuthMode) {
+    return null;
+  }
+
   if (!firebaseAuth) {
     return null;
   }

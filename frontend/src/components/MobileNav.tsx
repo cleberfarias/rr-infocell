@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Bug, LogOut, Menu, Plus, Settings, Users, UserCog, Receipt, X } from "lucide-react";
+import { Bug, LogOut, Menu, Plus, Settings, Users, UserCog, Receipt, UserPlus, X } from "lucide-react";
 import { MdDashboard, MdHandyman, MdInventory2, MdPointOfSale, MdAccountBalance, MdChecklist, MdPhoneAndroid } from "react-icons/md";
 import { FaWhatsapp } from "react-icons/fa";
 import { HiWrenchScrewdriver } from "react-icons/hi2";
@@ -37,6 +37,7 @@ const allNav: NavItem[] = [
   { to: "/app/atendimento", label: "Atendimento", icon: FaWhatsapp, key: "atendimento" },
   { to: "/app/usuarios", label: "Usuários", icon: UserCog, key: "usuarios" },
   { to: "/app/observabilidade", label: "Observabilidade", icon: Bug, key: "observabilidade" },
+  { to: "/app/leads-trials", label: "Leads / Clientes", icon: UserPlus, key: "leads-trials", roles: ["admin"] },
   { to: "/app/configuracoes", label: "Configurações", icon: Settings, key: "configuracoes", roles: ["admin"] },
 ];
 
@@ -55,6 +56,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   atendimento: FaWhatsapp,
   usuarios: UserCog,
   observabilidade: Bug,
+  "leads-trials": UserPlus,
   configuracoes: Settings,
 };
 
@@ -79,7 +81,7 @@ export const MobileNav = ({ badges = {} }: MobileNavProps) => {
   const filteredNav = allNav
     .filter((n) => canAccess(role, n.to))
     .filter((n) => !n.roles || n.roles.includes(role))
-    .filter((n) => n.key !== "observabilidade" || podeObservabilidade);
+    .filter((n) => !["observabilidade", "leads-trials"].includes(n.key) || podeObservabilidade);
 
   const sair = async () => {
     setDrawerOpen(false);

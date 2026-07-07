@@ -3,7 +3,12 @@ import logoNextAssist from "@/assets/logo-nextassist-white.svg";
 import type { PlanKey } from "@/config/planModules";
 
 const hostname = typeof window !== "undefined" ? window.location.hostname : "";
-const isNextAssistDomain = hostname.includes("nextassist");
+const envTenantId = import.meta.env.VITE_TENANT_ID?.trim().toLowerCase();
+const envSystemName = import.meta.env.VITE_SYSTEM_NAME?.trim().toLowerCase();
+const isNextAssistDomain =
+  hostname.includes("nextassist") ||
+  envTenantId === "nextassist" ||
+  envSystemName === "nextassist";
 
 const fallbackTenantId = isNextAssistDomain ? "nextassist" : "rr-infocell";
 const fallbackProductName = "NextAssist";
