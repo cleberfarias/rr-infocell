@@ -26,6 +26,7 @@ import Usuarios from "./pages/Usuarios";
 import Atendimento from "./pages/Atendimento";
 import Treinamento from "./pages/Treinamento";
 import Observabilidade from "./pages/Observabilidade";
+import LeadsTrials from "./pages/LeadsTrials";
 import TenantSettings from "./pages/TenantSettings";
 import ConfiguracoesMensagens from "./pages/ConfiguracoesMensagens";
 import Planos from "./pages/Planos";
@@ -61,6 +62,7 @@ const App = () => (
                 <Route path="usuarios" element={<Usuarios />} />
                 <Route path="atendimento" element={<Atendimento />} />
                 <Route path="observabilidade" element={<Observabilidade />} />
+                <Route path="leads-trials" element={<LeadsTrials />} />
                 <Route path="treinamento" element={<Treinamento />} />
                 <Route path="configuracoes" element={<TenantSettings />} />
                 <Route path="configuracoes/mensagens" element={<ConfiguracoesMensagens />} />

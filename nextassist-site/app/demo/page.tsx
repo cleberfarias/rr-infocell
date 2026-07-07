@@ -21,10 +21,20 @@ export default function DemoPage() {
     setErroMsg("");
 
     try {
+      const params = new URLSearchParams(window.location.search);
       const res = await fetch(`${API_URL}/demo/registrar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome, email, empresa }),
+        body: JSON.stringify({
+          nome,
+          email,
+          empresa,
+          utmSource: params.get("utm_source") ?? undefined,
+          utmCampaign: params.get("utm_campaign") ?? undefined,
+          utmMedium: params.get("utm_medium") ?? undefined,
+          paginaOrigem: document.referrer || undefined,
+          landingPage: window.location.href,
+        }),
       });
 
       if (res.status === 409) {
