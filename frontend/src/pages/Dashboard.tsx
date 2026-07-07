@@ -160,10 +160,12 @@ const Dashboard = () => {
     const valorMes = ordensDoMes.reduce((total, ordem) => total + ordem.valorTotal, 0);
     const valorDia = ordensDoDia.reduce((total, ordem) => total + ordem.valorTotal, 0);
     const ticketMedio = ordensDoMes.length > 0 ? valorMes / ordensDoMes.length : 0;
+    const canceladasMes = ordensDoMes.filter((ordem) => ordem.status === "cancelado").length;
 
     return {
       abertas: abertas.length,
       atrasadas: atrasadas.length,
+      canceladasMes,
       emManutencao: emManutencao.length,
       finalizadas: finalizadas.length,
       ticketMedio,
@@ -488,9 +490,7 @@ const Dashboard = () => {
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Canceladas</dt>
-              <dd className="font-mono">
-                {ordens.filter((ordem) => ordem.status === "cancelado").length}
-              </dd>
+              <dd className="font-mono">{relatorio.canceladasMes}</dd>
             </div>
           </dl>
         </SectionPanel>
