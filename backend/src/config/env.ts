@@ -18,7 +18,9 @@ const envSchema = z.object({
   ATENDIMENTO_LEMBRETE_RETIRADA_DIAS: z.coerce.number().positive().default(2),
   ATENDIMENTO_AUTOARQUIVAR_DIAS: z.coerce.number().positive().default(7),
   WHATSAPP_AUTH_DIR: z.string().default("./whatsapp-auth"),
-  OBSERVABILIDADE_ALLOWED_EMAILS: z.string().default("cleber.super@rrinfocell.com.br"),
+  OBSERVABILIDADE_ALLOWED_EMAILS: z
+    .string()
+    .default("cleber.super@rrinfocell.com.br,cleber.adm@nextassist.app"),
   OBSERVABILIDADE_ALLOWED_UIDS: z.string().optional(),
   KIWIFY_WEBHOOK_TOKEN: z.string().default("gzowchq4hd8"),
   APP_URL: z.string().default("https://rr-infocell.web.app"),
