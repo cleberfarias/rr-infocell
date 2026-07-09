@@ -15,7 +15,6 @@ export const isPlatformOwner = (request: AuthenticatedRequest) => {
   const email = request.user?.email?.toLowerCase();
 
   return Boolean(
-    (email && platformOwnerEmails.includes(email)) ||
-      (uid && platformOwnerUids.includes(uid)),
+    (email && platformOwnerEmails.includes(email)) || (uid && platformOwnerUids.includes(uid)),
   );
 };
