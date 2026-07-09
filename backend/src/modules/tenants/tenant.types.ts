@@ -1,5 +1,5 @@
 export type TenantPlan = "starter" | "profissional" | "empresarial";
-export type TenantStatus = "active" | "inactive" | "suspended";
+export type TenantStatus = "active" | "inactive" | "trial" | "suspended";
 
 export type TenantBranding = {
   logoUrl?: string;
@@ -16,6 +16,7 @@ export type Tenant = {
   whiteLabel: boolean;
   status: TenantStatus;
   branding?: TenantBranding;
+  trialEndsAt?: string;
   createdAt: string;
   updatedAt: string;
 };

@@ -6,6 +6,7 @@ import { auth, db } from "../../firebase/admin.js";
 import { requireRole, type AuthenticatedRequest } from "../../middlewares/auth.js";
 import { httpStatus } from "../../shared/http-status.js";
 import { AppError } from "../../shared/errors.js";
+import { isPlatformOwner } from "../../shared/platform-owner.js";
 import { resolveTenant, getRequestTenantId, type TenantRequest } from "../../middlewares/tenant.js";
 import { DEFAULT_TENANT_ID, defaultTenant } from "./tenant.config.js";
 import type { Tenant } from "./tenant.types.js";
@@ -13,15 +14,6 @@ import type { Tenant } from "./tenant.types.js";
 export const tenantsRoutes = Router();
 
 tenantsRoutes.use(resolveTenant);
-
-const separarLista = (valor?: string) =>
-  (valor ?? "")
-    .split(",")
-    .map((item) => item.trim().toLowerCase())
-    .filter(Boolean);
-
-const emailsPermitidos = separarLista(env.OBSERVABILIDADE_ALLOWED_EMAILS);
-const uidsPermitidos = separarLista(env.OBSERVABILIDADE_ALLOWED_UIDS);
 
 const asyncHandler =
   (handler: (req: Request, res: Response, next: NextFunction) => Promise<unknown>) =>
@@ -39,12 +31,7 @@ const requireDonoPlataforma = (
     return;
   }
 
-  const uid = request.user?.uid?.toLowerCase();
-  const email = request.user?.email?.toLowerCase();
-  const permitidoPorUid = uid ? uidsPermitidos.includes(uid) : false;
-  const permitidoPorEmail = email ? emailsPermitidos.includes(email) : false;
-
-  if (!permitidoPorUid && !permitidoPorEmail) {
+  if (!isPlatformOwner(request)) {
     next(
       new AppError(
         "platform_admin_forbidden",
@@ -210,6 +197,9 @@ tenantsRoutes.get(
         name: data.name ?? tenantId,
         productName: data.productName ?? "NextAssist",
         plan: data.plan ?? "empresarial",
+        status: data.status ?? "active",
+        trialEndsAt: toIso(data.trialEndsAt),
+        diasRestantes: diasRestantes(data.trialEndsAt),
         branding: data.branding ?? {},
       },
     });
@@ -222,6 +212,9 @@ function buildFallback(tenantId: string) {
     name: tenantId === DEFAULT_TENANT_ID ? "RR Infocell" : tenantId,
     productName: "NextAssist",
     plan: "empresarial",
+    status: "active",
+    trialEndsAt: null,
+    diasRestantes: 0,
     branding: {},
   };
 }

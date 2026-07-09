@@ -23,6 +23,7 @@ import type {
   TenantConfig,
   TenantId,
   TenantPlan,
+  TenantStatus,
 } from "@/types/tenant";
 import type { ModuleKey } from "@/config/planModules";
 
@@ -30,6 +31,9 @@ type TenantContextValue = {
   tenant: TenantConfig;
   tenantId: TenantId;
   plan: TenantPlan;
+  status: TenantStatus;
+  trialEndsAt: string | null;
+  diasRestantes: number;
   branding: TenantBranding;
   isWhiteLabel: boolean;
   canUseModule: (moduleKey: ModuleKey) => boolean;
@@ -49,6 +53,9 @@ const buildStaticValue = (): TenantContextValue => {
     tenant,
     tenantId: getCurrentTenantId(),
     plan,
+    status: tenant.status,
+    trialEndsAt: null,
+    diasRestantes: 0,
     branding: getTenantBranding(),
     isWhiteLabel: isWhiteLabelEnabled(),
     canUseModule: (moduleKey) => canUsePlanModule(moduleKey, plan),
@@ -74,6 +81,7 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
     try {
       const remote = await fetchCurrentTenant();
       const { branding } = remote;
+      const plan = remote.plan ?? getCurrentTenantPlan();
 
       applyCssColors(branding.primaryColor, branding.secondaryColor);
 
@@ -87,13 +95,21 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
           productName: remote.productName ?? prev.tenant.productName,
           systemName,
           tenantName: remote.name ?? prev.tenant.tenantName,
+          plan,
+          status: remote.status ?? prev.tenant.status,
         },
+        tenantId: (remote.id as TenantId) ?? prev.tenantId,
+        plan,
+        status: remote.status ?? prev.status,
+        trialEndsAt: remote.trialEndsAt ?? null,
+        diasRestantes: Math.max(0, remote.diasRestantes ?? 0),
         branding: {
           ...prev.branding,
           logo: branding.logoUrl ?? tenantConfig.logo,
           primaryColor: branding.primaryColor ?? tenantConfig.primaryColor,
           secondaryColor: branding.secondaryColor ?? tenantConfig.secondaryColor,
         },
+        canUseModule: (moduleKey) => canUsePlanModule(moduleKey, plan),
       }));
     } catch {
       // falha silenciosa — mantém branding estático do tenantConfig

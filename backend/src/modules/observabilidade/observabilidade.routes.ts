@@ -4,18 +4,10 @@ import { env } from "../../config/env.js";
 import type { AuthenticatedRequest } from "../../middlewares/auth.js";
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
+import { isPlatformOwner } from "../../shared/platform-owner.js";
 import { observabilidadeService } from "./observabilidade.service.js";
 
 export const observabilidadeRoutes = Router();
-
-const separarLista = (valor?: string) =>
-  (valor ?? "")
-    .split(",")
-    .map((item) => item.trim().toLowerCase())
-    .filter(Boolean);
-
-const emailsPermitidos = separarLista(env.OBSERVABILIDADE_ALLOWED_EMAILS);
-const uidsPermitidos = separarLista(env.OBSERVABILIDADE_ALLOWED_UIDS);
 
 const requireDonoObservabilidade = (
   request: AuthenticatedRequest,
@@ -27,12 +19,7 @@ const requireDonoObservabilidade = (
     return;
   }
 
-  const uid = request.user?.uid?.toLowerCase();
-  const email = request.user?.email?.toLowerCase();
-  const permitidoPorUid = uid ? uidsPermitidos.includes(uid) : false;
-  const permitidoPorEmail = email ? emailsPermitidos.includes(email) : false;
-
-  if (!permitidoPorUid && !permitidoPorEmail) {
+  if (!isPlatformOwner(request)) {
     next(
       new AppError(
         "observabilidade_forbidden",

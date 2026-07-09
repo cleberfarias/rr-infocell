@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
 import { resolveTenant, getRequestTenantId, type TenantRequest } from "../../middlewares/tenant.js";
+import { isPlatformOwner } from "../../shared/platform-owner.js";
 import { clienteInputSchema, clienteSearchSchema } from "./clientes.schemas.js";
 import { clientesService } from "./clientes.service.js";
 
@@ -40,7 +41,11 @@ clientesRoutes.get(
   asyncHandler(async (request, response) => {
     const tenantId = getRequestTenantId(request as TenantRequest);
     const { q } = parseOrThrow(() => clienteSearchSchema.parse(request.query));
-    const clientes = await clientesService.list(q, tenantId);
+    const clientes = await clientesService.list(
+      q,
+      tenantId,
+      isPlatformOwner(request as TenantRequest),
+    );
 
     const page = Math.max(1, parseInt(request.query.page as string) || 1);
     const limit = Math.min(200, Math.max(1, parseInt(request.query.limit as string) || 50));
@@ -64,7 +69,9 @@ clientesRoutes.get(
 clientesRoutes.get(
   "/:id",
   asyncHandler(async (request, response) => {
-    const tenantId = getRequestTenantId(request as TenantRequest);
+    const tenantId = isPlatformOwner(request as TenantRequest)
+      ? undefined
+      : getRequestTenantId(request as TenantRequest);
     const id = String(request.params.id);
 
     response.status(httpStatus.ok).json({

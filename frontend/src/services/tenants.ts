@@ -1,10 +1,15 @@
 import { apiRequest } from "@/services/api";
+import type { TenantStatus } from "@/types/tenant";
+import type { PlanKey } from "@/config/planModules";
 
 export type RemoteTenantBranding = {
   id: string;
   name: string;
   productName: string;
-  plan: string;
+  plan: PlanKey;
+  status: TenantStatus;
+  trialEndsAt: string | null;
+  diasRestantes: number;
   branding: {
     logoUrl?: string;
     primaryColor?: string;

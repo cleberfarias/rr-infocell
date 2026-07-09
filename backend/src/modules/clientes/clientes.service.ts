@@ -10,8 +10,8 @@ import type { ClienteInput } from "./clientes.types.js";
 export class ClientesService {
   constructor(private readonly repository: ClientesRepository = createClientesRepository(db)) {}
 
-  async list(search?: string, tenantId?: string) {
-    return this.repository.list(search, tenantId);
+  async list(search?: string, tenantId?: string, allTenants = false) {
+    return this.repository.list(search, tenantId, allTenants);
   }
 
   async getById(id: string, tenantId?: string) {
