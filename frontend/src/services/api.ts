@@ -3,7 +3,10 @@ import { onAuthStateChanged, type User } from "firebase/auth";
 import { firebaseAuth } from "@/lib/firebase";
 
 export const apiBaseUrl =
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3333/api";
+  import.meta.env.VITE_API_BASE_URL ??
+  (import.meta.env.PROD
+    ? "https://rr-infocell-api-91248386036.southamerica-east1.run.app/api"
+    : "http://localhost:3333/api");
 
 const isDevelopmentAuthMode = import.meta.env.VITE_AUTH_DEV_MODE === "true";
 

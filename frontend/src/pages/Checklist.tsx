@@ -531,7 +531,7 @@ const Checklist = () => {
           <EmptyState
             icon={CheckCircle2}
             title="Não foi possível carregar o checklist"
-            description="Verifique se o backend está rodando em http://localhost:3333."
+            description="Verifique sua conexão e tente novamente."
           />
         </Card>
       ) : !selectedOrdem ? (

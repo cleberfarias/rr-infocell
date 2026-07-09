@@ -255,7 +255,7 @@ const Clientes = () => {
           <EmptyState
             icon={UserRound}
             title="Não foi possível carregar clientes"
-            description="Verifique se o backend está rodando em http://localhost:3333."
+            description="Verifique sua conexão e tente novamente."
             actions={
               <Button
                 variant="outline"
