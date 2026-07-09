@@ -127,7 +127,7 @@ jobs:
             --allow-unauthenticated \
             --set-env-vars "NODE_ENV=production" \
             --set-env-vars "FIREBASE_PROJECT_ID=rr-infocell" \
-            --set-env-vars "CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}" \
+            --set-env-vars "^@^CORS_ORIGIN=https://rr-infocell.web.app,https://nextassist.web.app" \
             --set-env-vars "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" \
             --set-env-vars "ATENDIMENTO_LEMBRETE_ORCAMENTO_HORAS=24" \
             --set-env-vars "ATENDIMENTO_LEMBRETE_RETIRADA_DIAS=2" \
