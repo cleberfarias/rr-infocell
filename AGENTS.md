@@ -30,7 +30,8 @@ docs/nextassist/
 
 ## Regras de produto que nao podem regredir
 
-- Modelo mental obrigatorio: RR Infocell e o cliente/tenant piloto em producao; NextAssist e o produto SaaS/White Label preparado para vender a outros clientes.
+- Modelo mental obrigatorio: RR Infocell e um cliente White Label (WL) em producao e o tenant piloto; NextAssist e a plataforma SaaS/White Label preparada para atender a RR Infocell e outros clientes.
+- A RR Infocell deve ter identidade propria por tenant, incluindo logo, nome, cores, dados da empresa e demais personalizacoes. Nao use a marca NextAssist como identidade visual operacional desse cliente.
 - Mudancas pedidas para "RR Infocell" normalmente afetam a operacao do cliente atual. Avalie se a regra tambem deve ir para a base SaaS comum.
 - Mudancas pedidas para "NextAssist", "site", "planos", "SaaS", "WL" ou "White Label" devem considerar outros clientes futuros, nao apenas a RR Infocell.
 - Nao trocar marca RR Infocell por NextAssist em documentos operacionais, fiscais, recibos, OS, garantias ou relatorios sem confirmar o contexto.
@@ -107,7 +108,8 @@ Via interna de impressao pode exibir senha; via cliente nao deve expor senha do 
 
 ## NextAssist SaaS, planos e site comercial
 
-- O produto SaaS/White Label e NextAssist; RR Infocell e o tenant piloto operacional.
+- O produto SaaS/White Label e NextAssist; RR Infocell e um cliente WL em producao e o tenant piloto operacional.
+- Trate logo, marca, cores, dados empresariais e demais personalizacoes da RR Infocell como configuracao exclusiva do tenant. Elas nao devem virar padrao global da plataforma nem ser herdadas por outros clientes.
 - O sistema deve ser mantido como base comum: melhorias estruturais entram no produto, mas configuracoes, branding, dados e permissoes devem ser resolvidos por tenant/plano quando forem SaaS.
 - Para outro cliente com White Label, o app deve poder exibir marca, cores, dados de empresa, plano e permissoes diferentes sem alterar regras centrais de OS, PDV, estoque e financeiro.
 - Ao implementar algo para SaaS real, nao confiar em config estatica do frontend como fonte final; o backend/tenant deve ser a fonte de verdade para plano, status de assinatura e features.
