@@ -72,7 +72,35 @@ jobs:
       - name: TypeScript check
         run: npx tsc --noEmit
 
-      - name: Build
+      - name: Build RR Infocell White Label
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || 'https://rr-infocell-api-91248386036.southamerica-east1.run.app/api' }}
+          VITE_AUTH_DEV_MODE: "false"
+          VITE_TENANT_ID: rr-infocell
+          VITE_PRODUCT_NAME: NextAssist
+          VITE_SYSTEM_NAME: RR Infocell
+          VITE_TENANT_NAME: RR Infocell
+          VITE_DEFAULT_PLAN: empresarial
+          VITE_OWNER_LOGIN: cleber.adm
+          VITE_OWNER_EMAIL: cleber.adm@nextassist.app
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY || 'ci-placeholder' }}
+          VITE_FIREBASE_AUTH_DOMAIN: rr-infocell.firebaseapp.com
+          VITE_FIREBASE_PROJECT_ID: rr-infocell
+          VITE_FIREBASE_STORAGE_BUCKET: rr-infocell.appspot.com
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID || 'ci-placeholder' }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID || 'ci-placeholder' }}
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        if: github.ref == 'refs/heads/main'
+        with:
+          name: frontend-dist-rr-infocell
+          path: frontend/dist
+          retention-days: 1
+
+      - name: Build NextAssist
+        if: github.ref == 'refs/heads/main'
         run: npm run build
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || 'https://rr-infocell-api-91248386036.southamerica-east1.run.app/api' }}
@@ -91,11 +119,11 @@ jobs:
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID || 'ci-placeholder' }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID || 'ci-placeholder' }}
 
-      - name: Upload build artifact
+      - name: Upload NextAssist build artifact
         uses: actions/upload-artifact@v4
         if: github.ref == 'refs/heads/main'
         with:
-          name: frontend-dist
+          name: frontend-dist-nextassist
           path: frontend/dist
           retention-days: 1
 
@@ -158,7 +186,7 @@ jobs:
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
-          name: frontend-dist
+          name: frontend-dist-rr-infocell
           path: frontend/dist
 
       - name: Authenticate to Firebase
@@ -183,6 +211,17 @@ jobs:
               exit "$status"
             fi
           fi
+
+      - name: Prepare NextAssist artifact directory
+        run: |
+          rm -rf frontend/dist
+          mkdir -p frontend/dist
+
+      - name: Download NextAssist build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist-nextassist
+          path: frontend/dist
 
       - name: Deploy nextassist.web.app
         run: |

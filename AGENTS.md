@@ -171,3 +171,11 @@ npx tsx src/scripts/reverter-venda-vanessa.ts
 - Para regras financeiras, rode `cd frontend && npm run test -- financeiro.test.ts`.
 - Se mexer em UI critica, preferir validar visualmente no navegador/dev server.
 - Nao incluir arquivos soltos ou scripts de manutencao nao relacionados no commit.
+
+## Commit e deploy automatico
+
+- Commit local nao dispara deploy. O deploy de producao ocorre apos `push` para `main`, desde que o commit altere caminhos monitorados pelo workflow.
+- `.github/workflows/ci.yml` monitora `frontend/**`, `backend/**`, `infra/**` e o proprio workflow. Depois das validacoes, faca commit apenas dos arquivos da tarefa, envie `main` e acompanhe o run `CI / CD` ate concluir.
+- O workflow gera artefatos separados: RR Infocell para `rr-infocell.web.app` e NextAssist para `nextassist.web.app`. Nao reutilize um unico build com a mesma identidade nos dois targets.
+- Alteracoes em `nextassist-site/**` disparam o workflow separado `.github/workflows/nextassist-deploy.yml`.
+- Mudancas apenas em documentacao ou `AGENTS.md` nao disparam deploy, salvo quando o arquivo estiver listado nos filtros do workflow.
