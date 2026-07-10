@@ -249,14 +249,14 @@ tenantsRoutes.patch(
     const createDefaults = tenantSnapshot.exists
       ? {}
       : {
-        id: tenantId,
-        slug: tenantId,
-        productName: defaultTenant.productName,
-        plan: defaultTenant.plan,
-        whiteLabel: true,
-        status: defaultTenant.status,
-        createdAt: now,
-      };
+          id: tenantId,
+          slug: tenantId,
+          productName: defaultTenant.productName,
+          plan: defaultTenant.plan,
+          whiteLabel: true,
+          status: defaultTenant.status,
+          createdAt: now,
+        };
 
     await tenantRef.set(
       {
