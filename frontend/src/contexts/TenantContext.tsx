@@ -18,12 +18,14 @@ import {
 } from "@/lib/tenant";
 import { useAuth } from "@/lib/auth";
 import { fetchCurrentTenant } from "@/services/tenants";
+import { EMPRESA } from "@/constants/company";
 import type {
   TenantBranding,
   TenantConfig,
   TenantId,
   TenantPlan,
   TenantStatus,
+  TenantCompany,
 } from "@/types/tenant";
 import type { ModuleKey } from "@/config/planModules";
 
@@ -35,8 +37,10 @@ type TenantContextValue = {
   trialEndsAt: string | null;
   diasRestantes: number;
   branding: TenantBranding;
+  company: TenantCompany;
   isWhiteLabel: boolean;
   canUseModule: (moduleKey: ModuleKey) => boolean;
+  refreshTenant: () => Promise<void>;
 };
 
 const TenantContext = createContext<TenantContextValue | null>(null);
@@ -57,8 +61,32 @@ const buildStaticValue = (): TenantContextValue => {
     trialEndsAt: null,
     diasRestantes: 0,
     branding: getTenantBranding(),
+    company: EMPRESA,
     isWhiteLabel: isWhiteLabelEnabled(),
     canUseModule: (moduleKey) => canUsePlanModule(moduleKey, plan),
+    refreshTenant: async () => undefined,
+  };
+};
+
+const buildCompany = (
+  name: string,
+  remote: Partial<Omit<TenantCompany, "nome" | "enderecoCompleto">>,
+): TenantCompany => {
+  const endereco = remote.endereco ?? EMPRESA.endereco;
+  const bairro = remote.bairro ?? EMPRESA.bairro;
+  const cidade = remote.cidade ?? EMPRESA.cidade;
+  const uf = remote.uf ?? EMPRESA.uf;
+  return {
+    ...EMPRESA,
+    ...remote,
+    nome: name,
+    endereco,
+    bairro,
+    cidade,
+    uf,
+    enderecoCompleto: [endereco, bairro, cidade && uf ? `${cidade} - ${uf}` : cidade || uf]
+      .filter(Boolean)
+      .join(", "),
   };
 };
 
@@ -109,12 +137,17 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
           primaryColor: branding.primaryColor ?? tenantConfig.primaryColor,
           secondaryColor: branding.secondaryColor ?? tenantConfig.secondaryColor,
         },
+        company: buildCompany(remote.name ?? prev.company.nome, remote.company ?? {}),
         canUseModule: (moduleKey) => canUsePlanModule(moduleKey, plan),
       }));
     } catch {
       // falha silenciosa — mantém branding estático do tenantConfig
     }
   }, []);
+
+  const refreshTenant = useCallback(async () => {
+    await loadBranding();
+  }, [loadBranding]);
 
   useEffect(() => {
     if (isAuthenticated && !isDevelopmentMode) {
@@ -126,7 +159,9 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
   }, [isAuthenticated, isDevelopmentMode, loadBranding]);
 
   return (
-    <TenantContext.Provider value={value}>{children}</TenantContext.Provider>
+    <TenantContext.Provider value={{ ...value, refreshTenant }}>
+      {children}
+    </TenantContext.Provider>
   );
 };
 

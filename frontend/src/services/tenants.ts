@@ -15,7 +15,36 @@ export type RemoteTenantBranding = {
     primaryColor?: string;
     secondaryColor?: string;
   };
+  company: {
+    cnpj?: string;
+    endereco?: string;
+    bairro?: string;
+    cidade?: string;
+    uf?: string;
+    telefone?: string;
+    whatsapp?: string;
+    horarioAtendimento?: string;
+    tecnicoPadrao?: string;
+    mensagemFinal?: string;
+    rodape?: string;
+  };
 };
 
 export const fetchCurrentTenant = () =>
   apiRequest<{ data: RemoteTenantBranding }>("/tenants/current").then((r) => r.data);
+
+export type TenantSettingsInput = {
+  name: string;
+  branding: {
+    logoUrl?: string;
+    primaryColor: string;
+    secondaryColor: string;
+  };
+  company: RemoteTenantBranding["company"];
+};
+
+export const updateCurrentTenant = (input: TenantSettingsInput) =>
+  apiRequest<{ data: TenantSettingsInput & { id: string } }>("/tenants/current", {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  }).then((response) => response.data);

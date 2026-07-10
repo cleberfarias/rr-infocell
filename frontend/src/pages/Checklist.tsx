@@ -39,6 +39,7 @@ import {
   isFirebaseClientConfigured,
 } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
+import { useTenant } from "@/contexts/TenantContext";
 import {
   CHECKLIST_ENTRADA_ITENS,
   CHECKLIST_SAIDA_ITENS,
@@ -116,6 +117,7 @@ const uploadWithTimeout = (
   });
 
 const Checklist = () => {
+  const { branding } = useTenant();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -422,7 +424,7 @@ const Checklist = () => {
           <header className="print-header">
             <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
               {(() => {
-                const logoUrl = localStorage.getItem("rr-logo-url");
+                const logoUrl = branding.logo;
                 return logoUrl ? (
                   <img
                     src={logoUrl}

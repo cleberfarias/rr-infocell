@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { formatBRL } from "@/lib/formatters";
-import { EMPRESA } from "@/constants/company";
+import { useTenant } from "@/contexts/TenantContext";
 import { MoneyInput } from "@/components/ui/money-input";
 import { listAparelhos } from "@/services/aparelhos";
 import { listClientes } from "@/services/clientes";
@@ -94,6 +94,7 @@ const paymentOptions: Array<{
 ];
 
 const PDV = () => {
+  const { company, branding } = useTenant();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -584,7 +585,7 @@ const PDV = () => {
       (venda.clienteId ? clienteById.get(venda.clienteId)?.nome : undefined) ??
       "AO CONSUMIDOR"
     ).toUpperCase();
-    const atendente = EMPRESA.tecnicoPadrao.toUpperCase();
+    const atendente = company.tecnicoPadrao.toUpperCase();
     const formaPgto = (venda.formaPagamento ?? "dinheiro").toUpperCase();
 
     const center = (str: string) => {
@@ -643,7 +644,7 @@ const PDV = () => {
 
     const pgWidth = larguraCupom === "58mm" ? "58mm" : "80mm";
 
-    const logoUrl = localStorage.getItem("rr-logo-url");
+    const logoUrl = branding.logo;
     const logoHtml = logoUrl
       ? `<div class="center" style="margin-bottom:4px"><img src="${logoUrl}" style="max-height:50px;max-width:${larguraCupom === "58mm" ? "120px" : "160px"};object-fit:contain" /></div>`
       : "";
@@ -672,11 +673,11 @@ const PDV = () => {
   .sep { border: none; border-top: 2px dashed #000; margin: 2px 0; }
 </style>
 </head><body>
-${logoHtml}<div class="center">${EMPRESA.cnpj} ${EMPRESA.nome.toUpperCase()}</div>
-<div class="center">${EMPRESA.endereco.toUpperCase()} - SALA</div>
-<div class="center">${EMPRESA.bairro.toUpperCase()} - ${EMPRESA.cidade.toUpperCase()}/${EMPRESA.uf}</div>
-<div class="center">TELEFONE: ${EMPRESA.telefone.replace(/\D/g, "")}</div>
-<div class="center">CNPJ: ${EMPRESA.cnpj}</div>
+${logoHtml}<div class="center">${company.cnpj} ${company.nome.toUpperCase()}</div>
+<div class="center">${company.endereco.toUpperCase()} - SALA</div>
+<div class="center">${company.bairro.toUpperCase()} - ${company.cidade.toUpperCase()}/${company.uf}</div>
+<div class="center">TELEFONE: ${company.telefone.replace(/\D/g, "")}</div>
+<div class="center">CNPJ: ${company.cnpj}</div>
 <div class="center">IE:</div>
 <div>${sep}</div>
 <div>DATA: ${now}</div>
@@ -699,9 +700,9 @@ ${itensHtml}
 <div>${rAlign(formaPgto + ": R$", recebido)}</div>
 ${troco}
 <div>${sep}</div>
-<div class="center">${EMPRESA.mensagemFinal}</div>
+<div class="center">${company.mensagemFinal}</div>
 <div>${sep}</div>
-<div class="center small">${EMPRESA.rodape}</div>
+<div class="center small">${company.rodape}</div>
 <script>window.onload = () => { window.print(); window.onafterprint = () => window.close(); }<\/script>
 </body></html>`;
   };
@@ -717,7 +718,7 @@ ${troco}
       (venda.clienteId ? clienteById.get(venda.clienteId)?.nome : undefined) ??
       "AO CONSUMIDOR"
     ).toUpperCase();
-    const atendente = EMPRESA.tecnicoPadrao.toUpperCase();
+    const atendente = company.tecnicoPadrao.toUpperCase();
     const formaPgto = (venda.formaPagamento ?? "dinheiro").toUpperCase();
     const servicoCupom = getServicoCupom(venda);
     const fBRL = (v: number) =>
@@ -743,19 +744,19 @@ ${troco}
         }}
       >
         <div style={{ textAlign: "center" }}>
-          {EMPRESA.cnpj} {EMPRESA.nome.toUpperCase()}
+          {company.cnpj} {company.nome.toUpperCase()}
         </div>
         <div style={{ textAlign: "center" }}>
-          {EMPRESA.endereco.toUpperCase()}
+          {company.endereco.toUpperCase()}
         </div>
         <div style={{ textAlign: "center" }}>
-          {EMPRESA.bairro.toUpperCase()} - {EMPRESA.cidade.toUpperCase()}/
-          {EMPRESA.uf}
+          {company.bairro.toUpperCase()} - {company.cidade.toUpperCase()}/
+          {company.uf}
         </div>
         <div style={{ textAlign: "center" }}>
-          TELEFONE: {EMPRESA.telefone.replace(/\D/g, "")}
+          TELEFONE: {company.telefone.replace(/\D/g, "")}
         </div>
-        <div style={{ textAlign: "center" }}>CNPJ: {EMPRESA.cnpj}</div>
+        <div style={{ textAlign: "center" }}>CNPJ: {company.cnpj}</div>
         <div style={{ textAlign: "center" }}>IE:</div>
         <div>{sep}</div>
         <div>DATA: {now}</div>
@@ -825,10 +826,10 @@ ${troco}
         <div>{rAlign(formaPgto + ": R$", fBRL(venda.valorRecebido))}</div>
         {venda.troco > 0 && <div>{rAlign("TROCO:", fBRL(venda.troco))}</div>}
         <div>{sep}</div>
-        <div style={{ textAlign: "center" }}>{EMPRESA.mensagemFinal}</div>
+        <div style={{ textAlign: "center" }}>{company.mensagemFinal}</div>
         <div>{sep}</div>
         <div style={{ textAlign: "center", fontSize: 10 }}>
-          {EMPRESA.rodape}
+          {company.rodape}
         </div>
       </div>
     );
@@ -872,7 +873,7 @@ ${troco}
   const handleSalvarReciboPdf = () => {
     const venda = vendaFinalizada;
     if (!venda) return;
-    const logoUrl = localStorage.getItem("rr-logo-url");
+    const logoUrl = branding.logo;
     const cliente = venda.clienteNome ?? (venda.clienteId ? clienteById.get(venda.clienteId)?.nome : undefined) ?? "Consumidor";
     const fBRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     const now = new Date().toLocaleString("pt-BR");
@@ -883,7 +884,7 @@ ${troco}
     const win = window.open("", "_blank", "width=800,height=1000");
     if (!win) return;
     win.document.write(`<!DOCTYPE html><html lang="pt-BR"><head>
-<meta charset="UTF-8"/><title>Recibo — ${EMPRESA.nome}</title>
+<meta charset="UTF-8"/><title>Recibo — ${company.nome}</title>
 <style>
   @page { size: A4; margin: 20mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -906,10 +907,10 @@ ${troco}
 <div class="header">
   <div class="empresa">
     ${logoHtml}
-    <h1>${EMPRESA.nome}</h1>
-    <p>CNPJ: ${EMPRESA.cnpj}</p>
-    <p>${EMPRESA.enderecoCompleto}</p>
-    <p>Tel: ${EMPRESA.telefone}</p>
+    <h1>${company.nome}</h1>
+    <p>CNPJ: ${company.cnpj}</p>
+    <p>${company.enderecoCompleto}</p>
+    <p>Tel: ${company.telefone}</p>
   </div>
   <div style="text-align:right">
     <h2>RECIBO NÃO FISCAL</h2>
@@ -930,7 +931,7 @@ ${troco}
   <p>Recebido: ${fBRL(venda.valorRecebido)}</p>
   ${venda.troco > 0 ? `<p>Troco: ${fBRL(venda.troco)}</p>` : ""}
 </div>
-<div class="rodape"><p>${EMPRESA.mensagemFinal ?? ""}</p></div>
+<div class="rodape"><p>${company.mensagemFinal ?? ""}</p></div>
 <script>window.onload = () => { window.print(); }<\/script>
 </body></html>`);
     win.document.close();

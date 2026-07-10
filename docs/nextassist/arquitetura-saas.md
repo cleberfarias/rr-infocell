@@ -9,7 +9,7 @@ Componentes atuais:
 - `tenantConfig.ts`: configuracao estatica do tenant.
 - `planModules.ts`: matriz estatica de capacidades por plano.
 - `AppLayout.tsx`: comeca a respeitar modulos na navegacao.
-- `TenantSettings.tsx`: exibe configuracoes do tenant em modo somente leitura.
+- `TenantSettings.tsx`: permite ao administrador editar identidade e dados operacionais do proprio tenant.
 
 ## tenantConfig estatico
 
@@ -51,16 +51,9 @@ Diretriz:
 
 ## TenantSettings
 
-A tela de configuracoes da empresa mostra os dados atuais do tenant e os modulos disponiveis.
+A tela de configuracoes da empresa le e grava branding e dados empresariais em `tenants/{tenantId}`.
 
-Nesta fase, ela e somente leitura.
-
-Uso futuro:
-
-- Mostrar dados vindos do backend.
-- Permitir edicao controlada.
-- Exibir status de assinatura.
-- Gerenciar branding por tenant.
+O administrador do tenant pode editar nome, logo, cores, contatos, endereco e parametros usados em impressoes. Plano, status de assinatura, produto base e permissoes continuam sob controle da plataforma.
 
 ## Multiempresa real
 
