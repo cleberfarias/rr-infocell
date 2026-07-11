@@ -1,4 +1,4 @@
-import HeroSceneWrapper from "@/components/three/HeroSceneWrapper";
+import OsFlowShowcase from "@/components/OsFlowShowcase";
 
 export default function Hero() {
   return (
@@ -42,8 +42,8 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className="hero-3d-canvas">
-          <HeroSceneWrapper />
+        <div className="hero-visual">
+          <OsFlowShowcase />
         </div>
       </div>
     </section>

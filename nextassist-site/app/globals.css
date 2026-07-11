@@ -12,6 +12,7 @@
   --muted: #7a9bc0;
   --green: #22c55e;
   --yellow: #f59e0b;
+  --purple: #a78bfa;
   --radius: 12px;
 }
 
@@ -128,19 +129,19 @@ h1 em { color: var(--accent); font-style: normal; }
 .stat-num { font-size: 1.75rem; font-weight: 800; color: var(--accent); }
 .stat-label { font-size: .8rem; color: var(--muted); }
 
-/* hero 3D canvas */
-.hero-3d-canvas {
+/* hero visual */
+.hero-visual {
   width: 100%; height: 520px;
   position: relative;
   filter: drop-shadow(0 0 40px rgba(0,180,245,.18));
 }
-@media(max-width:768px) { .hero-3d-canvas { height: 340px; } }
 
-/* mockup (keep for fallback / other uses) */
+/* mockup */
 .mockup-frame {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 16px; overflow: hidden;
   box-shadow: 0 40px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(0,180,245,.1);
+  height: 100%; display: flex; flex-direction: column;
 }
 .mockup-bar {
   background: var(--surface2); border-bottom: 1px solid var(--border);
@@ -155,7 +156,7 @@ h1 em { color: var(--accent); font-style: normal; }
   flex: 1; background: rgba(255,255,255,.05); border-radius: 6px;
   padding: .25rem .75rem; font-size: .7rem; color: var(--muted); margin: 0 .5rem;
 }
-.mockup-body { padding: 1.5rem; }
+.mockup-body { padding: 1.5rem; flex: 1; display: flex; flex-direction: column; justify-content: center; }
 .dash-header { margin-bottom: 1rem; }
 .dash-title-label { font-size: .65rem; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: .2rem; }
 .dash-date-text { font-size: .85rem; font-weight: 700; }
@@ -187,7 +188,59 @@ h1 em { color: var(--accent); font-style: normal; }
 .badge-blue { background: rgba(0,180,245,.15); color: var(--accent); }
 .badge-green { background: rgba(34,197,94,.15); color: var(--green); }
 .badge-yellow { background: rgba(245,158,11,.15); color: var(--yellow); }
-@media(max-width:900px){ .hero-grid { grid-template-columns: 1fr; } .mockup-frame { display: none; } }
+
+/* ── OS FLOW (hero) — replica a tela real de detalhe da OS ── */
+.os-flow-title { font-size: .95rem; font-weight: 700; margin-bottom: 1rem; }
+.os-flow-stats {
+  display: grid; grid-template-columns: 1.7fr 1fr 1fr 1fr;
+  gap: .6rem; margin-bottom: 1rem;
+}
+.os-flow-stat {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; padding: .7rem .85rem;
+}
+.os-flow-stat-label {
+  font-size: .6rem; color: var(--muted); text-transform: uppercase;
+  letter-spacing: .5px; margin-bottom: .35rem;
+}
+.os-flow-stat-value { font-size: .95rem; font-weight: 700; }
+@keyframes osFlowFade {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+.os-flow-status {
+  display: flex; align-items: center; gap: .4rem; animation: osFlowFade .4s ease;
+  white-space: nowrap;
+}
+.os-flow-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.os-flow-columns {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: .6rem;
+}
+.os-flow-col {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; padding: .85rem;
+}
+.os-flow-col h4 {
+  font-size: .68rem; color: var(--muted); text-transform: uppercase;
+  letter-spacing: .5px; margin-bottom: .65rem; font-weight: 700;
+}
+.os-flow-field { margin-bottom: .55rem; }
+.os-flow-field:last-child { margin-bottom: 0; }
+.os-flow-field-label { font-size: .62rem; color: var(--muted); margin-bottom: .1rem; }
+.os-flow-field-value { font-size: .82rem; font-weight: 600; }
+.os-flow-pill {
+  margin-top: .5rem; padding: .4rem .6rem; border-radius: 8px;
+  background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.3);
+}
+.os-flow-pill .os-flow-field-label { color: var(--yellow); }
+
+@media(max-width: 640px) {
+  .os-flow-stats { grid-template-columns: repeat(2, 1fr); }
+  .os-flow-columns { grid-template-columns: 1fr; }
+}
+
+@media(max-width:900px){ .hero-grid { grid-template-columns: 1fr; } .hero-visual { display: none; } }
 
 /* ── LOGOS BAR ── */
 .logos-bar {
@@ -233,6 +286,33 @@ h2 em { color: var(--accent); font-style: normal; }
 }
 .feature-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: .5rem; }
 .feature-card p { font-size: .9rem; color: var(--muted); }
+
+/* ── FEATURES SHOWCASE (scroll + hover synced com o celular) ── */
+.features-showcase {
+  display: grid; grid-template-columns: 420px 1fr;
+  gap: 3rem; margin-top: 3rem; align-items: start;
+}
+.features-showcase-visual {
+  position: sticky; top: 88px; height: 480px;
+  border-radius: 24px; overflow: hidden;
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 38%, rgba(0,180,245,.16), transparent 70%),
+    radial-gradient(circle at 50% 50%, #0f2138 0%, #081524 55%, #020711 100%);
+}
+.features-showcase-list { display: flex; flex-direction: column; gap: 1.25rem; }
+.features-showcase-list .feature-card { min-height: 168px; cursor: default; }
+.features-showcase-list .feature-card.active {
+  border-color: var(--accent); background: rgba(0,180,245,.07); transform: translateY(-2px);
+}
+
+@media(max-width: 900px) {
+  .features-showcase { grid-template-columns: 1fr; }
+  .features-showcase-visual { display: none; }
+  .features-showcase-list {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.25rem;
+  }
+}
 
 /* ── COMO FUNCIONA ── */
 .how-section { background: var(--surface); }

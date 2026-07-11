@@ -1,4 +1,5 @@
 import ScrollReveal from "./ScrollReveal";
+import FeatureShowcase from "./FeatureShowcase";
 
 const FEATURES = [
   {
@@ -57,17 +58,7 @@ export default function Features() {
             nenhum detalhe.
           </p>
         </ScrollReveal>
-        <div className="features-grid">
-          {FEATURES.map((f) => (
-            <ScrollReveal key={f.title}>
-              <div className="feature-card">
-                <div className="feature-icon">{f.icon}</div>
-                <h3>{f.title}</h3>
-                <p>{f.desc}</p>
-              </div>
-            </ScrollReveal>
-          ))}
-        </div>
+        <FeatureShowcase features={FEATURES} />
       </div>
     </section>
   );
