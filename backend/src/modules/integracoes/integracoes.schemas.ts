@@ -3,7 +3,11 @@ import { z } from "zod";
 const optionalSecret = z.string().max(20_000_000).optional().or(z.literal(""));
 
 export const fiscalSettingsSchema = z.object({
-  uf: z.string().trim().length(2).transform((value) => value.toUpperCase()),
+  uf: z
+    .string()
+    .trim()
+    .length(2)
+    .transform((value) => value.toUpperCase()),
   ambiente: z.enum(["homologacao", "producao"]),
   regimeTributario: z.enum(["simples_nacional", "simples_excesso", "regime_normal"]),
   emiteNfce: z.boolean(),
@@ -32,5 +36,10 @@ export const mercadoPagoOrderSchema = z.object({
   terminalId: z.string().trim().min(1, "Selecione um terminal Point."),
   amount: z.coerce.number().positive("O valor da cobranca deve ser positivo.").max(999999.99),
   description: z.string().trim().min(2).max(150),
-  reference: z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/, "Referencia invalida."),
+  reference: z
+    .string()
+    .trim()
+    .min(1)
+    .max(64)
+    .regex(/^[A-Za-z0-9_-]+$/, "Referencia invalida."),
 });

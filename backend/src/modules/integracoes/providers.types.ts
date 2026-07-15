@@ -9,7 +9,11 @@ export interface FiscalProvider {
 
 export interface PaymentProvider {
   testConnection(tenantId: string): Promise<IntegrationTestResult>;
-  createCharge(tenantId: string, vendaId: string, amount: number): Promise<{ chargeId: string; status: string }>;
+  createCharge(
+    tenantId: string,
+    vendaId: string,
+    amount: number,
+  ): Promise<{ chargeId: string; status: string }>;
   getCharge(tenantId: string, chargeId: string): Promise<{ chargeId: string; status: string }>;
   refund(tenantId: string, chargeId: string, amount?: number): Promise<void>;
 }

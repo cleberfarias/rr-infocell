@@ -9,7 +9,10 @@ import { movimentacoesEstoqueService } from "../movimentacoes-estoque/movimentac
 import { produtosService } from "../produtos/produtos.service.js";
 import { createVendasRepository, type VendasRepository } from "./vendas.repository.js";
 import type { VendaInput, VendaStatus } from "./vendas.types.js";
-import { consumePaymentTransaction, requireApprovedPaymentTransaction } from "../integracoes/payment-transactions.service.js";
+import {
+  consumePaymentTransaction,
+  requireApprovedPaymentTransaction,
+} from "../integracoes/payment-transactions.service.js";
 
 const now = () => new Date().toISOString();
 
@@ -42,7 +45,9 @@ export class VendasService {
     const integratedPayment = input.paymentTransactionId
       ? await requireApprovedPaymentTransaction(tenantId, input.paymentTransactionId, saldo)
       : null;
-    const valorRecebido = integratedPayment ? Number(integratedPayment.amount) : input.valorRecebido;
+    const valorRecebido = integratedPayment
+      ? Number(integratedPayment.amount)
+      : input.valorRecebido;
 
     if (valorRecebido < saldo) {
       throw new AppError(
@@ -100,14 +105,15 @@ export class VendasService {
       ordemServicoId: delivered.id,
       tipo: "venda",
       titulo: "Venda finalizada no PDV",
-      descricao: `Pagamento ${input.formaPagamento} de ${valorRecebido.toLocaleString(
-        "pt-BR",
-        { currency: "BRL", style: "currency" },
-      )}.`,
+      descricao: `Pagamento ${input.formaPagamento} de ${valorRecebido.toLocaleString("pt-BR", {
+        currency: "BRL",
+        style: "currency",
+      })}.`,
       criadoPor: delivered.tecnicoResponsavel,
     });
 
-    if (input.paymentTransactionId) await consumePaymentTransaction(tenantId, input.paymentTransactionId, venda.id);
+    if (input.paymentTransactionId)
+      await consumePaymentTransaction(tenantId, input.paymentTransactionId, venda.id);
 
     return venda;
   }
@@ -167,7 +173,9 @@ export class VendasService {
     const integratedPayment = input.paymentTransactionId
       ? await requireApprovedPaymentTransaction(tenantId, input.paymentTransactionId, valorTotal)
       : null;
-    const valorRecebido = integratedPayment ? Number(integratedPayment.amount) : input.valorRecebido;
+    const valorRecebido = integratedPayment
+      ? Number(integratedPayment.amount)
+      : input.valorRecebido;
 
     if (valorRecebido < valorTotal) {
       throw new AppError(
@@ -214,7 +222,8 @@ export class VendasService {
       tenantId,
       createdAt: now(),
     });
-    if (input.paymentTransactionId) await consumePaymentTransaction(tenantId, input.paymentTransactionId, venda.id);
+    if (input.paymentTransactionId)
+      await consumePaymentTransaction(tenantId, input.paymentTransactionId, venda.id);
     return venda;
   }
 
