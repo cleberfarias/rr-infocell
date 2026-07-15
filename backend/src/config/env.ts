@@ -30,6 +30,10 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   TRIAL_NOTIFICATION_EMAIL: z.string().email().optional(),
+  INTEGRATIONS_ENCRYPTION_KEY: z.string().min(32).optional(),
+  MERCADO_PAGO_CLIENT_ID: z.string().optional(),
+  MERCADO_PAGO_CLIENT_SECRET: z.string().optional(),
+  MERCADO_PAGO_OAUTH_REDIRECT_URI: z.string().url().optional(),
 });
 
 export const env = envSchema.parse(process.env);
