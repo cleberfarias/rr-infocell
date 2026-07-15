@@ -9,6 +9,10 @@ import { movimentacoesEstoqueService } from "../movimentacoes-estoque/movimentac
 import { produtosService } from "../produtos/produtos.service.js";
 import { createVendasRepository, type VendasRepository } from "./vendas.repository.js";
 import type { VendaInput, VendaStatus } from "./vendas.types.js";
+import {
+  consumePaymentTransaction,
+  requireApprovedPaymentTransaction,
+} from "../integracoes/payment-transactions.service.js";
 
 const now = () => new Date().toISOString();
 
@@ -38,8 +42,14 @@ export class VendasService {
     const totalComDesconto = Math.max(0, ordem.valorTotal - desconto);
     const valorAdiantado = ordem.valorAdiantado ?? 0;
     const saldo = Math.max(0, totalComDesconto - valorAdiantado);
+    const integratedPayment = input.paymentTransactionId
+      ? await requireApprovedPaymentTransaction(tenantId, input.paymentTransactionId, saldo)
+      : null;
+    const valorRecebido = integratedPayment
+      ? Number(integratedPayment.amount)
+      : input.valorRecebido;
 
-    if (input.valorRecebido < saldo) {
+    if (valorRecebido < saldo) {
       throw new AppError(
         "pagamento_insuficiente",
         "Valor recebido menor que o saldo devedor da OS.",
@@ -63,7 +73,7 @@ export class VendasService {
       desconto: descontoTotal > 0 ? descontoTotal : undefined,
       status: "entregue",
       formaPagamento: input.formaPagamento,
-      valorRecebido: input.valorRecebido,
+      valorRecebido,
     });
     const venda = await this.repository.create({
       tipo: "ordem_servico",
@@ -84,8 +94,8 @@ export class VendasService {
       desconto: desconto > 0 ? desconto : undefined,
       valorTotal: totalComDesconto,
       formaPagamento: input.formaPagamento,
-      valorRecebido: input.valorRecebido,
-      troco: Math.max(0, input.valorRecebido - saldo),
+      valorRecebido,
+      troco: input.paymentTransactionId ? 0 : Math.max(0, valorRecebido - saldo),
       status: "finalizada",
       tenantId,
       createdAt: delivered.pagoEm ?? now(),
@@ -95,12 +105,15 @@ export class VendasService {
       ordemServicoId: delivered.id,
       tipo: "venda",
       titulo: "Venda finalizada no PDV",
-      descricao: `Pagamento ${input.formaPagamento} de ${input.valorRecebido.toLocaleString(
-        "pt-BR",
-        { currency: "BRL", style: "currency" },
-      )}.`,
+      descricao: `Pagamento ${input.formaPagamento} de ${valorRecebido.toLocaleString("pt-BR", {
+        currency: "BRL",
+        style: "currency",
+      })}.`,
       criadoPor: delivered.tecnicoResponsavel,
     });
+
+    if (input.paymentTransactionId)
+      await consumePaymentTransaction(tenantId, input.paymentTransactionId, venda.id);
 
     return venda;
   }
@@ -157,8 +170,14 @@ export class VendasService {
     const subtotal = itens.reduce((total, item) => total + item.valorTotal, 0);
     const desconto = input.desconto && input.desconto > 0 ? input.desconto : 0;
     const valorTotal = Math.max(0, subtotal - desconto);
+    const integratedPayment = input.paymentTransactionId
+      ? await requireApprovedPaymentTransaction(tenantId, input.paymentTransactionId, valorTotal)
+      : null;
+    const valorRecebido = integratedPayment
+      ? Number(integratedPayment.amount)
+      : input.valorRecebido;
 
-    if (input.valorRecebido < valorTotal) {
+    if (valorRecebido < valorTotal) {
       throw new AppError(
         "pagamento_insuficiente",
         "Valor recebido menor que o total da venda.",
@@ -183,7 +202,7 @@ export class VendasService {
       );
     }
 
-    return this.repository.create({
+    const venda = await this.repository.create({
       tipo: "direta",
       clienteId: input.clienteId,
       clienteNome: input.clienteNome,
@@ -197,12 +216,15 @@ export class VendasService {
       desconto: desconto > 0 ? desconto : undefined,
       valorTotal,
       formaPagamento: input.formaPagamento,
-      valorRecebido: input.valorRecebido,
-      troco: Math.max(0, input.valorRecebido - valorTotal),
+      valorRecebido,
+      troco: input.paymentTransactionId ? 0 : Math.max(0, valorRecebido - valorTotal),
       status: "finalizada",
       tenantId,
       createdAt: now(),
     });
+    if (input.paymentTransactionId)
+      await consumePaymentTransaction(tenantId, input.paymentTransactionId, venda.id);
+    return venda;
   }
 
   private toOrdemInput(ordem: OrdemServico) {
