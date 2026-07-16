@@ -36,8 +36,8 @@ export interface ClientesRepository {
   findById(id: string, tenantId?: string): Promise<Cliente | null>;
   findByTelefone(telefone: string): Promise<Cliente | null>;
   create(input: ClienteInput, tenantId?: string): Promise<Cliente>;
-  update(id: string, input: ClienteInput): Promise<Cliente | null>;
-  delete(id: string): Promise<boolean>;
+  update(id: string, input: ClienteInput, tenantId?: string): Promise<Cliente | null>;
+  delete(id: string, tenantId?: string): Promise<boolean>;
 }
 
 export class MemoryClientesRepository implements ClientesRepository {
@@ -84,8 +84,8 @@ export class MemoryClientesRepository implements ClientesRepository {
     return cliente;
   }
 
-  async update(id: string, input: ClienteInput) {
-    const current = await this.findById(id);
+  async update(id: string, input: ClienteInput, tenantId?: string) {
+    const current = await this.findById(id, tenantId);
 
     if (!current) {
       return null;
@@ -102,7 +102,7 @@ export class MemoryClientesRepository implements ClientesRepository {
     return cliente;
   }
 
-  async delete(id: string) {
+  async delete(id: string, _tenantId?: string) {
     return this.clientes.delete(id);
   }
 }
@@ -181,8 +181,8 @@ export class FirestoreClientesRepository implements ClientesRepository {
     return cliente;
   }
 
-  async update(id: string, input: ClienteInput) {
-    const current = await this.findById(id);
+  async update(id: string, input: ClienteInput, tenantId?: string) {
+    const current = await this.findById(id, tenantId);
 
     if (!current) {
       return null;
@@ -200,8 +200,8 @@ export class FirestoreClientesRepository implements ClientesRepository {
     return cliente;
   }
 
-  async delete(id: string) {
-    const current = await this.findById(id);
+  async delete(id: string, tenantId?: string) {
+    const current = await this.findById(id, tenantId);
 
     if (!current) {
       return false;

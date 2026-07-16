@@ -34,11 +34,15 @@ export class ClientesService {
     );
   }
 
-  async update(id: string, input: ClienteInput) {
-    const cliente = await this.repository.update(id, {
-      ...input,
-      telefone: input.telefone ? normalizarTelefone(input.telefone) : undefined,
-    });
+  async update(id: string, input: ClienteInput, tenantId?: string) {
+    const cliente = await this.repository.update(
+      id,
+      {
+        ...input,
+        telefone: input.telefone ? normalizarTelefone(input.telefone) : undefined,
+      },
+      tenantId,
+    );
 
     if (!cliente) {
       throw new AppError("cliente_not_found", "Cliente nao encontrado.", httpStatus.notFound);
@@ -47,10 +51,12 @@ export class ClientesService {
     return cliente;
   }
 
-  async delete(id: string) {
+  async delete(id: string, tenantId?: string) {
+    await this.getById(id, tenantId);
+
     const [aparelhos, ordens] = await Promise.all([
-      createAparelhosRepository(db).list({ clienteId: id }),
-      createOrdensServicoRepository(db).list({ clienteId: id }),
+      createAparelhosRepository(db).list({ clienteId: id }, tenantId),
+      createOrdensServicoRepository(db).list({ clienteId: id }, tenantId),
     ]);
 
     if (ordens.length > 0) {
@@ -69,7 +75,7 @@ export class ClientesService {
       );
     }
 
-    const deleted = await this.repository.delete(id);
+    const deleted = await this.repository.delete(id, tenantId);
 
     if (!deleted) {
       throw new AppError("cliente_not_found", "Cliente nao encontrado.", httpStatus.notFound);

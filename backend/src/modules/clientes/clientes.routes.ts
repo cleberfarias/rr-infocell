@@ -4,7 +4,6 @@ import { ZodError } from "zod";
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
 import { resolveTenant, getRequestTenantId, type TenantRequest } from "../../middlewares/tenant.js";
-import { isPlatformOwner } from "../../shared/platform-owner.js";
 import { clienteInputSchema, clienteSearchSchema } from "./clientes.schemas.js";
 import { clientesService } from "./clientes.service.js";
 
@@ -41,11 +40,7 @@ clientesRoutes.get(
   asyncHandler(async (request, response) => {
     const tenantId = getRequestTenantId(request as TenantRequest);
     const { q } = parseOrThrow(() => clienteSearchSchema.parse(request.query));
-    const clientes = await clientesService.list(
-      q,
-      tenantId,
-      isPlatformOwner(request as TenantRequest),
-    );
+    const clientes = await clientesService.list(q, tenantId);
 
     const page = Math.max(1, parseInt(request.query.page as string) || 1);
     const limit = Math.min(200, Math.max(1, parseInt(request.query.limit as string) || 50));
@@ -69,9 +64,7 @@ clientesRoutes.get(
 clientesRoutes.get(
   "/:id",
   asyncHandler(async (request, response) => {
-    const tenantId = isPlatformOwner(request as TenantRequest)
-      ? undefined
-      : getRequestTenantId(request as TenantRequest);
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const id = String(request.params.id);
 
     response.status(httpStatus.ok).json({
@@ -96,10 +89,11 @@ clientesRoutes.put(
   "/:id",
   asyncHandler(async (request, response) => {
     const id = String(request.params.id);
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const input = parseOrThrow(() => clienteInputSchema.parse(request.body));
 
     response.status(httpStatus.ok).json({
-      data: await clientesService.update(id, input),
+      data: await clientesService.update(id, input, tenantId),
     });
   }),
 );
@@ -108,8 +102,9 @@ clientesRoutes.delete(
   "/:id",
   asyncHandler(async (request, response) => {
     const id = String(request.params.id);
+    const tenantId = getRequestTenantId(request as TenantRequest);
 
-    await clientesService.delete(id);
+    await clientesService.delete(id, tenantId);
 
     response.status(204).send();
   }),
