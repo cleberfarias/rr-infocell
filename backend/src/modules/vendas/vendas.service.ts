@@ -57,7 +57,7 @@ export class VendasService {
       );
     }
 
-    const currentVenda = await this.repository.findByOrdem(ordem.id);
+    const currentVenda = await this.repository.findByOrdem(ordem.id, tenantId);
 
     if (currentVenda) {
       throw new AppError(
@@ -101,16 +101,19 @@ export class VendasService {
       createdAt: delivered.pagoEm ?? now(),
     });
 
-    await ordemEventosService.create({
-      ordemServicoId: delivered.id,
-      tipo: "venda",
-      titulo: "Venda finalizada no PDV",
-      descricao: `Pagamento ${input.formaPagamento} de ${valorRecebido.toLocaleString("pt-BR", {
-        currency: "BRL",
-        style: "currency",
-      })}.`,
-      criadoPor: delivered.tecnicoResponsavel,
-    });
+    await ordemEventosService.create(
+      {
+        ordemServicoId: delivered.id,
+        tipo: "venda",
+        titulo: "Venda finalizada no PDV",
+        descricao: `Pagamento ${input.formaPagamento} de ${valorRecebido.toLocaleString("pt-BR", {
+          currency: "BRL",
+          style: "currency",
+        })}.`,
+        criadoPor: delivered.tecnicoResponsavel,
+      },
+      tenantId,
+    );
 
     if (input.paymentTransactionId)
       await consumePaymentTransaction(tenantId, input.paymentTransactionId, venda.id);
