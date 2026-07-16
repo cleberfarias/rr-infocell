@@ -1,17 +1,18 @@
-# Plano de implementacao de IA no RR Infocell
+# Plano de implementação da Stella no NextAssist
 
 Este documento define uma proposta incremental para evoluir a IA do sistema RR Infocell sem criar risco operacional em financeiro, estoque, PDV ou dados de clientes.
 
 ## 1. Estado atual
 
-O sistema ja possui um assistente IA basico:
+O sistema já possui a Stella, assistente básica da plataforma NextAssist e dos ambientes White Label:
 
 - Frontend: `frontend/src/components/AIAssistant.tsx`.
 - Service: `frontend/src/services/ajuda.ts`.
 - Backend: `backend/src/modules/ajuda/ajuda.routes.ts`.
 - Endpoint: `POST /api/ajuda/perguntar`.
 - Configuracao: `OPENAI_API_KEY` no backend.
-- Uso atual: tirar duvidas de uso do sistema com base em um prompt fixo.
+- Identidade: Stella em todos os tenants; a marca e os dados operacionais continuam pertencendo à empresa atual.
+- Uso atual: tirar dúvidas de uso do sistema com base em um prompt fixo.
 
 Limitacao principal: a IA atual nao consulta dados reais do sistema nem executa analises estruturadas. Ela responde a partir de conhecimento estatico embutido no prompt.
 

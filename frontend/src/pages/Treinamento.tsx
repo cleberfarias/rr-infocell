@@ -772,7 +772,7 @@ export default function Treinamento() {
             Parabéns! Você completou todos os módulos.
           </p>
           <p className="text-sm text-muted-foreground mt-1">
-            Em caso de dúvida, use o assistente ✨ no canto inferior direito.
+            Em caso de dúvida, fale com a Stella ✨ no canto inferior direito.
           </p>
         </div>
       )}
