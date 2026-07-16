@@ -13,6 +13,7 @@ export const despesaCategorias = [
 ] as const;
 
 export type DespesaCategoria = (typeof despesaCategorias)[number];
+export type DespesaTipo = "unica" | "fixa" | "parcelada";
 
 export type Despesa = {
   id: string;
@@ -22,6 +23,8 @@ export type Despesa = {
   valor: number;
   vencimento: string;
   recorrente: boolean;
+  tipoLancamento: DespesaTipo;
+  totalParcelas?: number;
   pago: boolean;
   pagoEm?: string;
   recorrenciaOrigemId?: string;
@@ -37,6 +40,8 @@ export type DespesaInput = {
   valor: number;
   vencimento: string;
   recorrente?: boolean;
+  tipoLancamento?: DespesaTipo;
+  totalParcelas?: number;
   pago?: boolean;
 };
 
@@ -62,6 +67,7 @@ export const listDespesas = async (
     query?: string;
     categoria?: DespesaCategoria | "";
     pago?: boolean | "";
+    competencia?: string;
   } = {},
 ) => {
   const search = new URLSearchParams();
@@ -77,6 +83,7 @@ export const listDespesas = async (
   if (filters.pago !== "" && filters.pago !== undefined) {
     search.set("pago", String(filters.pago));
   }
+  if (filters.competencia) search.set("competencia", filters.competencia);
 
   const suffix = search.toString() ? `?${search.toString()}` : "";
   const response = await apiRequest<ApiResponse<Despesa[]>>(

@@ -11,6 +11,7 @@ export const despesaCategorias = [
 ] as const;
 
 export type DespesaCategoria = (typeof despesaCategorias)[number];
+export type DespesaTipo = "unica" | "fixa" | "parcelada";
 
 export type Despesa = {
   id: string;
@@ -20,6 +21,8 @@ export type Despesa = {
   valor: number;
   vencimento: string;
   recorrente: boolean;
+  tipoLancamento: DespesaTipo;
+  totalParcelas?: number;
   pago: boolean;
   pagoEm?: string;
   recorrenciaOrigemId?: string;
@@ -36,6 +39,8 @@ export type DespesaInput = {
   valor: number;
   vencimento: string;
   recorrente?: boolean;
+  tipoLancamento?: DespesaTipo;
+  totalParcelas?: number;
   pago?: boolean;
   recorrenciaOrigemId?: string;
   recorrenciaIndice?: number;

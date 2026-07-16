@@ -122,4 +122,54 @@ describe("despesas routes", () => {
     expect(response.status).toBe(400);
     expect(response.body.error.message).toContain("dd/mm");
   });
+
+  it("creates every installment open with an independent due date", async () => {
+    const response = await request(app).post("/api/despesas").send({
+      descricao: "Equipamento parcelado teste",
+      categoria: "outros",
+      valor: 300,
+      vencimento: "31/01/2027",
+      tipoLancamento: "parcelada",
+      totalParcelas: 3,
+      pago: false,
+    });
+
+    expect(response.status).toBe(201);
+    const origemId = response.body.data.id;
+    const listResponse = await request(app).get("/api/despesas");
+    const parcelas = listResponse.body.data.filter(
+      (despesa: { id: string; recorrenciaOrigemId?: string }) =>
+        despesa.id === origemId || despesa.recorrenciaOrigemId === origemId,
+    );
+
+    expect(parcelas.map((despesa: { vencimento: string }) => despesa.vencimento).sort()).toEqual([
+      "28/02/2027",
+      "31/01/2027",
+      "31/03/2027",
+    ]);
+    expect(parcelas.every((despesa: { pago: boolean }) => !despesa.pago)).toBe(true);
+  });
+
+  it("materializes a fixed monthly expense only once for the requested month", async () => {
+    const response = await request(app).post("/api/despesas").send({
+      descricao: "Aluguel fixo automatico teste",
+      categoria: "aluguel",
+      valor: 1200,
+      vencimento: "10/07/2027",
+      tipoLancamento: "fixa",
+      pago: true,
+    });
+    const origemId = response.body.data.id;
+
+    await request(app).get("/api/despesas?competencia=2027-08");
+    await request(app).get("/api/despesas?competencia=2027-08");
+    const listResponse = await request(app).get("/api/despesas");
+    const agosto = listResponse.body.data.filter(
+      (despesa: { recorrenciaOrigemId?: string; vencimento: string }) =>
+        despesa.recorrenciaOrigemId === origemId && despesa.vencimento === "10/08/2027",
+    );
+
+    expect(agosto).toHaveLength(1);
+    expect(agosto[0].pago).toBe(false);
+  });
 });

@@ -12,9 +12,13 @@ export class DespesasService {
       search?: string;
       categoria?: DespesaCategoria | "";
       pago?: boolean | "";
+      competencia?: string;
     },
     tenantId?: string,
   ) {
+    if (filters?.competencia) {
+      await this.materializarFixas(filters.competencia, tenantId);
+    }
     return this.repository.list(filters, tenantId);
   }
 
@@ -29,7 +33,64 @@ export class DespesasService {
   }
 
   async create(input: DespesaInput, tenantId?: string) {
-    return this.repository.create(input, tenantId);
+    const tipoLancamento = input.tipoLancamento ?? (input.recorrente ? "fixa" : "unica");
+    const origem = await this.repository.create(
+      { ...input, tipoLancamento, recorrente: tipoLancamento !== "unica" },
+      tenantId,
+    );
+
+    if (tipoLancamento === "parcelada" && input.totalParcelas) {
+      await this.criarFilhas(origem, input.totalParcelas - 1, tenantId);
+    }
+
+    return origem;
+  }
+
+  private async materializarFixas(competencia: string, tenantId?: string) {
+    const [ano, mes] = competencia.split("-").map(Number);
+    const existentes = await this.repository.list(undefined, tenantId);
+    const origens = existentes.filter(
+      (despesa) => despesa.tipoLancamento === "fixa" && !despesa.recorrenciaOrigemId,
+    );
+
+    for (const origem of origens) {
+      const base = parseVencimento(origem.vencimento);
+      if (!base) continue;
+      const indice = (ano - base.ano) * 12 + (mes - base.mes);
+      if (indice <= 0) continue;
+      const jaExiste = existentes.some(
+        (despesa) =>
+          despesa.recorrenciaOrigemId === origem.id && despesa.recorrenciaIndice === indice,
+      );
+      if (!jaExiste) await this.criarFilhas(origem, 1, tenantId, indice);
+    }
+  }
+
+  private async criarFilhas(
+    origem: Awaited<ReturnType<DespesasRepository["create"]>>,
+    quantidade: number,
+    tenantId?: string,
+    inicio = 1,
+  ) {
+    const base = parseVencimento(origem.vencimento);
+    if (!base) return [];
+    const criadas = [];
+    for (let indice = inicio; indice < inicio + quantidade; indice += 1) {
+      criadas.push(await this.repository.create({
+        descricao: origem.descricao,
+        categoria: origem.categoria,
+        fornecedor: origem.fornecedor,
+        valor: origem.valor,
+        vencimento: adicionarMeses(base, indice),
+        recorrente: true,
+        tipoLancamento: origem.tipoLancamento,
+        totalParcelas: origem.totalParcelas,
+        pago: false,
+        recorrenciaOrigemId: origem.id,
+        recorrenciaIndice: indice,
+      }, tenantId));
+    }
+    return criadas;
   }
 
   async criarRecorrencias(id: string, meses: number, tenantId?: string) {
@@ -67,6 +128,8 @@ export class DespesasService {
             valor: origem.valor,
             vencimento: adicionarMeses(vencimentoBase, indice),
             recorrente: true,
+            tipoLancamento: origem.tipoLancamento,
+            totalParcelas: origem.totalParcelas,
             pago: false,
             recorrenciaOrigemId: origem.id,
             recorrenciaIndice: indice,

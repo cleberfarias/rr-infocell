@@ -19,6 +19,7 @@ const seedDespesas: Despesa[] = [
     valor: 2200,
     vencimento: "05/05",
     recorrente: true,
+    tipoLancamento: "fixa",
     pago: true,
     pagoEm: now(),
     createdAt: now(),
@@ -32,6 +33,7 @@ const seedDespesas: Despesa[] = [
     valor: 540,
     vencimento: "10/05",
     recorrente: true,
+    tipoLancamento: "fixa",
     pago: true,
     pagoEm: now(),
     createdAt: now(),
@@ -45,6 +47,7 @@ const seedDespesas: Despesa[] = [
     valor: 199,
     vencimento: "15/05",
     recorrente: true,
+    tipoLancamento: "fixa",
     pago: false,
     createdAt: now(),
     updatedAt: now(),
@@ -79,6 +82,10 @@ const buildDespesa = (input: DespesaInput, current?: Despesa): Despesa => {
     valor: input.valor,
     vencimento: input.vencimento,
     recorrente: input.recorrente ?? current?.recorrente ?? false,
+    tipoLancamento:
+      input.tipoLancamento ?? current?.tipoLancamento ??
+      ((input.recorrente ?? current?.recorrente) ? "fixa" : "unica"),
+    totalParcelas: input.totalParcelas ?? current?.totalParcelas,
     pago,
     pagoEm: paidNow ? timestamp : pago ? current?.pagoEm : undefined,
     recorrenciaOrigemId: input.recorrenciaOrigemId ?? current?.recorrenciaOrigemId,
@@ -256,6 +263,13 @@ export class FirestoreDespesasRepository implements DespesasRepository {
       valor: Number(data.valor ?? 0),
       vencimento: String(data.vencimento ?? ""),
       recorrente: data.recorrente === true,
+      tipoLancamento:
+        data.tipoLancamento === "parcelada" || data.tipoLancamento === "unica"
+          ? data.tipoLancamento
+          : data.recorrente === true
+            ? "fixa"
+            : "unica",
+      totalParcelas: data.totalParcelas !== undefined ? Number(data.totalParcelas) : undefined,
       pago: data.pago === true,
       pagoEm: data.pagoEm ? String(data.pagoEm) : undefined,
       recorrenciaOrigemId: data.recorrenciaOrigemId ? String(data.recorrenciaOrigemId) : undefined,

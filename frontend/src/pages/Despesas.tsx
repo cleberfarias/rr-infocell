@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
-  CalendarPlus,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -48,7 +47,6 @@ import { toast } from "@/hooks/use-toast";
 import {
   categoriaLabels,
   createDespesa,
-  createDespesaRecorrencias,
   deleteDespesa,
   despesaCategorias,
   listDespesas,
@@ -56,6 +54,7 @@ import {
   type Despesa,
   type DespesaCategoria,
   type DespesaInput,
+  type DespesaTipo,
 } from "@/services/despesas";
 
 const categorias: DespesaCategoria[] = [...despesaCategorias];
@@ -67,6 +66,7 @@ const emptyForm: DespesaInput = {
   valor: 0,
   vencimento: "",
   recorrente: true,
+  tipoLancamento: "fixa",
   pago: false,
 };
 
@@ -77,6 +77,8 @@ const toInput = (despesa: Despesa): DespesaInput => ({
   valor: despesa.valor,
   vencimento: despesa.vencimento,
   recorrente: despesa.recorrente,
+  tipoLancamento: despesa.tipoLancamento,
+  totalParcelas: despesa.totalParcelas,
   pago: despesa.pago,
 });
 
@@ -122,10 +124,6 @@ const Despesas = () => {
   const [form, setForm] = useState<DespesaInput>(emptyForm);
   const [filtro, setFiltro] = useState<DespesaCategoria | "todas">("todas");
   const [mesOffset, setMesOffset] = useState(0);
-  const [recorrenciaDespesa, setRecorrenciaDespesa] = useState<Despesa | null>(
-    null,
-  );
-  const [recorrenciaMeses, setRecorrenciaMeses] = useState("12");
 
   const mesRef = useMemo(() => {
     const d = new Date();
@@ -134,9 +132,10 @@ const Despesas = () => {
     return d;
   }, [mesOffset]);
 
+  const competencia = `${mesRef.getFullYear()}-${String(mesRef.getMonth() + 1).padStart(2, "0")}`;
   const despesasQuery = useQuery({
-    queryKey: ["despesas"],
-    queryFn: () => listDespesas(),
+    queryKey: ["despesas", competencia],
+    queryFn: () => listDespesas({ competencia }),
   });
 
   const lista = useMemo(() => despesasQuery.data ?? [], [despesasQuery.data]);
@@ -226,34 +225,6 @@ const Despesas = () => {
     },
   });
 
-  const recorrenciaMutation = useMutation({
-    mutationFn: ({ id, meses }: { id: string; meses: number }) =>
-      createDespesaRecorrencias(id, meses),
-    onSuccess: async ({ criadas, ignoradas }) => {
-      await invalidateDespesas();
-      toast({
-        title:
-          criadas.length > 0
-            ? `${criadas.length} despesas mensais criadas`
-            : "Os meses selecionados ja estavam gerados",
-        description:
-          ignoradas > 0
-            ? `${ignoradas} lancamento(s) existente(s) foram mantidos sem duplicar.`
-            : "Cada mes pode ser editado e baixado separadamente.",
-      });
-      setRecorrenciaDespesa(null);
-    },
-    onError: (error) => {
-      toast({
-        title:
-          error instanceof Error
-            ? error.message
-            : "Nao foi possivel gerar as despesas recorrentes",
-        variant: "destructive",
-      });
-    },
-  });
-
   const total = despesasDoMes.reduce((sum, despesa) => sum + despesa.valor, 0);
   const totalPago = despesasDoMes
     .filter((despesa) => despesa.pago)
@@ -282,30 +253,37 @@ const Despesas = () => {
       return;
     }
 
-    if (!parseDespesaMes(form.vencimento)) {
+    const tipo = form.tipoLancamento ?? "unica";
+    const somenteDia = form.vencimento.trim().match(/^(\d{1,2})$/);
+    const vencimento = somenteDia && tipo !== "unica"
+      ? `${String(Number(somenteDia[1])).padStart(2, "0")}/${String(mesRef.getMonth() + 1).padStart(2, "0")}/${mesRef.getFullYear()}`
+      : form.vencimento;
+
+    if (!parseDespesaMes(vencimento)) {
       toast({
         title: "Informe o vencimento com dia e mes",
-        description: "Use dd/mm, dd/mm/aaaa ou aaaa-mm-dd.",
+        description: tipo === "unica" ? "Use dd/mm, dd/mm/aaaa ou aaaa-mm-dd." : "Informe somente o dia ou uma data completa.",
         variant: "destructive",
       });
       return;
     }
 
-    if (editingId) {
-      updateMutation.mutate({ id: editingId, input: form });
+    if (tipo === "parcelada" && (!form.totalParcelas || form.totalParcelas < 2)) {
+      toast({ title: "Informe ao menos 2 parcelas", variant: "destructive" });
       return;
     }
 
-    createMutation.mutate(form);
+    const input = { ...form, vencimento, recorrente: tipo !== "unica" };
+    if (editingId) {
+      updateMutation.mutate({ id: editingId, input });
+      return;
+    }
+
+    createMutation.mutate(input);
   };
 
   const remover = (id: string) => {
     deleteMutation.mutate(id);
-  };
-
-  const abrirRecorrencia = (despesa: Despesa) => {
-    setRecorrenciaDespesa(despesa);
-    setRecorrenciaMeses("12");
   };
 
   const alternarPago = (id: string) => {
@@ -476,6 +454,41 @@ const Despesas = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
+                    <Label>Tipo de lancamento</Label>
+                    <Select
+                      value={form.tipoLancamento ?? "unica"}
+                      onValueChange={(value) =>
+                        setForm({
+                          ...form,
+                          tipoLancamento: value as DespesaTipo,
+                          recorrente: value !== "unica",
+                          totalParcelas: value === "parcelada" ? (form.totalParcelas ?? 2) : undefined,
+                        })
+                      }
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unica">Unica</SelectItem>
+                        <SelectItem value="fixa">Fixa mensal</SelectItem>
+                        <SelectItem value="parcelada">Parcelada</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {form.tipoLancamento === "parcelada" && (
+                    <div className="space-y-2">
+                      <Label>Quantidade de parcelas</Label>
+                      <Input
+                        type="number"
+                        min={2}
+                        max={120}
+                        value={form.totalParcelas ?? 2}
+                        onChange={(event) => setForm({ ...form, totalParcelas: Number(event.target.value) })}
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
                     <Label>Valor (R$)</Label>
                     <Input
                       type="number"
@@ -491,9 +504,9 @@ const Despesas = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Vencimento</Label>
+                    <Label>{form.tipoLancamento === "unica" ? "Vencimento" : "Dia do vencimento"}</Label>
                     <Input
-                      placeholder="dd/mm ou dd/mm/aaaa"
+                      placeholder={form.tipoLancamento === "unica" ? "dd/mm ou dd/mm/aaaa" : "Ex.: 10"}
                       value={form.vencimento}
                       onChange={(event) =>
                         setForm({ ...form, vencimento: event.target.value })
@@ -501,18 +514,13 @@ const Despesas = () => {
                     />
                   </div>
                 </div>
-                <div className="flex items-center justify-between rounded-md border border-border bg-secondary/30 px-3 py-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Repeat className="h-4 w-4 text-primary" /> Despesa
-                    recorrente
-                  </div>
-                  <Switch
-                    checked={form.recorrente}
-                    onCheckedChange={(value) =>
-                      setForm({ ...form, recorrente: value })
-                    }
-                  />
-                </div>
+                {form.tipoLancamento !== "unica" && (
+                  <p className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+                    {form.tipoLancamento === "fixa"
+                      ? "A despesa sera repetida mensalmente, sem prazo final, sempre em aberto."
+                      : `Serao criadas ${form.totalParcelas ?? 2} parcelas mensais independentes, todas em aberto.`}
+                  </p>
+                )}
                 <div className="flex items-center justify-between rounded-md border border-border bg-secondary/30 px-3 py-2">
                   <div className="flex items-center gap-2 text-sm">
                     <CheckCircle2 className="h-4 w-4 text-success" /> Ja esta
@@ -634,6 +642,11 @@ const Despesas = () => {
                       <Repeat className="h-3 w-3 text-primary" />
                     )}
                   </span>
+                  {despesa.tipoLancamento === "parcelada" && despesa.totalParcelas && (
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      Parcela {(despesa.recorrenciaIndice ?? 0) + 1}/{despesa.totalParcelas}
+                    </div>
+                  )}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {despesa.fornecedor || "-"}
@@ -664,18 +677,6 @@ const Despesas = () => {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="inline-flex gap-1">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      disabled={
-                        !despesa.recorrente || recorrenciaMutation.isPending
-                      }
-                      onClick={() => abrirRecorrencia(despesa)}
-                      className="text-primary hover:text-primary"
-                      title="Gerar proximos meses"
-                    >
-                      <CalendarPlus className="h-3.5 w-3.5" />
-                    </Button>
                     <Button
                       size="icon"
                       variant="ghost"
@@ -710,75 +711,6 @@ const Despesas = () => {
         </Table>
       </Card>
 
-      <Dialog
-        open={Boolean(recorrenciaDespesa)}
-        onOpenChange={(nextOpen) => {
-          if (!nextOpen) setRecorrenciaDespesa(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Gerar despesas recorrentes</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="rounded-md border border-border bg-secondary/30 p-3">
-              <p className="font-medium">{recorrenciaDespesa?.descricao}</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                A partir do vencimento {recorrenciaDespesa?.vencimento}. Os
-                novos meses serao criados em aberto e poderao ser editados
-                separadamente.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label>Gerar os proximos</Label>
-              <Select
-                value={recorrenciaMeses}
-                onValueChange={setRecorrenciaMeses}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="3">3 meses</SelectItem>
-                  <SelectItem value="6">6 meses</SelectItem>
-                  <SelectItem value="12">12 meses</SelectItem>
-                  <SelectItem value="24">24 meses</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Se algum desses meses ja tiver sido gerado por esta recorrencia,
-              ele sera mantido sem criar duplicata.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setRecorrenciaDespesa(null)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              disabled={recorrenciaMutation.isPending || !recorrenciaDespesa}
-              onClick={() => {
-                if (!recorrenciaDespesa) return;
-                recorrenciaMutation.mutate({
-                  id: recorrenciaDespesa.id,
-                  meses: Number(recorrenciaMeses),
-                });
-              }}
-              className="bg-gradient-primary text-primary-foreground shadow-glow"
-            >
-              {recorrenciaMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <CalendarPlus className="h-4 w-4" />
-              )}
-              Gerar lancamentos
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
