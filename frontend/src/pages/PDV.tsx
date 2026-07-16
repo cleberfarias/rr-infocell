@@ -45,6 +45,7 @@ import {
 } from "@/services/ordens-servico";
 import { listProdutos, type Produto } from "@/services/produtos";
 import { createVenda, listVendas, type Venda } from "@/services/vendas";
+import { createMercadoPagoOrder, getIntegrationSettings, getMercadoPagoOrder } from "@/services/integracoes";
 import {
   createTerceirizado,
   type TerceirizadoInput,
@@ -107,6 +108,7 @@ const PDV = () => {
   const [valorRecebido, setValorRecebido] = useState("");
   const [desconto, setDesconto] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [paymentProgress, setPaymentProgress] = useState("");
   const [modoVenda, setModoVenda] = useState<"os" | "direta">("os");
   const [clienteVendaDireta, setClienteVendaDireta] = useState("");
   const [carrinho, setCarrinho] = useState<
@@ -157,6 +159,31 @@ const PDV = () => {
     queryKey: ["produtos", "pdv-direto"],
     queryFn: () => listProdutos({ ativo: true }),
   });
+
+  const integrationSettingsQuery = useQuery({
+    queryKey: ["integration-settings"],
+    queryFn: getIntegrationSettings,
+  });
+  const mercadoPagoIntegrado = formaPagamento === "cartao"
+    && integrationSettingsQuery.data?.payment?.provider === "mercado_pago"
+    && integrationSettingsQuery.data.payment.oauthConnected
+    && Boolean(integrationSettingsQuery.data.payment.terminalId);
+
+  const processIntegratedCardPayment = async (amount: number, description: string, reference: string) => {
+    if (!mercadoPagoIntegrado) return null;
+    const terminalId = integrationSettingsQuery.data?.payment?.terminalId;
+    if (!terminalId) throw new Error("Selecione um terminal Point nas configurações de pagamentos.");
+    setPaymentProgress("Enviando cobrança ao terminal Mercado Pago...");
+    const transaction = await createMercadoPagoOrder({ terminalId, amount, description, reference });
+    for (let attempt = 0; attempt < 90; attempt += 1) {
+      setPaymentProgress("Aguardando o cliente concluir o pagamento no terminal...");
+      await new Promise((resolve) => window.setTimeout(resolve, 2_000));
+      const current = await getMercadoPagoOrder(transaction.id);
+      if (current.status === "approved") { setPaymentProgress("Pagamento aprovado. Finalizando venda..."); return current; }
+      if (["failed", "canceled", "expired"].includes(current.status)) throw new Error(`Pagamento não aprovado (${current.status}).`);
+    }
+    throw new Error("Tempo de espera do terminal esgotado. Consulte a transação antes de tentar novamente.");
+  };
 
   const ordens = useMemo(
     () =>
@@ -341,13 +368,15 @@ const PDV = () => {
       const recebido = Number(valorRecebido.replace(",", ".")) || 0;
       const adiantadoOS = selectedOrdemPronta.valorAdiantado ?? 0;
       const saldoFinal = Math.max(0, totalFinal - adiantadoOS);
-      if (recebido < saldoFinal) {
+      if (!mercadoPagoIntegrado && recebido < saldoFinal) {
         throw new Error("Valor recebido menor que o saldo devedor da OS.");
       }
+      const paymentTransaction = await processIntegratedCardPayment(saldoFinal, `OS ${selectedOrdemPronta.numero}`, `os_${selectedOrdemPronta.id}`);
       const venda = await createVenda({
+        paymentTransactionId: paymentTransaction?.id,
         ordemServicoId: selectedOrdemPronta.id,
         formaPagamento,
-        valorRecebido: recebido,
+        valorRecebido: paymentTransaction ? saldoFinal : recebido,
         desconto: desc > 0 ? desc : undefined,
       });
       return { ordem: selectedOrdemPronta, venda };
@@ -374,8 +403,10 @@ const PDV = () => {
       setTerceirizadoInfo(emptyTerceirizado);
       setTercErrors({});
       setFormError(null);
+      setPaymentProgress("");
     },
     onError: (error) => {
+      setPaymentProgress("");
       setFormError(
         error instanceof Error
           ? error.message
@@ -390,12 +421,14 @@ const PDV = () => {
       const recebido = Number(valorRecebido.replace(",", ".")) || 0;
       const desc = Number(desconto.replace(",", ".")) || 0;
       const totalFinal = Math.max(0, totalDireto - desc);
-      if (recebido < totalFinal)
+      if (!mercadoPagoIntegrado && recebido < totalFinal)
         throw new Error("Valor recebido menor que o total da venda.");
+      const paymentTransaction = await processIntegratedCardPayment(totalFinal, "Venda direta no PDV", `direta_${crypto.randomUUID()}`);
       return createVenda({
+        paymentTransactionId: paymentTransaction?.id,
         clienteNome: clienteVendaDireta || undefined,
         formaPagamento,
-        valorRecebido: recebido,
+        valorRecebido: paymentTransaction ? totalFinal : recebido,
         desconto: desc > 0 ? desc : undefined,
         itens: carrinho.map((item) => ({
           produtoId: item.id,
@@ -417,8 +450,10 @@ const PDV = () => {
       setClienteVendaDireta("");
       setDesconto("");
       setFormError(null);
+      setPaymentProgress("");
     },
     onError: (error) => {
+      setPaymentProgress("");
       setFormError(
         error instanceof Error
           ? error.message
@@ -1999,6 +2034,9 @@ ${troco}
               {formError && (
                 <p className="mt-3 text-sm text-destructive">{formError}</p>
               )}
+              {paymentProgress && (
+                <p className="mt-3 flex items-center gap-2 text-sm text-primary"><Loader2 className="h-4 w-4 animate-spin" />{paymentProgress}</p>
+              )}
 
               <Button
                 className="mt-4 w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
@@ -2214,6 +2252,9 @@ ${troco}
                 </div>
                 {formError && (
                   <p className="text-sm text-destructive">{formError}</p>
+                )}
+                {paymentProgress && (
+                  <p className="flex items-center gap-2 text-sm text-primary"><Loader2 className="h-4 w-4 animate-spin" />{paymentProgress}</p>
                 )}
                 <Button
                   className="w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"

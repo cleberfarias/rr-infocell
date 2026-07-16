@@ -24,4 +24,5 @@ export const ROUTES = {
   observabilidade: "/app/observabilidade",
   treinamento: "/app/treinamento",
   configuracoesMensagens: "/app/configuracoes/mensagens",
+  configuracoesIntegracoes: "/app/configuracoes/integracoes",
 } as const;

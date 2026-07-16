@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { CheckCircle2, CircleSlash, Palette, ShieldCheck, ChevronRight, Save } from "lucide-react";
+import { CheckCircle2, CircleSlash, Palette, ShieldCheck, ChevronRight, Save, Landmark } from "lucide-react";
 import { Link } from "react-router-dom";
 import { FaWhatsapp } from "react-icons/fa";
 import { toast } from "sonner";
@@ -225,6 +225,14 @@ export default function TenantSettings() {
         </div>
       </Card>
       </form>
+
+      <Card className="surface-panel p-0 overflow-hidden">
+        <Link to={ROUTES.configuracoesIntegracoes} className="flex items-center gap-4 p-5 hover:bg-secondary/40 transition-colors group">
+          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0"><Landmark className="h-5 w-5" /></div>
+          <div className="min-w-0 flex-1"><p className="font-display font-semibold text-sm">Fiscal e Pagamentos</p><p className="text-xs text-muted-foreground mt-0.5">Configure NFC-e, NFS-e, certificado A1 e adquirentes deste tenant.</p></div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
+        </Link>
+      </Card>
 
       <Card className="surface-panel p-0 overflow-hidden">
         <Link
