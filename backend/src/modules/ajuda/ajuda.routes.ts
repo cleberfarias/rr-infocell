@@ -129,6 +129,8 @@ O relatório mostra as duas linhas separadas antes do lucro bruto.
 - **Fixa mensal**: informe somente o dia; cada nova competência recebe um lançamento independente em aberto, sem prazo final.
 - **Parcelada**: informe o dia e o total de parcelas; o sistema cria 1/N, 2/N e as demais, cada uma com pagamento independente.
 - Marcar julho como pago nunca marca agosto ou os meses seguintes como pagos.
+- Na tela Nova despesa, os campos atuais são: Descrição, Categoria, Fornecedor, Tipo de lançamento, Valor, Dia do vencimento e Já está paga. Em Parcelada também aparece Quantidade de parcelas.
+- Não existe campo de frequência nem data final. Selecionar **Fixa mensal** já define repetição sem prazo final; selecionar **Parcelada** exige a quantidade.
 
 ## Módulos do sistema
 - **Dashboard** — Visão geral: OS em manutenção, abertas, finalizadas, atrasadas, faturamento
