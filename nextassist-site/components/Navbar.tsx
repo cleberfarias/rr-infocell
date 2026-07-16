@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Navbar() {
   return (
     <nav>
@@ -10,7 +12,7 @@ export default function Navbar() {
         <a href="#planos">Planos</a>
         <a href="#depoimentos">Depoimentos</a>
         <a href="#contato">Contato</a>
-        <a href="/blog">Blog</a>
+        <Link href="/blog">Blog</Link>
       </div>
       <a href="#planos" className="nav-cta">
         Começar agora →
