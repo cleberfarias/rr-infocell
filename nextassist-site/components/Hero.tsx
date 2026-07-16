@@ -3,8 +3,10 @@ import OsFlowShowcase from "@/components/OsFlowShowcase";
 export default function Hero() {
   return (
     <section className="hero">
+      <div className="hero-orbit hero-orbit-one" aria-hidden="true" />
+      <div className="hero-orbit hero-orbit-two" aria-hidden="true" />
       <div className="hero-grid">
-        <div>
+        <div className="hero-copy">
           <div className="hero-tag">🔧 Sistema Operacional para Assistências Técnicas</div>
           <h1>
             Da entrada do aparelho ao <em>recibo final.</em>
@@ -42,7 +44,7 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className="hero-visual">
+        <div className="hero-visual hero-visual-enter">
           <OsFlowShowcase />
         </div>
       </div>

@@ -29,7 +29,7 @@ const FAQS = [
 
 export default function FAQ() {
   return (
-    <section>
+    <section className="immersive-section immersive-faq">
       <div className="section-center" style={{ textAlign: "center" }}>
         <ScrollReveal>
           <span className="section-tag">FAQ</span>
@@ -42,8 +42,8 @@ export default function FAQ() {
         </ScrollReveal>
       </div>
       <div className="faq-list">
-        {FAQS.map((item) => (
-          <ScrollReveal key={item.q}>
+        {FAQS.map((item, index) => (
+          <ScrollReveal key={item.q} delay={index * 70}>
             <details>
               <summary>{item.q}</summary>
               <p>{item.a}</p>

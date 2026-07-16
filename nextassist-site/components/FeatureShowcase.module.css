@@ -20,4 +20,16 @@
   font-weight: 700;
   white-space: nowrap;
   pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.label span {
+  color: #00b4f5;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding-right: 0.55rem;
+  border-right: 1px solid rgba(125, 211, 252, 0.22);
 }

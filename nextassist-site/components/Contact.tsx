@@ -3,24 +3,53 @@
 import { useState } from "react";
 import ScrollReveal from "./ScrollReveal";
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? "https://rr-infocell-api-91248386036.southamerica-east1.run.app";
+
 export default function Contact() {
   const [toast, setToast] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setError("");
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      (e.target as HTMLFormElement).reset();
+
+    const form = e.currentTarget;
+    const data = new FormData(form);
+
+    try {
+      const res = await fetch(`${API_URL}/contato/registrar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome: data.get("nome"),
+          telefone: data.get("telefone"),
+          email: data.get("email"),
+          assunto: data.get("assunto"),
+          mensagem: data.get("mensagem"),
+        }),
+      });
+
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? "Erro ao enviar mensagem.");
+      }
+
+      form.reset();
       setToast(true);
       setTimeout(() => setToast(false), 4000);
-    }, 900);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao enviar mensagem. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <>
-      <section id="contato" className="contact-section">
+      <section id="contato" className="contact-section immersive-section immersive-contact">
         <div className="section-center">
           <ScrollReveal>
             <span className="section-tag">Contato</span>
@@ -34,25 +63,31 @@ export default function Contact() {
           </ScrollReveal>
 
           <div className="contact-grid">
-            <ScrollReveal>
+            <ScrollReveal variant="left">
               <form className="contact-form" onSubmit={handleSubmit}>
                 <div className="form-row">
                   <div className="form-group">
                     <label htmlFor="nome">Nome</label>
-                    <input id="nome" type="text" placeholder="Seu nome" required />
+                    <input id="nome" name="nome" type="text" placeholder="Seu nome" required />
                   </div>
                   <div className="form-group">
                     <label htmlFor="telefone">WhatsApp / Telefone</label>
-                    <input id="telefone" type="tel" placeholder="(11) 99999-9999" required />
+                    <input
+                      id="telefone"
+                      name="telefone"
+                      type="tel"
+                      placeholder="(11) 99999-9999"
+                      required
+                    />
                   </div>
                 </div>
                 <div className="form-group">
                   <label htmlFor="email">E-mail</label>
-                  <input id="email" type="email" placeholder="seu@email.com" required />
+                  <input id="email" name="email" type="email" placeholder="seu@email.com" required />
                 </div>
                 <div className="form-group">
                   <label htmlFor="assunto">Assunto</label>
-                  <select id="assunto" required>
+                  <select id="assunto" name="assunto" required defaultValue="">
                     <option value="">Selecione...</option>
                     <option>Quero testar o sistema</option>
                     <option>Dúvida sobre planos</option>
@@ -65,10 +100,12 @@ export default function Contact() {
                   <label htmlFor="mensagem">Mensagem</label>
                   <textarea
                     id="mensagem"
+                    name="mensagem"
                     placeholder="Descreva sua necessidade..."
                     required
                   />
                 </div>
+                {error && <p className="demo-error">{error}</p>}
                 <button type="submit" className="form-submit" disabled={loading}>
                   {loading ? "Enviando..." : "Enviar mensagem →"}
                 </button>
@@ -78,7 +115,7 @@ export default function Contact() {
               </form>
             </ScrollReveal>
 
-            <ScrollReveal>
+            <ScrollReveal variant="right" delay={120}>
               <div className="contact-info">
                 <div className="contact-item">
                   <div className="contact-item-icon">📧</div>

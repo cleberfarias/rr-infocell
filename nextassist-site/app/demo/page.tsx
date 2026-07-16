@@ -69,7 +69,7 @@ export default function DemoPage() {
           <div className="demo-steps">
             <div className="demo-step">
               <span className="demo-step-num">1</span>
-              <span>Abra o e-mail de <strong>NextAssist</strong> e clique em "Definir senha"</span>
+              <span>Abra o e-mail de <strong>NextAssist</strong> e clique em &quot;Definir senha&quot;</span>
             </div>
             <div className="demo-step">
               <span className="demo-step-num">2</span>
@@ -92,7 +92,7 @@ export default function DemoPage() {
           </a>
           <p className="demo-help">
             Não recebeu o e-mail? No login clique em{" "}
-            <strong>"Esqueci a senha"</strong> ou{" "}
+            <strong>&quot;Esqueci a senha&quot;</strong> ou{" "}
             <a href="https://wa.me/5548999019525">fale pelo WhatsApp</a>.
           </p>
         </div>

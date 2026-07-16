@@ -8,10 +8,10 @@ const PROFILES = [
     items: [
       "1 usuário incluído",
       "OS ilimitadas",
-      "PDV e estoque",
+      "Cadastro de clientes",
       "Impressão de recibos",
       "Dashboard pessoal",
-      "Suporte via chat",
+      "Suporte por e-mail",
     ],
   },
   {
@@ -21,8 +21,8 @@ const PROFILES = [
     items: [
       "Até 5 usuários",
       "Perfis de acesso por função",
+      "Controle de estoque",
       "Controle financeiro completo",
-      "Notificações WhatsApp",
       "Relatórios avançados",
       "Suporte prioritário",
     ],
@@ -36,7 +36,7 @@ const PROFILES = [
       "Múltiplas unidades",
       "Dashboard consolidado",
       "White label disponível",
-      "API para integrações",
+      "Notificações WhatsApp automáticas",
       "Gerente de conta dedicado",
     ],
   },
@@ -44,7 +44,7 @@ const PROFILES = [
 
 export default function Profiles() {
   return (
-    <section>
+    <section className="immersive-section immersive-scale">
       <div className="section-center">
         <ScrollReveal>
           <span className="section-tag">Para quem é</span>
@@ -57,8 +57,8 @@ export default function Profiles() {
           </p>
         </ScrollReveal>
         <div className="profiles-grid">
-          {PROFILES.map((p) => (
-            <ScrollReveal key={p.title}>
+          {PROFILES.map((p, index) => (
+            <ScrollReveal key={p.title} variant="scale" delay={index * 120}>
               <div className={`profile-card${p.highlight ? " highlight" : ""}`}>
                 <div style={{ fontSize: "2rem" }}>{p.icon}</div>
                 <div className="profile-title">{p.title}</div>

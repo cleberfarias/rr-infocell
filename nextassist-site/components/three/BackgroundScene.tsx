@@ -1,51 +1,58 @@
 "use client";
 
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { Stars } from "@react-three/drei";
-import { useRef, useMemo } from "react";
+import { useRef } from "react";
 import * as THREE from "three";
+
+// Generated once at module load (not during render) so the particle
+// network stays stable across re-renders without an impure useMemo call.
+function buildParticleNetworkGeometry() {
+  const count = 110;
+  const pts: number[] = [];
+  for (let i = 0; i < count; i++) {
+    pts.push(
+      (Math.random() - 0.5) * 44,
+      (Math.random() - 0.5) * 28,
+      (Math.random() - 0.5) * 22,
+    );
+  }
+
+  const lines: number[] = [];
+  for (let i = 0; i < count; i++) {
+    for (let j = i + 1; j < count; j++) {
+      const dx = pts[i * 3] - pts[j * 3];
+      const dy = pts[i * 3 + 1] - pts[j * 3 + 1];
+      const dz = pts[i * 3 + 2] - pts[j * 3 + 2];
+      if (Math.sqrt(dx * dx + dy * dy + dz * dz) < 7.5) {
+        lines.push(
+          pts[i * 3], pts[i * 3 + 1], pts[i * 3 + 2],
+          pts[j * 3], pts[j * 3 + 1], pts[j * 3 + 2],
+        );
+      }
+    }
+  }
+
+  const pointsGeo = new THREE.BufferGeometry();
+  pointsGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(pts), 3));
+
+  const linesGeo = new THREE.BufferGeometry();
+  linesGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(lines), 3));
+
+  return { pointsGeo, linesGeo };
+}
+
+const PARTICLE_NETWORK_GEOMETRY = buildParticleNetworkGeometry();
 
 function ParticleNetwork() {
   const groupRef = useRef<THREE.Group>(null);
+  const elapsedRef = useRef(0);
+  const { pointsGeo, linesGeo } = PARTICLE_NETWORK_GEOMETRY;
 
-  const { pointsGeo, linesGeo } = useMemo(() => {
-    const count = 110;
-    const pts: number[] = [];
-    for (let i = 0; i < count; i++) {
-      pts.push(
-        (Math.random() - 0.5) * 44,
-        (Math.random() - 0.5) * 28,
-        (Math.random() - 0.5) * 22,
-      );
-    }
-
-    const lines: number[] = [];
-    for (let i = 0; i < count; i++) {
-      for (let j = i + 1; j < count; j++) {
-        const dx = pts[i * 3] - pts[j * 3];
-        const dy = pts[i * 3 + 1] - pts[j * 3 + 1];
-        const dz = pts[i * 3 + 2] - pts[j * 3 + 2];
-        if (Math.sqrt(dx * dx + dy * dy + dz * dz) < 7.5) {
-          lines.push(
-            pts[i * 3], pts[i * 3 + 1], pts[i * 3 + 2],
-            pts[j * 3], pts[j * 3 + 1], pts[j * 3 + 2],
-          );
-        }
-      }
-    }
-
-    const pGeo = new THREE.BufferGeometry();
-    pGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(pts), 3));
-
-    const lGeo = new THREE.BufferGeometry();
-    lGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(lines), 3));
-
-    return { pointsGeo: pGeo, linesGeo: lGeo };
-  }, []);
-
-  useFrame(({ clock, pointer }) => {
+  useFrame(({ pointer }, delta) => {
     if (!groupRef.current) return;
-    groupRef.current.rotation.y = clock.elapsedTime * 0.016;
+    elapsedRef.current += delta;
+    groupRef.current.rotation.y = elapsedRef.current * 0.016;
     groupRef.current.rotation.x +=
       (pointer.y * -0.06 - groupRef.current.rotation.x) * 0.02;
   });
@@ -69,8 +76,8 @@ function ParticleNetwork() {
 }
 
 function CameraRig() {
-  const { camera, pointer } = useThree();
-  useFrame(() => {
+  useFrame((state) => {
+    const { camera, pointer } = state;
     camera.position.x += (pointer.x * 2.5 - camera.position.x) * 0.012;
     camera.position.y += (-pointer.y * 1.8 - camera.position.y) * 0.012;
     camera.lookAt(0, 0, 0);

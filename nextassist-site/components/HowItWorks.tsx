@@ -25,7 +25,7 @@ const STEPS = [
 
 export default function HowItWorks() {
   return (
-    <section id="como-funciona" className="how-section">
+    <section id="como-funciona" className="how-section immersive-section immersive-journey">
       <div className="section-center">
         <ScrollReveal>
           <span className="section-tag">Como funciona</span>
@@ -37,14 +37,16 @@ export default function HowItWorks() {
             no primeiro dia.
           </p>
         </ScrollReveal>
-        <ScrollReveal>
+        <ScrollReveal className="journey-reveal">
           <div className="steps-grid">
-            {STEPS.map((s) => (
+            {STEPS.map((s, index) => (
+              <ScrollReveal key={s.num} variant="scale" delay={index * 110}>
               <div key={s.num} className="step">
                 <div className="step-num">{s.num}</div>
                 <h3>{s.title}</h3>
                 <p>{s.desc}</p>
               </div>
+              </ScrollReveal>
             ))}
           </div>
         </ScrollReveal>

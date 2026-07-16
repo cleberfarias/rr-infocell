@@ -1,6 +1,11 @@
+import ScrollReveal from "./ScrollReveal";
+
 export default function CtaSection() {
   return (
-    <section className="cta-section">
+    <section className="cta-section immersive-section immersive-cta">
+      <div className="cta-orbit" aria-hidden="true" />
+      <ScrollReveal variant="scale">
+      <div className="cta-content">
       <h2>
         Pronto para organizar sua <em>assistência técnica?</em>
       </h2>
@@ -22,6 +27,8 @@ export default function CtaSection() {
         <span className="trust-item">✅ 100% web — sem instalar</span>
         <span className="trust-item">✅ Suporte incluso</span>
       </div>
+      </div>
+      </ScrollReveal>
     </section>
   );
 }
