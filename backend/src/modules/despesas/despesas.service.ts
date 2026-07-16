@@ -76,19 +76,24 @@ export class DespesasService {
     if (!base) return [];
     const criadas = [];
     for (let indice = inicio; indice < inicio + quantidade; indice += 1) {
-      criadas.push(await this.repository.create({
-        descricao: origem.descricao,
-        categoria: origem.categoria,
-        fornecedor: origem.fornecedor,
-        valor: origem.valor,
-        vencimento: adicionarMeses(base, indice),
-        recorrente: true,
-        tipoLancamento: origem.tipoLancamento,
-        totalParcelas: origem.totalParcelas,
-        pago: false,
-        recorrenciaOrigemId: origem.id,
-        recorrenciaIndice: indice,
-      }, tenantId));
+      criadas.push(
+        await this.repository.create(
+          {
+            descricao: origem.descricao,
+            categoria: origem.categoria,
+            fornecedor: origem.fornecedor,
+            valor: origem.valor,
+            vencimento: adicionarMeses(base, indice),
+            recorrente: true,
+            tipoLancamento: origem.tipoLancamento,
+            totalParcelas: origem.totalParcelas,
+            pago: false,
+            recorrenciaOrigemId: origem.id,
+            recorrenciaIndice: indice,
+          },
+          tenantId,
+        ),
+      );
     }
     return criadas;
   }

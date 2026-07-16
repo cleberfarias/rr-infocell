@@ -31,35 +31,40 @@ const isValidVencimento = (value: string) => {
   );
 };
 
-export const despesaInputSchema = z.object({
-  descricao: z.string().trim().min(2, "Descricao deve ter pelo menos 2 caracteres."),
-  categoria: z.enum(despesaCategorias),
-  fornecedor: optionalText,
-  valor: z.coerce.number().min(0.01, "Valor deve ser maior que zero."),
-  vencimento: z
-    .string()
-    .trim()
-    .min(1, "Vencimento e obrigatorio.")
-    .refine(isValidVencimento, "Use o vencimento no formato dd/mm, dd/mm/aaaa ou aaaa-mm-dd."),
-  recorrente: z.boolean().optional(),
-  tipoLancamento: z.enum(["unica", "fixa", "parcelada"]).optional(),
-  totalParcelas: z.coerce.number().int().min(2).max(120).optional(),
-  pago: z.boolean().optional(),
-}).superRefine((input, context) => {
-  if (input.tipoLancamento === "parcelada" && !input.totalParcelas) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["totalParcelas"],
-      message: "Informe a quantidade de parcelas.",
-    });
-  }
-});
+export const despesaInputSchema = z
+  .object({
+    descricao: z.string().trim().min(2, "Descricao deve ter pelo menos 2 caracteres."),
+    categoria: z.enum(despesaCategorias),
+    fornecedor: optionalText,
+    valor: z.coerce.number().min(0.01, "Valor deve ser maior que zero."),
+    vencimento: z
+      .string()
+      .trim()
+      .min(1, "Vencimento e obrigatorio.")
+      .refine(isValidVencimento, "Use o vencimento no formato dd/mm, dd/mm/aaaa ou aaaa-mm-dd."),
+    recorrente: z.boolean().optional(),
+    tipoLancamento: z.enum(["unica", "fixa", "parcelada"]).optional(),
+    totalParcelas: z.coerce.number().int().min(2).max(120).optional(),
+    pago: z.boolean().optional(),
+  })
+  .superRefine((input, context) => {
+    if (input.tipoLancamento === "parcelada" && !input.totalParcelas) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["totalParcelas"],
+        message: "Informe a quantidade de parcelas.",
+      });
+    }
+  });
 
 export const despesaSearchSchema = z.object({
   q: z.string().trim().optional().default(""),
   categoria: z.enum(despesaCategorias).optional().or(z.literal("")).default(""),
   pago: z.enum(["true", "false"]).optional().or(z.literal("")).default(""),
-  competencia: z.string().regex(/^\d{4}-\d{2}$/).optional(),
+  competencia: z
+    .string()
+    .regex(/^\d{4}-\d{2}$/)
+    .optional(),
 });
 
 export const despesaRecorrenciaSchema = z.object({

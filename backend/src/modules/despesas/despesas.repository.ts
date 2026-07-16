@@ -83,7 +83,8 @@ const buildDespesa = (input: DespesaInput, current?: Despesa): Despesa => {
     vencimento: input.vencimento,
     recorrente: input.recorrente ?? current?.recorrente ?? false,
     tipoLancamento:
-      input.tipoLancamento ?? current?.tipoLancamento ??
+      input.tipoLancamento ??
+      current?.tipoLancamento ??
       ((input.recorrente ?? current?.recorrente) ? "fixa" : "unica"),
     totalParcelas: input.totalParcelas ?? current?.totalParcelas,
     pago,
