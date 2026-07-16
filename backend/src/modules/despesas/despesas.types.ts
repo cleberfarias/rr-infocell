@@ -22,6 +22,8 @@ export type Despesa = {
   recorrente: boolean;
   pago: boolean;
   pagoEm?: string;
+  recorrenciaOrigemId?: string;
+  recorrenciaIndice?: number;
   tenantId?: string;
   createdAt: string;
   updatedAt: string;
@@ -35,4 +37,6 @@ export type DespesaInput = {
   vencimento: string;
   recorrente?: boolean;
   pago?: boolean;
+  recorrenciaOrigemId?: string;
+  recorrenciaIndice?: number;
 };

@@ -63,6 +63,41 @@ describe("despesas routes", () => {
     ).toBe(true);
   });
 
+  it("creates monthly recurrences without duplicates and adjusts month end", async () => {
+    const createResponse = await request(app).post("/api/despesas").send({
+      descricao: "Aluguel recorrente teste",
+      categoria: "aluguel",
+      valor: 1500,
+      vencimento: "31/01/2026",
+      recorrente: true,
+      pago: true,
+    });
+    const id = createResponse.body.data.id;
+
+    const recurrenceResponse = await request(app)
+      .post(`/api/despesas/${id}/recorrencias`)
+      .send({ meses: 3 });
+
+    expect(recurrenceResponse.status).toBe(201);
+    expect(
+      recurrenceResponse.body.data.criadas.map(
+        (despesa: { vencimento: string }) => despesa.vencimento,
+      ),
+    ).toEqual(["28/02/2026", "31/03/2026", "30/04/2026"]);
+    expect(
+      recurrenceResponse.body.data.criadas.every(
+        (despesa: { pago: boolean; recorrente: boolean }) => !despesa.pago && despesa.recorrente,
+      ),
+    ).toBe(true);
+
+    const repeatedResponse = await request(app)
+      .post(`/api/despesas/${id}/recorrencias`)
+      .send({ meses: 3 });
+
+    expect(repeatedResponse.body.data.criadas).toHaveLength(0);
+    expect(repeatedResponse.body.data.ignoradas).toBe(3);
+  });
+
   it("returns validation errors", async () => {
     const response = await request(app).post("/api/despesas").send({
       descricao: "A",

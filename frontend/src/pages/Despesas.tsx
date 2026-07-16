@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
+  CalendarPlus,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -47,6 +48,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   categoriaLabels,
   createDespesa,
+  createDespesaRecorrencias,
   deleteDespesa,
   despesaCategorias,
   listDespesas,
@@ -78,17 +80,25 @@ const toInput = (despesa: Despesa): DespesaInput => ({
   pago: despesa.pago,
 });
 
-const parseDespesaMes = (vencimento: string): { mes: number; ano: number | null } | null => {
+const parseDespesaMes = (
+  vencimento: string,
+): { mes: number; ano: number | null } | null => {
   const trimmed = vencimento.trim();
   const brDate = trimmed.match(/^\d{1,2}\/(\d{1,2})(?:\/(\d{2,4}))?$/);
   const isoDate = trimmed.match(/^(\d{4})-(\d{2})-\d{2}/);
 
-  const mes = brDate ? Number(brDate[1]) - 1 : isoDate ? Number(isoDate[2]) - 1 : NaN;
+  const mes = brDate
+    ? Number(brDate[1]) - 1
+    : isoDate
+      ? Number(isoDate[2]) - 1
+      : NaN;
   const anoText = brDate ? brDate[2] : isoDate ? isoDate[1] : undefined;
 
   if (!Number.isInteger(mes) || mes < 0 || mes > 11) return null;
 
-  const ano = anoText ? Number(anoText.length === 2 ? `20${anoText}` : anoText) : null;
+  const ano = anoText
+    ? Number(anoText.length === 2 ? `20${anoText}` : anoText)
+    : null;
   return { mes, ano };
 };
 
@@ -112,6 +122,10 @@ const Despesas = () => {
   const [form, setForm] = useState<DespesaInput>(emptyForm);
   const [filtro, setFiltro] = useState<DespesaCategoria | "todas">("todas");
   const [mesOffset, setMesOffset] = useState(0);
+  const [recorrenciaDespesa, setRecorrenciaDespesa] = useState<Despesa | null>(
+    null,
+  );
+  const [recorrenciaMeses, setRecorrenciaMeses] = useState("12");
 
   const mesRef = useMemo(() => {
     const d = new Date();
@@ -209,12 +223,42 @@ const Despesas = () => {
     },
   });
 
+  const recorrenciaMutation = useMutation({
+    mutationFn: ({ id, meses }: { id: string; meses: number }) =>
+      createDespesaRecorrencias(id, meses),
+    onSuccess: async ({ criadas, ignoradas }) => {
+      await invalidateDespesas();
+      toast({
+        title:
+          criadas.length > 0
+            ? `${criadas.length} despesas mensais criadas`
+            : "Os meses selecionados ja estavam gerados",
+        description:
+          ignoradas > 0
+            ? `${ignoradas} lancamento(s) existente(s) foram mantidos sem duplicar.`
+            : "Cada mes pode ser editado e baixado separadamente.",
+      });
+      setRecorrenciaDespesa(null);
+    },
+    onError: (error) => {
+      toast({
+        title:
+          error instanceof Error
+            ? error.message
+            : "Nao foi possivel gerar as despesas recorrentes",
+        variant: "destructive",
+      });
+    },
+  });
+
   const total = despesasDoMes.reduce((sum, despesa) => sum + despesa.valor, 0);
   const totalPago = despesasDoMes
     .filter((despesa) => despesa.pago)
     .reduce((sum, despesa) => sum + despesa.valor, 0);
   const totalAberto = total - totalPago;
-  const recorrentes = despesasDoMes.filter((despesa) => despesa.recorrente).length;
+  const recorrentes = despesasDoMes.filter(
+    (despesa) => despesa.recorrente,
+  ).length;
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
   const abrirNovo = () => {
@@ -245,6 +289,11 @@ const Despesas = () => {
 
   const remover = (id: string) => {
     deleteMutation.mutate(id);
+  };
+
+  const abrirRecorrencia = (despesa: Despesa) => {
+    setRecorrenciaDespesa(despesa);
+    setRecorrenciaMeses("12");
   };
 
   const alternarPago = (id: string) => {
@@ -301,18 +350,34 @@ const Despesas = () => {
           </p>
           <h2 className="font-display text-2xl font-bold">Despesas</h2>
           <p className="text-sm text-muted-foreground capitalize">
-            {mesRef.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
+            {mesRef.toLocaleDateString("pt-BR", {
+              month: "long",
+              year: "numeric",
+            })}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1 rounded-md border border-border bg-secondary/30 px-1">
-            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setMesOffset((m) => m - 1)}>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+              onClick={() => setMesOffset((m) => m - 1)}
+            >
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="min-w-[110px] text-center text-sm font-medium capitalize">
-              {mesRef.toLocaleDateString("pt-BR", { month: "short", year: "numeric" })}
+              {mesRef.toLocaleDateString("pt-BR", {
+                month: "short",
+                year: "numeric",
+              })}
             </span>
-            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setMesOffset((m) => m + 1)}>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+              onClick={() => setMesOffset((m) => m + 1)}
+            >
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
@@ -590,6 +655,18 @@ const Despesas = () => {
                     <Button
                       size="icon"
                       variant="ghost"
+                      disabled={
+                        !despesa.recorrente || recorrenciaMutation.isPending
+                      }
+                      onClick={() => abrirRecorrencia(despesa)}
+                      className="text-primary hover:text-primary"
+                      title="Gerar proximos meses"
+                    >
+                      <CalendarPlus className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
                       onClick={() => abrirEdicao(despesa)}
                     >
                       <Pencil className="h-3.5 w-3.5" />
@@ -620,6 +697,76 @@ const Despesas = () => {
           </TableBody>
         </Table>
       </Card>
+
+      <Dialog
+        open={Boolean(recorrenciaDespesa)}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) setRecorrenciaDespesa(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Gerar despesas recorrentes</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="rounded-md border border-border bg-secondary/30 p-3">
+              <p className="font-medium">{recorrenciaDespesa?.descricao}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                A partir do vencimento {recorrenciaDespesa?.vencimento}. Os
+                novos meses serao criados em aberto e poderao ser editados
+                separadamente.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Gerar os proximos</Label>
+              <Select
+                value={recorrenciaMeses}
+                onValueChange={setRecorrenciaMeses}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="3">3 meses</SelectItem>
+                  <SelectItem value="6">6 meses</SelectItem>
+                  <SelectItem value="12">12 meses</SelectItem>
+                  <SelectItem value="24">24 meses</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Se algum desses meses ja tiver sido gerado por esta recorrencia,
+              ele sera mantido sem criar duplicata.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setRecorrenciaDespesa(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              disabled={recorrenciaMutation.isPending || !recorrenciaDespesa}
+              onClick={() => {
+                if (!recorrenciaDespesa) return;
+                recorrenciaMutation.mutate({
+                  id: recorrenciaDespesa.id,
+                  meses: Number(recorrenciaMeses),
+                });
+              }}
+              className="bg-gradient-primary text-primary-foreground shadow-glow"
+            >
+              {recorrenciaMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CalendarPlus className="h-4 w-4" />
+              )}
+              Gerar lancamentos
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

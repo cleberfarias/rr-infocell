@@ -32,8 +32,55 @@ export class DespesasService {
     return this.repository.create(input, tenantId);
   }
 
-  async update(id: string, input: DespesaInput) {
-    const despesa = await this.repository.update(id, input);
+  async criarRecorrencias(id: string, meses: number, tenantId?: string) {
+    const selecionada = await this.getById(id, tenantId);
+    const origem = selecionada.recorrenciaOrigemId
+      ? await this.getById(selecionada.recorrenciaOrigemId, tenantId)
+      : selecionada;
+    const vencimentoBase = parseVencimento(origem.vencimento);
+
+    if (!vencimentoBase) {
+      throw new AppError(
+        "vencimento_invalido",
+        "Use um vencimento no formato dd/mm, dd/mm/aaaa ou aaaa-mm-dd.",
+        httpStatus.badRequest,
+      );
+    }
+
+    const existentes = await this.repository.list(undefined, tenantId);
+    const indicesExistentes = new Set(
+      existentes
+        .filter((despesa) => despesa.recorrenciaOrigemId === origem.id)
+        .map((despesa) => despesa.recorrenciaIndice),
+    );
+    const criadas = [];
+
+    for (let indice = 1; indice <= meses; indice += 1) {
+      if (indicesExistentes.has(indice)) continue;
+
+      criadas.push(
+        await this.repository.create(
+          {
+            descricao: origem.descricao,
+            categoria: origem.categoria,
+            fornecedor: origem.fornecedor,
+            valor: origem.valor,
+            vencimento: adicionarMeses(vencimentoBase, indice),
+            recorrente: true,
+            pago: false,
+            recorrenciaOrigemId: origem.id,
+            recorrenciaIndice: indice,
+          },
+          tenantId,
+        ),
+      );
+    }
+
+    return { origem, criadas, ignoradas: meses - criadas.length };
+  }
+
+  async update(id: string, input: DespesaInput, tenantId?: string) {
+    const despesa = await this.repository.update(id, input, tenantId);
 
     if (!despesa) {
       throw new AppError("despesa_not_found", "Despesa nao encontrada.", httpStatus.notFound);
@@ -42,8 +89,8 @@ export class DespesasService {
     return despesa;
   }
 
-  async delete(id: string) {
-    const deleted = await this.repository.delete(id);
+  async delete(id: string, tenantId?: string) {
+    const deleted = await this.repository.delete(id, tenantId);
 
     if (!deleted) {
       throw new AppError("despesa_not_found", "Despesa nao encontrada.", httpStatus.notFound);
@@ -52,3 +99,37 @@ export class DespesasService {
 }
 
 export const despesasService = new DespesasService();
+
+type VencimentoBase = { dia: number; mes: number; ano: number };
+
+const parseVencimento = (value: string): VencimentoBase | null => {
+  const trimmed = value.trim();
+  const br = trimmed.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2}|\d{4}))?$/);
+  const iso = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  const dia = br ? Number(br[1]) : iso ? Number(iso[3]) : NaN;
+  const mes = br ? Number(br[2]) : iso ? Number(iso[2]) : NaN;
+  const anoTexto = br?.[3];
+  const ano = iso
+    ? Number(iso[1])
+    : anoTexto
+      ? Number(anoTexto.length === 2 ? `20${anoTexto}` : anoTexto)
+      : new Date().getFullYear();
+
+  if (!Number.isInteger(dia) || !Number.isInteger(mes) || dia < 1 || mes < 1 || mes > 12) {
+    return null;
+  }
+
+  const ultimoDia = new Date(ano, mes, 0).getDate();
+  return dia <= ultimoDia ? { dia, mes, ano } : null;
+};
+
+const adicionarMeses = (base: VencimentoBase, offset: number) => {
+  const primeiroDia = new Date(base.ano, base.mes - 1 + offset, 1);
+  const ano = primeiroDia.getFullYear();
+  const mes = primeiroDia.getMonth() + 1;
+  const ultimoDia = new Date(ano, mes, 0).getDate();
+  const dia = Math.min(base.dia, ultimoDia);
+
+  return `${String(dia).padStart(2, "0")}/${String(mes).padStart(2, "0")}/${ano}`;
+};

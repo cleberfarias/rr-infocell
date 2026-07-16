@@ -24,6 +24,8 @@ export type Despesa = {
   recorrente: boolean;
   pago: boolean;
   pagoEm?: string;
+  recorrenciaOrigemId?: string;
+  recorrenciaIndice?: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -106,4 +108,15 @@ export const deleteDespesa = async (id: string) => {
   await apiRequest<void>(`/despesas/${id}`, {
     method: "DELETE",
   });
+};
+
+export const createDespesaRecorrencias = async (id: string, meses: number) => {
+  const response = await apiRequest<
+    ApiResponse<{ origem: Despesa; criadas: Despesa[]; ignoradas: number }>
+  >(`/despesas/${id}/recorrencias`, {
+    method: "POST",
+    body: JSON.stringify({ meses }),
+  });
+
+  return response.data;
 };

@@ -62,8 +62,8 @@ export interface DespesasRepository {
   ): Promise<Despesa[]>;
   findById(id: string, tenantId?: string): Promise<Despesa | null>;
   create(input: DespesaInput, tenantId?: string): Promise<Despesa>;
-  update(id: string, input: DespesaInput): Promise<Despesa | null>;
-  delete(id: string): Promise<boolean>;
+  update(id: string, input: DespesaInput, tenantId?: string): Promise<Despesa | null>;
+  delete(id: string, tenantId?: string): Promise<boolean>;
 }
 
 const buildDespesa = (input: DespesaInput, current?: Despesa): Despesa => {
@@ -81,6 +81,8 @@ const buildDespesa = (input: DespesaInput, current?: Despesa): Despesa => {
     recorrente: input.recorrente ?? current?.recorrente ?? false,
     pago,
     pagoEm: paidNow ? timestamp : pago ? current?.pagoEm : undefined,
+    recorrenciaOrigemId: input.recorrenciaOrigemId ?? current?.recorrenciaOrigemId,
+    recorrenciaIndice: input.recorrenciaIndice ?? current?.recorrenciaIndice,
     createdAt: current?.createdAt ?? timestamp,
     updatedAt: timestamp,
   };
@@ -142,8 +144,8 @@ export class MemoryDespesasRepository implements DespesasRepository {
     return despesa;
   }
 
-  async update(id: string, input: DespesaInput) {
-    const current = await this.findById(id);
+  async update(id: string, input: DespesaInput, tenantId?: string) {
+    const current = await this.findById(id, tenantId);
 
     if (!current) {
       return null;
@@ -156,7 +158,7 @@ export class MemoryDespesasRepository implements DespesasRepository {
     return despesa;
   }
 
-  async delete(id: string) {
+  async delete(id: string, _tenantId?: string) {
     return this.despesas.delete(id);
   }
 }
@@ -216,8 +218,8 @@ export class FirestoreDespesasRepository implements DespesasRepository {
     return despesa;
   }
 
-  async update(id: string, input: DespesaInput) {
-    const current = await this.findById(id);
+  async update(id: string, input: DespesaInput, tenantId?: string) {
+    const current = await this.findById(id, tenantId);
 
     if (!current) {
       return null;
@@ -233,8 +235,8 @@ export class FirestoreDespesasRepository implements DespesasRepository {
     return despesa;
   }
 
-  async delete(id: string) {
-    const current = await this.findById(id);
+  async delete(id: string, tenantId?: string) {
+    const current = await this.findById(id, tenantId);
 
     if (!current) {
       return false;
@@ -256,6 +258,9 @@ export class FirestoreDespesasRepository implements DespesasRepository {
       recorrente: data.recorrente === true,
       pago: data.pago === true,
       pagoEm: data.pagoEm ? String(data.pagoEm) : undefined,
+      recorrenciaOrigemId: data.recorrenciaOrigemId ? String(data.recorrenciaOrigemId) : undefined,
+      recorrenciaIndice:
+        data.recorrenciaIndice !== undefined ? Number(data.recorrenciaIndice) : undefined,
       tenantId: data.tenantId ? String(data.tenantId) : undefined,
       createdAt: String(data.createdAt ?? ""),
       updatedAt: String(data.updatedAt ?? ""),

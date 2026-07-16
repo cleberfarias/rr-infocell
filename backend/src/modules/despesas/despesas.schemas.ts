@@ -23,3 +23,7 @@ export const despesaSearchSchema = z.object({
   categoria: z.enum(despesaCategorias).optional().or(z.literal("")).default(""),
   pago: z.enum(["true", "false"]).optional().or(z.literal("")).default(""),
 });
+
+export const despesaRecorrenciaSchema = z.object({
+  meses: z.coerce.number().int().min(1).max(24),
+});
