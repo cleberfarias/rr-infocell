@@ -109,4 +109,17 @@ describe("despesas routes", () => {
     expect(response.status).toBe(400);
     expect(response.body.error.code).toBe("validation_error");
   });
+
+  it("rejects a due date without month", async () => {
+    const response = await request(app).post("/api/despesas").send({
+      descricao: "Aluguel invalido",
+      categoria: "aluguel",
+      valor: 1000,
+      vencimento: "10",
+      recorrente: true,
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.message).toContain("dd/mm");
+  });
 });

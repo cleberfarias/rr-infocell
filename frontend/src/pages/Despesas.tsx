@@ -153,7 +153,10 @@ const Despesas = () => {
     const mes = mesRef.getMonth();
     return filtrada.filter((despesa) => {
       const parsed = parseDespesaMes(despesa.vencimento);
-      if (!parsed) return true;
+      if (!parsed) {
+        const hoje = new Date();
+        return mes === hoje.getMonth() && ano === hoje.getFullYear();
+      }
       if (parsed.ano === null) return parsed.mes === mes;
       return parsed.mes === mes && parsed.ano === ano;
     });
@@ -276,6 +279,15 @@ const Despesas = () => {
   const salvar = () => {
     if (!form.descricao || form.valor <= 0) {
       toast({ title: "Preencha descrição e valor", variant: "destructive" });
+      return;
+    }
+
+    if (!parseDespesaMes(form.vencimento)) {
+      toast({
+        title: "Informe o vencimento com dia e mes",
+        description: "Use dd/mm, dd/mm/aaaa ou aaaa-mm-dd.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -481,7 +493,7 @@ const Despesas = () => {
                   <div className="space-y-2">
                     <Label>Vencimento</Label>
                     <Input
-                      placeholder="dd/mm"
+                      placeholder="dd/mm ou dd/mm/aaaa"
                       value={form.vencimento}
                       onChange={(event) =>
                         setForm({ ...form, vencimento: event.target.value })
