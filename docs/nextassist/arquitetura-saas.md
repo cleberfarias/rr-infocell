@@ -2,7 +2,7 @@
 
 ## Estado atual
 
-O sistema ainda opera como uma aplicacao dedicada a RR Infocell, mas com camadas iniciais para evoluir para NextAssist SaaS + White Label.
+O sistema opera com a RR Infocell como tenant piloto em producao e com base comum NextAssist SaaS + White Label. O backend ja resolve tenants dinamicamente e as integracoes fiscais e de pagamentos usam configuracao isolada por empresa.
 
 Componentes atuais:
 
@@ -10,18 +10,28 @@ Componentes atuais:
 - `planModules.ts`: matriz estatica de capacidades por plano.
 - `AppLayout.tsx`: comeca a respeitar modulos na navegacao.
 - `TenantSettings.tsx`: permite ao administrador editar identidade e dados operacionais do proprio tenant.
+- `Integracoes.tsx`: configura fiscal e pagamentos por tenant.
+- `backend/src/modules/integracoes`: adaptadores, OAuth, criptografia e transacoes integradas.
 
-## tenantConfig estatico
+## tenantConfig e configuracao remota
 
 `tenantConfig.ts` centraliza dados do tenant atual.
 
-Hoje ele e estatico e faz parte do bundle do frontend. Isso e suficiente para preparar a arquitetura sem introduzir risco de banco ou backend.
+O fallback estatico ainda existe para compatibilidade, mas identidade e dados operacionais editaveis sao persistidos em `tenants/{tenantId}`. Plano, assinatura e permissoes continuam sob controle da plataforma.
 
 Limites:
 
-- Nao permite multiplos tenants em runtime.
-- Nao permite edicao por usuario.
-- Nao permite provisionamento comercial.
+- Nao deve ser usado como fonte final para plano, assinatura ou feature flags.
+- Nao substitui o isolamento e as validacoes tenant-aware do backend.
+- O provisionamento comercial ainda precisa ser automatizado.
+
+## Integracoes fiscais e pagamentos
+
+As configuracoes nao secretas ficam em `tenantIntegrations`; segredos criptografados ficam em `tenantIntegrationSecrets`. Estados OAuth temporarios usam `integrationOAuthStates` e pagamentos integrados usam `paymentTransactions`.
+
+As credenciais OAuth da aplicacao pertencem ao NextAssist. Tokens e configuracoes operacionais pertencem a cada tenant. O backend valida aprovacao, valor, tenant e consumo unico antes de criar uma venda.
+
+O Mercado Pago Point esta integrado. A configuracao fiscal esta pronta, mas os adaptadores de emissao NFC-e/NFS-e ainda precisam ser implementados. Consulte [Integracoes Fiscais e de Pagamentos](./integracoes-fiscais-pagamentos.md).
 
 ## planModules
 
@@ -57,15 +67,7 @@ O administrador do tenant pode editar nome, logo, cores, contatos, endereco e pa
 
 ## Multiempresa real
 
-Para virar SaaS real, o sistema precisara de um identificador de tenant.
-
-Possiveis nomes:
-
-- `tenantId`
-- `empresaId`
-- `organizationId`
-
-A escolha deve ser feita antes de qualquer migracao de banco.
+O identificador adotado e `tenantId`. Modulos tenant-aware devem usar `resolveTenant` e `getRequestTenantId`, e nunca aceitar o tenant do payload como autoridade isolada.
 
 ## Isolamento de dados
 
@@ -101,8 +103,8 @@ Nao aplicar multiempresa diretamente em producao.
 
 A evolucao para SaaS deve ser incremental:
 
-- Primeiro configuracao estatica.
-- Depois leitura de configuracao remota.
-- Depois isolamento por tenant em novas areas.
-- Depois migracao planejada dos dados existentes.
-- Por fim, provisionamento comercial e White Label avancado.
+- Manter configuracao remota e fallback estatico apenas onde necessario.
+- Expandir isolamento por tenant em qualquer nova area.
+- Migrar dados antigos apenas com auditoria, backup e rollback.
+- Automatizar provisionamento comercial e White Label avancado.
+- Adicionar provedores fiscais e de pagamento por adaptadores, sem acoplar o nucleo a um fornecedor.

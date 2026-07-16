@@ -74,6 +74,17 @@ docs/nextassist/
 - Venda/finalizacao de OS deve invalidar queries relacionadas: ordens, ordem individual, vendas e eventos.
 - Ao lidar com pagamento de OS, respeite `valorAdiantado`, `formaPagamentoAdiantamento`, desconto e troco.
 
+## Integracoes fiscais e pagamentos
+
+- A documentacao de referencia fica em `docs/nextassist/integracoes-fiscais-pagamentos.md`.
+- Configuracoes fiscais, tokens OAuth, terminal e adquirente sao sempre resolvidos por `tenantId`; nunca use credenciais de um tenant em outro.
+- `MERCADO_PAGO_CLIENT_ID` e `MERCADO_PAGO_CLIENT_SECRET` pertencem a aplicacao NextAssist. Cada cliente conecta a propria conta via OAuth e nao recebe essas credenciais globais.
+- Segredos persistidos devem usar a criptografia de `backend/src/modules/integracoes/integracoes.crypto.ts`. Nunca salvar senha de certificado, token ou client secret em texto puro, frontend, Git ou logs.
+- No pagamento integrado, o backend deve validar tenant, status aprovado, valor suficiente e consumo unico antes de criar a venda. Validacao apenas no frontend nao e aceitavel.
+- A integracao Mercado Pago Point esta ativa; o status atual usa polling de Orders. Webhook assinado, estorno e recuperacao de pendencias ainda sao trabalhos futuros.
+- A interface ja armazena configuracao de NFC-e/NFS-e, mas emissao fiscal real ainda nao esta implementada. Nao apresentar configuracao salva como nota fiscal autorizada.
+- Novos adquirentes e emissores devem implementar `PaymentProvider` ou `FiscalProvider`, preservando o nucleo e o isolamento multiempresa.
+
 ## Sistema de impressao
 
 | Tipo | Onde | Como |
