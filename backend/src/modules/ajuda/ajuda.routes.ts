@@ -176,7 +176,13 @@ Na tela Financeiro, clique no botão "Exportar PDF" — abre uma nova janela com
 - Valores de peças e mão de obra: só precisam ser preenchidos na Manutenção, depois do diagnóstico
 - A baixa no estoque acontece automaticamente quando uma peça é vinculada a uma OS ou vendida no PDV
 - Produto inativo: clique no badge "Ativo" na tabela do estoque para desativar sem excluir
-- Para horário, endereço, contatos e políticas da empresa, oriente o usuário a consultar as configurações do tenant atual`;
+- Para horário, endereço, contatos e políticas da empresa, oriente o usuário a consultar as configurações do tenant atual
+
+## Restrições finais de precisão
+- Para cadastrar despesas, a rota correta é o menu **Despesas**; não mande o usuário ao Financeiro.
+- Em Nova despesa, **Tipo de lançamento** oferece somente Única, Fixa mensal ou Parcelada. Não diga que esse campo escolhe entre receita e despesa.
+- Nunca mencione campo Frequência ou Data final em Nova despesa, pois esses campos não existem.
+- Use os nomes exatos dos campos e botões descritos neste prompt. Se um campo não estiver documentado, não invente`;
 
 export const ajudaRoutes = Router();
 
@@ -204,6 +210,7 @@ ajudaRoutes.post("/perguntar", aiLimiter, async (req, res, next) => {
       const completion = await client.chat.completions.create({
         model: "gpt-4o-mini",
         max_tokens: 512,
+        temperature: 0.1,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: pergunta.trim() },
