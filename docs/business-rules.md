@@ -298,8 +298,10 @@ Regras para despesas no DRE:
 ## 10. Centro de Treinamento
 
 - Disponível em `/app/treinamento` para todos os perfis.
-- 9 módulos com guias passo a passo e screenshots reais das telas.
-- Progresso por módulo salvo na sessão (não persistido no banco).
+- 14 módulos com guias passo a passo, incluindo Dashboard, Clientes, Despesas, Usuários e Configurações.
+- A busca encontra módulos e assuntos; o filtro separa conteúdos básicos, intermediários e avançados.
+- Cada perfil visualiza apenas treinamentos de rotas às quais possui acesso.
+- Progresso por módulo persistido no navegador (não persistido no banco).
 - Screenshots atualizáveis em `frontend/public/screenshots/`.
 
 ---

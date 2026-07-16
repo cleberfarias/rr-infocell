@@ -1,6 +1,17 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, CheckCircle2, ChevronRight, Play, X } from "lucide-react";
+import {
+  BookOpen,
+  CheckCircle2,
+  ChevronRight,
+  Play,
+  Receipt,
+  Search,
+  Settings,
+  UserCog,
+  Users,
+  X,
+} from "lucide-react";
 import {
   MdDashboard,
   MdHandyman,
@@ -17,6 +28,7 @@ import { TbFileCheck } from "react-icons/tb";
 import { PageHeader } from "@/components/design-system";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
@@ -24,6 +36,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth";
+import { canAccess } from "@/lib/roles";
 import { ROUTES } from "@/constants/routes";
 
 type Passo = {
@@ -46,6 +60,65 @@ type Modulo = {
 };
 
 const modulos: Modulo[] = [
+  {
+    key: "dashboard",
+    titulo: "Dashboard",
+    descricao:
+      "Entenda os indicadores do mês, alertas operacionais e atalhos para as tarefas que exigem atenção.",
+    icone: MdDashboard,
+    gradiente: "from-indigo-600 via-blue-600 to-cyan-500",
+    screenshot: "/screenshots/financeiro.jpg",
+    rota: ROUTES.dashboard,
+    nivel: "básico",
+    tempoMinutos: 3,
+    passos: [
+      {
+        titulo: "Visão mensal",
+        descricao:
+          "Os cards resumem o mês selecionado: faturamento, ordens, ticket médio e situação operacional. Use as setas para consultar outros meses.",
+      },
+      {
+        titulo: "Alertas que exigem atenção",
+        descricao:
+          "Confira OS atrasadas, aparelhos prontos para retirada, orçamentos aguardando aprovação e produtos com estoque baixo.",
+        dica: "Clique nos alertas para abrir a lista já filtrada.",
+      },
+      {
+        titulo: "Atalhos e busca",
+        descricao:
+          "Use Nova OS para iniciar um atendimento e a busca do topo para localizar rapidamente uma OS, cliente ou IMEI.",
+      },
+    ],
+  },
+  {
+    key: "clientes",
+    titulo: "Clientes",
+    descricao:
+      "Cadastre clientes, mantenha os contatos atualizados e consulte aparelhos e atendimentos vinculados.",
+    icone: Users,
+    gradiente: "from-cyan-600 via-sky-500 to-blue-500",
+    screenshot: "/screenshots/aparelhos.jpg",
+    rota: ROUTES.clientes,
+    nivel: "básico",
+    tempoMinutos: 3,
+    passos: [
+      {
+        titulo: "Cadastrando um cliente",
+        descricao:
+          "Clique em Novo cliente e informe pelo menos nome e telefone. CPF/CNPJ, e-mail e endereço podem ser adicionados quando disponíveis.",
+      },
+      {
+        titulo: "Evitando duplicidades",
+        descricao:
+          "Antes de cadastrar, pesquise pelo nome, telefone ou documento. Na abertura de OS, prefira selecionar o cliente já existente.",
+      },
+      {
+        titulo: "Histórico do cliente",
+        descricao:
+          "Abra o cadastro para atualizar seus dados e identificar os aparelhos e ordens relacionados.",
+      },
+    ],
+  },
   {
     key: "os",
     titulo: "Ordens de Serviço",
@@ -293,7 +366,7 @@ const modulos: Modulo[] = [
       {
         titulo: "Despesas por vencimento",
         descricao:
-          "Despesas futuras não reduzem o lucro atual. Despesas não recorrentes entram no mês do vencimento e recorrentes repetem mês a mês.",
+          "As despesas entram no DRE pelo mês do vencimento, mesmo quando são pagas em outra data. O pagamento não move a despesa entre competências.",
       },
       {
         titulo: "Gráfico semanal",
@@ -375,6 +448,99 @@ const modulos: Modulo[] = [
       },
     ],
   },
+  {
+    key: "despesas",
+    titulo: "Despesas",
+    descricao:
+      "Registre contas únicas, despesas fixas mensais e compras parceladas com pagamento independente por mês.",
+    icone: Receipt,
+    gradiente: "from-rose-600 via-pink-500 to-orange-400",
+    screenshot: "/screenshots/financeiro.jpg",
+    rota: ROUTES.despesas,
+    nivel: "intermediário",
+    tempoMinutos: 4,
+    passos: [
+      {
+        titulo: "Escolhendo o tipo",
+        descricao:
+          "Use Única para uma conta isolada, Fixa mensal para aluguel e outras contas sem prazo final, ou Parcelada para uma quantidade definida de parcelas.",
+      },
+      {
+        titulo: "Fixa mensal",
+        descricao:
+          "Informe somente o dia. Ao acessar uma nova competência, o sistema cria o lançamento daquele mês em aberto, sem duplicar os meses existentes.",
+        dica: "O pagamento de um mês nunca marca os próximos como pagos.",
+      },
+      {
+        titulo: "Despesa parcelada",
+        descricao:
+          "Informe o dia e a quantidade de parcelas. Cada parcela recebe seu próprio vencimento e sequência, como 1/12 e 2/12.",
+      },
+      {
+        titulo: "Baixa e competência",
+        descricao:
+          "Clique em Em aberto para registrar o pagamento. O financeiro continua contabilizando a despesa no mês do vencimento.",
+      },
+    ],
+  },
+  {
+    key: "usuarios",
+    titulo: "Usuários e permissões",
+    descricao:
+      "Crie acessos para a equipe e defina o perfil adequado para cada função da operação.",
+    icone: UserCog,
+    gradiente: "from-slate-700 via-slate-600 to-blue-500",
+    screenshot: "/screenshots/os.jpg",
+    rota: ROUTES.usuarios,
+    nivel: "avançado",
+    tempoMinutos: 3,
+    passos: [
+      {
+        titulo: "Criando um usuário",
+        descricao:
+          "Cadastre nome, e-mail e perfil. Use uma conta individual para cada colaborador; não compartilhe a senha do administrador.",
+      },
+      {
+        titulo: "Escolhendo o perfil",
+        descricao:
+          "Administrador possui acesso amplo. Atendente trabalha com clientes, OS e caixa; técnico acompanha checklist, manutenção e estoque conforme suas permissões.",
+      },
+      {
+        titulo: "Revisando acessos",
+        descricao:
+          "Desative usuários que saíram da equipe e revise periodicamente quem pode acessar financeiro e configurações.",
+      },
+    ],
+  },
+  {
+    key: "configuracoes",
+    titulo: "Configurações da empresa",
+    descricao:
+      "Atualize identidade, dados da empresa, mensagens e integrações específicas do seu ambiente.",
+    icone: Settings,
+    gradiente: "from-zinc-700 via-neutral-600 to-stone-500",
+    screenshot: "/screenshots/atendimento.jpg",
+    rota: "/app/configuracoes",
+    nivel: "avançado",
+    tempoMinutos: 4,
+    passos: [
+      {
+        titulo: "Dados e identidade",
+        descricao:
+          "Confira nome, documento, endereço, contatos e identidade visual. Esses dados pertencem à empresa atual.",
+      },
+      {
+        titulo: "Mensagens",
+        descricao:
+          "Personalize os textos usados no atendimento e nas comunicações com clientes.",
+      },
+      {
+        titulo: "Integrações",
+        descricao:
+          "Conecte apenas as contas da própria empresa. Uma configuração salva não significa que uma nota fiscal já foi emitida ou autorizada.",
+      },
+    ],
+  },
 ];
 
 const nivelCor: Record<string, string> = {
@@ -383,10 +549,47 @@ const nivelCor: Record<string, string> = {
   avançado: "bg-red-500/15 text-red-500 border-red-500/30",
 };
 
+const progressoStorageKey = "nextassist-treinamento-concluidos";
+type NivelFiltro = "todos" | Modulo["nivel"];
+
 export default function Treinamento() {
+  const { role } = useAuth();
   const [moduloAberto, setModuloAberto] = useState<Modulo | null>(null);
   const [passoAtivo, setPassoAtivo] = useState(0);
-  const [concluidos, setConcluidos] = useState<Set<string>>(new Set());
+  const [concluidos, setConcluidos] = useState<Set<string>>(() => {
+    try {
+      const salvos = JSON.parse(localStorage.getItem(progressoStorageKey) ?? "[]");
+      return new Set(Array.isArray(salvos) ? salvos : []);
+    } catch {
+      return new Set();
+    }
+  });
+  const [busca, setBusca] = useState("");
+  const [nivelFiltro, setNivelFiltro] = useState<NivelFiltro>("todos");
+
+  useEffect(() => {
+    localStorage.setItem(progressoStorageKey, JSON.stringify([...concluidos]));
+  }, [concluidos]);
+
+  const modulosDisponiveis = useMemo(
+    () => modulos.filter((modulo) => canAccess(role, modulo.rota)),
+    [role],
+  );
+
+  const modulosFiltrados = useMemo(() => {
+    const termo = busca.trim().toLocaleLowerCase("pt-BR");
+    return modulosDisponiveis.filter((modulo) => {
+      const correspondeNivel =
+        nivelFiltro === "todos" || modulo.nivel === nivelFiltro;
+      const correspondeBusca =
+        !termo ||
+        [modulo.titulo, modulo.descricao, ...modulo.passos.map((passo) => passo.titulo)]
+          .join(" ")
+          .toLocaleLowerCase("pt-BR")
+          .includes(termo);
+      return correspondeNivel && correspondeBusca;
+    });
+  }, [busca, modulosDisponiveis, nivelFiltro]);
 
   const abrirModulo = (modulo: Modulo) => {
     setModuloAberto(modulo);
@@ -398,8 +601,13 @@ export default function Treinamento() {
     setModuloAberto(null);
   };
 
-  const totalConcluidos = concluidos.size;
-  const progressoPct = Math.round((totalConcluidos / modulos.length) * 100);
+  const totalDisponiveis = modulosDisponiveis.length;
+  const totalConcluidos = modulosDisponiveis.filter((modulo) =>
+    concluidos.has(modulo.key),
+  ).length;
+  const progressoPct = totalDisponiveis
+    ? Math.round((totalConcluidos / totalDisponiveis) * 100)
+    : 0;
   const passoAtual = moduloAberto?.passos[passoAtivo];
 
   return (
@@ -420,7 +628,7 @@ export default function Treinamento() {
             <div>
               <p className="font-semibold">Seu progresso</p>
               <p className="text-sm text-muted-foreground">
-                {totalConcluidos} de {modulos.length} módulos concluídos
+                {totalConcluidos} de {totalDisponiveis} módulos concluídos
               </p>
             </div>
           </div>
@@ -436,9 +644,37 @@ export default function Treinamento() {
         </div>
       </div>
 
+      <div className="flex flex-col gap-3 rounded-xl border border-border bg-card/60 p-4 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={busca}
+            onChange={(event) => setBusca(event.target.value)}
+            placeholder="Buscar treinamento, módulo ou assunto..."
+            className="pl-9"
+          />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {(["todos", "básico", "intermediário", "avançado"] as NivelFiltro[]).map(
+            (nivel) => (
+              <Button
+                key={nivel}
+                type="button"
+                size="sm"
+                variant={nivelFiltro === nivel ? "default" : "outline"}
+                onClick={() => setNivelFiltro(nivel)}
+                className={nivelFiltro === nivel ? "bg-gradient-primary text-primary-foreground" : ""}
+              >
+                {nivel === "todos" ? "Todos" : nivel}
+              </Button>
+            ),
+          )}
+        </div>
+      </div>
+
       {/* Grid de cards */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {modulos.map((modulo) => {
+        {modulosFiltrados.map((modulo) => {
           const Icon = modulo.icone;
           const concluido = concluidos.has(modulo.key);
 
@@ -522,9 +758,14 @@ export default function Treinamento() {
           );
         })}
       </div>
+      {modulosFiltrados.length === 0 && (
+        <div className="rounded-xl border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
+          Nenhum treinamento encontrado para os filtros selecionados.
+        </div>
+      )}
 
       {/* Parabéns */}
-      {totalConcluidos === modulos.length && (
+      {totalDisponiveis > 0 && totalConcluidos === totalDisponiveis && (
         <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/5 p-6 text-center">
           <p className="text-3xl mb-2">🎉</p>
           <p className="font-display text-lg font-bold text-emerald-500">
@@ -545,6 +786,11 @@ export default function Treinamento() {
           side="right"
           className="flex w-full flex-col gap-0 p-0 sm:max-w-lg"
         >
+          <SheetHeader className="sr-only">
+            <SheetTitle>
+              {moduloAberto ? `Treinamento: ${moduloAberto.titulo}` : "Treinamento"}
+            </SheetTitle>
+          </SheetHeader>
           {moduloAberto &&
             passoAtual &&
             (() => {
