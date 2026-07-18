@@ -65,6 +65,7 @@ export interface DespesasRepository {
   ): Promise<Despesa[]>;
   findById(id: string, tenantId?: string): Promise<Despesa | null>;
   create(input: DespesaInput, tenantId?: string): Promise<Despesa>;
+  createRecurrence(input: DespesaInput, tenantId?: string): Promise<Despesa>;
   update(id: string, input: DespesaInput, tenantId?: string): Promise<Despesa | null>;
   delete(id: string, tenantId?: string): Promise<boolean>;
 }
@@ -86,11 +87,18 @@ const buildDespesa = (input: DespesaInput, current?: Despesa): Despesa => {
       input.tipoLancamento ??
       current?.tipoLancamento ??
       ((input.recorrente ?? current?.recorrente) ? "fixa" : "unica"),
-    totalParcelas: input.totalParcelas ?? current?.totalParcelas,
+    totalParcelas:
+      input.tipoLancamento === "unica" ? undefined : input.totalParcelas ?? current?.totalParcelas,
     pago,
     pagoEm: paidNow ? timestamp : pago ? current?.pagoEm : undefined,
-    recorrenciaOrigemId: input.recorrenciaOrigemId ?? current?.recorrenciaOrigemId,
-    recorrenciaIndice: input.recorrenciaIndice ?? current?.recorrenciaIndice,
+    recorrenciaOrigemId:
+      input.tipoLancamento === "unica"
+        ? undefined
+        : input.recorrenciaOrigemId ?? current?.recorrenciaOrigemId,
+    recorrenciaIndice:
+      input.tipoLancamento === "unica"
+        ? undefined
+        : input.recorrenciaIndice ?? current?.recorrenciaIndice,
     createdAt: current?.createdAt ?? timestamp,
     updatedAt: timestamp,
   };
@@ -150,6 +158,16 @@ export class MemoryDespesasRepository implements DespesasRepository {
     this.despesas.set(despesa.id, despesa);
 
     return despesa;
+  }
+
+  async createRecurrence(input: DespesaInput, tenantId?: string) {
+    const existing = Array.from(this.despesas.values()).find(
+      (despesa) =>
+        despesa.recorrenciaOrigemId === input.recorrenciaOrigemId &&
+        despesa.recorrenciaIndice === input.recorrenciaIndice,
+    );
+
+    return existing ?? this.create(input, tenantId);
   }
 
   async update(id: string, input: DespesaInput, tenantId?: string) {
@@ -224,6 +242,37 @@ export class FirestoreDespesasRepository implements DespesasRepository {
     await document.set(withoutUndefined(despesa));
 
     return despesa;
+  }
+
+  async createRecurrence(input: DespesaInput, tenantId = DEFAULT_TENANT_ID) {
+    const originId = input.recorrenciaOrigemId;
+    const index = input.recorrenciaIndice;
+
+    if (!originId || index === undefined) {
+      return this.create(input, tenantId);
+    }
+
+    // A deterministic document prevents duplicate installments when two Cloud Run
+    // requests materialize the same competence at the same time.
+    const safeTenantId = tenantId.replace(/[^a-zA-Z0-9_-]/g, "_");
+    const document = this.firestore
+      .collection(despesasCollection)
+      .doc(`rec_${safeTenantId}_${originId}_${index}`);
+
+    return this.firestore.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(document);
+      if (snapshot.exists) {
+        return this.fromDocument(snapshot.id, snapshot.data() ?? {});
+      }
+
+      const despesa = {
+        ...buildDespesa(input),
+        id: document.id,
+        tenantId,
+      };
+      transaction.create(document, withoutUndefined(despesa));
+      return despesa;
+    });
   }
 
   async update(id: string, input: DespesaInput, tenantId?: string) {

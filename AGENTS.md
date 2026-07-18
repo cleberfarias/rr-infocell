@@ -66,6 +66,13 @@ docs/nextassist/
 - Formatos aceitos de vencimento: `dd/mm`, `dd/mm/aaaa` e `aaaa-mm-dd`.
 - Despesa marcada como paga pode receber `pagoEm` no backend, mas isso nao deve mover a despesa para outro mes do DRE.
 - No Dashboard, metricas dentro de um bloco mensal devem usar o mesmo recorte temporal do bloco. Nao misture contagem historica com titulo "Valores de <mes>".
+- Recorrencias materializadas devem ser idempotentes inclusive com requisicoes simultaneas e multiplas instancias do Cloud Run. Checar antes de gravar nao basta; use chave deterministica, transacao ou outra garantia atomica no Firestore.
+- Trate separadamente a origem da serie e cada ocorrencia mensal. Antes de editar ou excluir, defina explicitamente se a acao vale para esta ocorrencia, para esta e as futuras ou para toda a serie.
+- Converter uma despesa fixa em unica deve encerrar/desvincular a recorrencia de forma persistente. Depois da conversao, excluir o lancamento nao pode fazer o backend recria-lo na proxima listagem.
+- Excluir uma ocorrencia de despesa fixa nao pode resultar em recriacao silenciosa. Se a regra exigir manter a serie, persista cancelamento/excecao ou ofereca escopo de exclusao claro.
+- Nunca corrija duplicacao apenas filtrando a interface: os documentos duplicados continuam afetando DRE, totais e outras consultas. Corrija a invariavel no backend/repositorio.
+- Ao alterar recorrencias, adicione testes para: chamadas concorrentes, navegacao repetida na mesma competencia, edicao de ocorrencia, conversao fixa para unica, exclusao sem reaparecimento e isolamento por `tenantId`.
+- Dados duplicados ja existentes exigem auditoria/limpeza separada. Preserve lancamentos pagos e alterados manualmente, execute primeiro em dry-run e nao apague producao por semelhanca apenas de descricao/valor/data.
 
 ## PDV, OS e descontos
 

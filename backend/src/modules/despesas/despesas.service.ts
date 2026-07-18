@@ -77,7 +77,7 @@ export class DespesasService {
     const criadas = [];
     for (let indice = inicio; indice < inicio + quantidade; indice += 1) {
       criadas.push(
-        await this.repository.create(
+        await this.repository.createRecurrence(
           {
             descricao: origem.descricao,
             categoria: origem.categoria,
@@ -125,7 +125,7 @@ export class DespesasService {
       if (indicesExistentes.has(indice)) continue;
 
       criadas.push(
-        await this.repository.create(
+        await this.repository.createRecurrence(
           {
             descricao: origem.descricao,
             categoria: origem.categoria,
@@ -148,7 +148,29 @@ export class DespesasService {
   }
 
   async update(id: string, input: DespesaInput, tenantId?: string) {
-    const despesa = await this.repository.update(id, input, tenantId);
+    const current = await this.getById(id, tenantId);
+    const tipoLancamento = input.tipoLancamento ?? (input.recorrente ? "fixa" : "unica");
+
+    // Converting any occurrence to a one-off expense ends the fixed series. The
+    // selected occurrence is detached, so it can be deleted without being recreated.
+    if (
+      tipoLancamento === "unica" &&
+      current.tipoLancamento === "fixa" &&
+      current.recorrenciaOrigemId
+    ) {
+      const origin = await this.getById(current.recorrenciaOrigemId, tenantId);
+      await this.repository.update(
+        origin.id,
+        { ...origin, tipoLancamento: "unica", recorrente: false },
+        tenantId,
+      );
+    }
+
+    const despesa = await this.repository.update(
+      id,
+      { ...input, tipoLancamento, recorrente: tipoLancamento !== "unica" },
+      tenantId,
+    );
 
     if (!despesa) {
       throw new AppError("despesa_not_found", "Despesa nao encontrada.", httpStatus.notFound);

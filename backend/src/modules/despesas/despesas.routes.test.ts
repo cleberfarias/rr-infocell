@@ -172,4 +172,67 @@ describe("despesas routes", () => {
     expect(agosto).toHaveLength(1);
     expect(agosto[0].pago).toBe(false);
   });
+
+  it("does not duplicate a fixed expense under concurrent requests", async () => {
+    const response = await request(app).post("/api/despesas").send({
+      descricao: "Aluguel concorrente teste",
+      categoria: "aluguel",
+      valor: 1300,
+      vencimento: "10/07/2028",
+      tipoLancamento: "fixa",
+      pago: false,
+    });
+    const origemId = response.body.data.id;
+
+    await Promise.all(
+      Array.from({ length: 5 }, () => request(app).get("/api/despesas?competencia=2028-08")),
+    );
+    const listResponse = await request(app).get("/api/despesas");
+    const agosto = listResponse.body.data.filter(
+      (despesa: { recorrenciaOrigemId?: string; vencimento: string }) =>
+        despesa.recorrenciaOrigemId === origemId && despesa.vencimento === "10/08/2028",
+    );
+
+    expect(agosto).toHaveLength(1);
+  });
+
+  it("stops a fixed series when an occurrence becomes unique and allows its deletion", async () => {
+    const response = await request(app).post("/api/despesas").send({
+      descricao: "Aluguel editavel teste",
+      categoria: "aluguel",
+      valor: 1400,
+      vencimento: "10/07/2029",
+      tipoLancamento: "fixa",
+      pago: false,
+    });
+    const origemId = response.body.data.id;
+
+    await request(app).get("/api/despesas?competencia=2029-08");
+    const listResponse = await request(app).get("/api/despesas");
+    const agosto = listResponse.body.data.find(
+      (despesa: { recorrenciaOrigemId?: string }) => despesa.recorrenciaOrigemId === origemId,
+    );
+
+    const updateResponse = await request(app).put(`/api/despesas/${agosto.id}`).send({
+      descricao: agosto.descricao,
+      categoria: agosto.categoria,
+      fornecedor: agosto.fornecedor,
+      valor: agosto.valor,
+      vencimento: agosto.vencimento,
+      tipoLancamento: "unica",
+      pago: agosto.pago,
+    });
+    expect(updateResponse.body.data.recorrenciaOrigemId).toBeUndefined();
+
+    await request(app).delete(`/api/despesas/${agosto.id}`);
+    await request(app).get("/api/despesas?competencia=2029-08");
+    const finalList = await request(app).get("/api/despesas");
+    expect(finalList.body.data.some((despesa: { id: string }) => despesa.id === agosto.id)).toBe(
+      false,
+    );
+    expect(
+      finalList.body.data.find((despesa: { id: string }) => despesa.id === origemId)
+        .tipoLancamento,
+    ).toBe("unica");
+  });
 });
