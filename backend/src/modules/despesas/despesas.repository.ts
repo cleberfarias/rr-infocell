@@ -88,17 +88,19 @@ const buildDespesa = (input: DespesaInput, current?: Despesa): Despesa => {
       current?.tipoLancamento ??
       ((input.recorrente ?? current?.recorrente) ? "fixa" : "unica"),
     totalParcelas:
-      input.tipoLancamento === "unica" ? undefined : input.totalParcelas ?? current?.totalParcelas,
+      input.tipoLancamento === "unica"
+        ? undefined
+        : (input.totalParcelas ?? current?.totalParcelas),
     pago,
     pagoEm: paidNow ? timestamp : pago ? current?.pagoEm : undefined,
     recorrenciaOrigemId:
       input.tipoLancamento === "unica"
         ? undefined
-        : input.recorrenciaOrigemId ?? current?.recorrenciaOrigemId,
+        : (input.recorrenciaOrigemId ?? current?.recorrenciaOrigemId),
     recorrenciaIndice:
       input.tipoLancamento === "unica"
         ? undefined
-        : input.recorrenciaIndice ?? current?.recorrenciaIndice,
+        : (input.recorrenciaIndice ?? current?.recorrenciaIndice),
     createdAt: current?.createdAt ?? timestamp,
     updatedAt: timestamp,
   };

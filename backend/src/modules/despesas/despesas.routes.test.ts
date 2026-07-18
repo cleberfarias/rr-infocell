@@ -231,8 +231,7 @@ describe("despesas routes", () => {
       false,
     );
     expect(
-      finalList.body.data.find((despesa: { id: string }) => despesa.id === origemId)
-        .tipoLancamento,
+      finalList.body.data.find((despesa: { id: string }) => despesa.id === origemId).tipoLancamento,
     ).toBe("unica");
   });
 });
