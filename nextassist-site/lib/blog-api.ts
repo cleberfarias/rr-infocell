@@ -17,8 +17,11 @@ export interface BlogPost {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "https://rr-infocell-api-91248386036.southamerica-east1.run.app";
 
-export async function getPublishedPosts(): Promise<BlogPost[]> {
-  const res = await fetch(`${API_URL}/blog/posts`, { next: { revalidate: 60 } });
+export async function getPublishedPosts(options?: { fresh?: boolean }): Promise<BlogPost[]> {
+  const res = await fetch(
+    `${API_URL}/blog/posts`,
+    options?.fresh ? { cache: "no-store" } : { next: { revalidate: 60 } },
+  );
   if (!res.ok) return [];
   const json = await res.json();
   return json.data ?? [];
