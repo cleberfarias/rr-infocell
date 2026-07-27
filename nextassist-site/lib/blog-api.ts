@@ -16,6 +16,9 @@ export interface BlogPost {
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "https://rr-infocell-api-91248386036.southamerica-east1.run.app";
+const LEGACY_REDIRECTED_SLUGS = new Set([
+  "erros-gestao-estoque-pecas-celular",
+]);
 
 export async function getPublishedPosts(options?: { fresh?: boolean }): Promise<BlogPost[]> {
   const res = await fetch(
@@ -24,7 +27,9 @@ export async function getPublishedPosts(options?: { fresh?: boolean }): Promise<
   );
   if (!res.ok) return [];
   const json = await res.json();
-  return json.data ?? [];
+  return (json.data ?? []).filter(
+    (post: BlogPost) => !LEGACY_REDIRECTED_SLUGS.has(post.slug),
+  );
 }
 
 export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
