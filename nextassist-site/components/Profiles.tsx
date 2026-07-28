@@ -1,4 +1,5 @@
 import ScrollReveal from "./ScrollReveal";
+import { Tilt } from "@/components/unlumen-ui/tilt";
 
 const PROFILES = [
   {
@@ -59,15 +60,21 @@ export default function Profiles() {
         <div className="profiles-grid">
           {PROFILES.map((p, index) => (
             <ScrollReveal key={p.title} variant="scale" delay={index * 120}>
-              <div className={`profile-card${p.highlight ? " highlight" : ""}`}>
-                <div style={{ fontSize: "2rem" }}>{p.icon}</div>
-                <div className="profile-title">{p.title}</div>
-                <ul className="profile-list">
-                  {p.items.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
+              <Tilt
+                className="profile-tilt"
+                rotationFactor={3}
+                springOptions={{ stiffness: 150, damping: 20, mass: 0.5 }}
+              >
+                <div className={`profile-card${p.highlight ? " highlight" : ""}`}>
+                  <div style={{ fontSize: "2rem" }}>{p.icon}</div>
+                  <div className="profile-title">{p.title}</div>
+                  <ul className="profile-list">
+                    {p.items.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              </Tilt>
             </ScrollReveal>
           ))}
         </div>

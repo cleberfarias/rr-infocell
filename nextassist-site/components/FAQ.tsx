@@ -1,4 +1,5 @@
 import ScrollReveal from "./ScrollReveal";
+import { MotionAccordion } from "@/components/unlumen-ui/motion-faqs-accordion";
 
 const FAQS = [
   {
@@ -42,14 +43,16 @@ export default function FAQ() {
         </ScrollReveal>
       </div>
       <div className="faq-list">
-        {FAQS.map((item, index) => (
-          <ScrollReveal key={item.q} delay={index * 70}>
-            <details>
-              <summary>{item.q}</summary>
-              <p>{item.a}</p>
-            </details>
-          </ScrollReveal>
-        ))}
+        <ScrollReveal variant="scale">
+          <MotionAccordion
+            items={FAQS.map((item) => ({
+              question: item.q,
+              answer: item.a,
+            }))}
+            gap={12}
+            className="faq-motion"
+          />
+        </ScrollReveal>
       </div>
     </section>
   );
