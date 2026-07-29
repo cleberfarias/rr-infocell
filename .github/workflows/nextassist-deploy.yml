@@ -35,6 +35,7 @@ jobs:
             --set-env-vars "NODE_ENV=production" \
             --set-env-vars "API_URL=https://rr-infocell-api-91248386036.southamerica-east1.run.app" \
             --set-env-vars "NEXT_PUBLIC_API_URL=https://rr-infocell-api-91248386036.southamerica-east1.run.app" \
+            --set-env-vars "NEXT_PUBLIC_CONVERSION_ENDPOINT=https://nextassist-blog-panel-7aake2caja-rj.a.run.app/api/conversions" \
             --set-env-vars "NEXT_PUBLIC_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY }}" \
             --port 3000 \
             --min-instances 0 \
