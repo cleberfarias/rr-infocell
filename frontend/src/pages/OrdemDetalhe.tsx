@@ -62,7 +62,7 @@ import {
 } from "@/components/ui/popover";
 import { formatBRL, formatDate } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
-import { EMPRESA } from "@/constants/company";
+import { useTenant } from "@/contexts/TenantContext";
 import { getAparelho } from "@/services/aparelhos";
 import { getCliente } from "@/services/clientes";
 import {
@@ -75,6 +75,7 @@ import {
 import { listProdutos } from "@/services/produtos";
 
 const OrdemDetalhe = () => {
+  const { company, branding } = useTenant();
   const { ordemId } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -575,7 +576,7 @@ const OrdemDetalhe = () => {
           >
             <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
               {(() => {
-                const logoUrl = localStorage.getItem("rr-logo-url");
+                const logoUrl = branding.logo;
                 return logoUrl ? (
                   <img
                     src={logoUrl}
@@ -598,16 +599,16 @@ const OrdemDetalhe = () => {
                     color: "#111827",
                   }}
                 >
-                  {EMPRESA.nome}
+                  {company.nome}
                 </p>
                 <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>
-                  CNPJ: {EMPRESA.cnpj}
+                  CNPJ: {company.cnpj}
                 </p>
                 <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>
-                  {EMPRESA.enderecoCompleto}
+                  {company.enderecoCompleto}
                 </p>
                 <p style={{ margin: 0, fontSize: 10, color: "#374151" }}>
-                  Tel/WhatsApp: {EMPRESA.telefone}
+                  Tel/WhatsApp: {company.telefone}
                 </p>
               </div>
             </div>
@@ -651,7 +652,7 @@ const OrdemDetalhe = () => {
             },
             {
               label: "Técnico responsável",
-              val: ordem.tecnicoResponsavel ?? EMPRESA.tecnicoPadrao,
+              val: ordem.tecnicoResponsavel ?? company.tecnicoPadrao,
             },
           ].map(({ label, val }) => (
             <div
@@ -1060,7 +1061,7 @@ const OrdemDetalhe = () => {
         >
           {[
             "Assinatura do cliente",
-            `Atendente: ${ordem.tecnicoResponsavel ?? EMPRESA.tecnicoPadrao}`,
+            `Atendente: ${ordem.tecnicoResponsavel ?? company.tecnicoPadrao}`,
           ].map((label) => (
             <div
               key={label}

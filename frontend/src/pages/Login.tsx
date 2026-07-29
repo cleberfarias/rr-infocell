@@ -5,7 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
-import { isOwnerLogin, OWNER_LOGIN } from "@/lib/owner";
+import {
+  isOwnerLogin,
+  OWNER_LOGIN,
+  resolveLoginEmail,
+} from "@/lib/owner";
 import {
   ShieldCheck,
   Wrench,
@@ -19,6 +23,7 @@ import { useState } from "react";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { firebaseAuth } from "@/lib/firebase";
 import { useTenant } from "@/contexts/TenantContext";
+import { tenantConfig } from "@/config/tenantConfig";
 
 type Role = "admin" | "atendente" | "tecnico";
 
@@ -86,7 +91,7 @@ const Login = () => {
     if (!firebaseAuth) return;
     setResetStatus("sending");
     try {
-      await sendPasswordResetEmail(firebaseAuth, resetEmail, {
+      await sendPasswordResetEmail(firebaseAuth, resolveLoginEmail(resetEmail), {
         url: window.location.origin,
       });
       setResetStatus("sent");
@@ -97,7 +102,13 @@ const Login = () => {
 
   const handleRoleChange = (nextRole: Role) => {
     setRole(nextRole);
-    setEmail(roles[nextRole].email);
+    setEmail(
+      tenantConfig.isNextAssistDomain
+        ? nextRole === "admin"
+          ? OWNER_LOGIN
+          : ""
+        : roles[nextRole].email,
+    );
     setError(null);
   };
 

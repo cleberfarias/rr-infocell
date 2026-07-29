@@ -120,3 +120,23 @@ Escopo futuro:
 
 Resultado esperado:
 - Clientes podem usar o NextAssist com identidade visual propria, mantendo a base comum do produto.
+
+## Fase 9: Integracoes fiscais e pagamentos
+
+Status: em andamento, com a fundacao e o Mercado Pago Point implantados em producao em 15 de julho de 2026.
+
+Entregue:
+
+- Configuracao fiscal e de pagamentos por tenant.
+- Contratos `FiscalProvider` e `PaymentProvider`.
+- OAuth e pagamentos presenciais Mercado Pago Point.
+- Segredos criptografados e validacao server-side antes da venda.
+
+Proximas entregas:
+
+- Emissao real de NFC-e e NFS-e em homologacao e producao.
+- Webhooks, estorno e conciliacao Mercado Pago.
+- Stone API e PagBank.
+- SmartPOS Stone e, posteriormente, TEF.
+
+Documento tecnico: [Integracoes Fiscais e de Pagamentos](./integracoes-fiscais-pagamentos.md).

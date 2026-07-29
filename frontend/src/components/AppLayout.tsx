@@ -21,6 +21,8 @@ import {
   Bug,
   Settings,
   UserPlus,
+  CalendarClock,
+  CreditCard,
 } from "lucide-react";
 import { MdDashboard, MdHandyman, MdInventory2, MdPointOfSale, MdAccountBalance, MdChecklist, MdPhoneAndroid } from "react-icons/md";
 import { FaWhatsapp } from "react-icons/fa";
@@ -43,6 +45,7 @@ import { listOrdensServico } from "@/services/ordens-servico";
 import { listProdutos } from "@/services/produtos";
 import { useTenant } from "@/contexts/TenantContext";
 import { canUseModule, type ModuleKey } from "@/config/planModules";
+import { formatDate } from "@/lib/formatters";
 
 type NavItem = {
   to: string;
@@ -102,7 +105,7 @@ export const AppLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchValue, setSearchValue] = useState("");
-  const { tenant } = useTenant();
+  const { diasRestantes, status, tenant, trialEndsAt } = useTenant();
   const {
     displayName: nome,
     isAuthenticated,
@@ -230,6 +233,7 @@ export const AppLayout = () => {
 
   const podeNovaOS = canAccess(role, "/app/ordens/nova");
   const inicial = nome.trim().charAt(0).toUpperCase();
+  const showTrialBanner = status === "trial";
 
   const sair = async () => {
     await logout();
@@ -464,6 +468,35 @@ export const AppLayout = () => {
             )}
           </div>
         </header>
+
+        {showTrialBanner && (
+          <section className="border-b border-primary/20 bg-primary/10 px-4 py-3 md:px-8">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary">
+                  <CalendarClock className="h-4 w-4" />
+                </span>
+                <div className="min-w-0">
+                  <p className="font-display text-sm font-semibold text-foreground">
+                    Teste gratuito: {diasRestantes} {diasRestantes === 1 ? "dia restante" : "dias restantes"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Seu acesso de teste termina em {formatDate(trialEndsAt ?? undefined)}. Contrate o plano para manter o sistema ativo.
+                  </p>
+                </div>
+              </div>
+              <Button
+                asChild
+                className="w-full bg-gradient-primary text-primary-foreground shadow-glow md:w-auto"
+              >
+                <NavLink to="/planos">
+                  <CreditCard className="h-4 w-4" />
+                  Escolher plano
+                </NavLink>
+              </Button>
+            </div>
+          </section>
+        )}
 
         <main className="flex-1 overflow-x-hidden p-4 pb-20 md:p-8 md:pb-8 animate-fade-in">
           <ErrorBoundary>

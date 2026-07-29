@@ -23,10 +23,13 @@ import { usuariosTecnicosRoutes } from "./modules/usuarios/usuarios-tecnicos.rou
 import { tenantsRoutes } from "./modules/tenants/tenants.routes.js";
 import { vendasRoutes } from "./modules/vendas/vendas.routes.js";
 import { whatsappRoutes } from "./modules/whatsapp/whatsapp.router.js";
+import { integracoesRoutes } from "./modules/integracoes/integracoes.routes.js";
+import { integracoesPublicRoutes } from "./modules/integracoes/integracoes.public.routes.js";
 
 export const routes = Router();
 
 routes.use("/health", healthRoutes);
+routes.use("/integracoes", integracoesPublicRoutes);
 routes.use(requireAuth);
 routes.use("/ajuda", requireRole("admin", "atendente", "tecnico"), ajudaRoutes);
 routes.use("/clientes", requireRole("admin", "atendente", "tecnico"), clientesRoutes);
@@ -57,3 +60,4 @@ routes.use("/fornecedores", requireRole("admin", "atendente", "tecnico"), fornec
 routes.use("/terceirizados", requireRole("admin", "atendente"), terceirizadosRoutes);
 routes.use("/contas", requireRole("admin", "atendente"), contasRoutes);
 routes.use("/tenants", requireRole("admin", "atendente", "tecnico"), tenantsRoutes);
+routes.use("/integracoes", requireRole("admin"), integracoesRoutes);

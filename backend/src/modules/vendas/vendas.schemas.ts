@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const vendaInputSchema = z
   .object({
+    paymentTransactionId: z.string().uuid().optional(),
     ordemServicoId: z.string().trim().optional(),
     clienteId: z.string().trim().optional(),
     clienteNome: z.string().trim().optional(),

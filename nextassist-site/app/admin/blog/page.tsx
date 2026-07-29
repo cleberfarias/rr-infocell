@@ -90,6 +90,8 @@ function AdminBlogPage() {
   }, [headers]);
 
   useEffect(() => {
+    // Standard fetch-on-mount/dependency-change effect (react.dev/learn/synchronizing-with-effects#fetching-data).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (user) loadPosts();
   }, [user, loadPosts]);
 
@@ -412,7 +414,7 @@ function AdminBlogPage() {
               </div>
 
               <div className="form-group" style={{ gridColumn: "1 / -1" }}>
-                <label>Inserir imagem no conteÃºdo</label>
+                <label>Inserir imagem no conteúdo</label>
                 <div className="admin-image-insert-row">
                   <input
                     value={contentImageUrl}
@@ -422,7 +424,7 @@ function AdminBlogPage() {
                   <input
                     value={contentImageAlt}
                     onChange={(e) => setContentImageAlt(e.target.value)}
-                    placeholder="DescriÃ§Ã£o da imagem"
+                    placeholder="Descrição da imagem"
                   />
                   <button
                     type="button"
@@ -434,7 +436,7 @@ function AdminBlogPage() {
                   </button>
                 </div>
                 <p style={{ color: "var(--muted)", fontSize: ".78rem", marginTop: ".5rem" }}>
-                  A imagem serÃ¡ adicionada ao final do HTML como figure/img.
+                  A imagem será adicionada ao final do HTML como figure/img.
                 </p>
               </div>
 

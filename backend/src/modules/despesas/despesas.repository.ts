@@ -19,6 +19,7 @@ const seedDespesas: Despesa[] = [
     valor: 2200,
     vencimento: "05/05",
     recorrente: true,
+    tipoLancamento: "fixa",
     pago: true,
     pagoEm: now(),
     createdAt: now(),
@@ -32,6 +33,7 @@ const seedDespesas: Despesa[] = [
     valor: 540,
     vencimento: "10/05",
     recorrente: true,
+    tipoLancamento: "fixa",
     pago: true,
     pagoEm: now(),
     createdAt: now(),
@@ -45,6 +47,7 @@ const seedDespesas: Despesa[] = [
     valor: 199,
     vencimento: "15/05",
     recorrente: true,
+    tipoLancamento: "fixa",
     pago: false,
     createdAt: now(),
     updatedAt: now(),
@@ -62,8 +65,9 @@ export interface DespesasRepository {
   ): Promise<Despesa[]>;
   findById(id: string, tenantId?: string): Promise<Despesa | null>;
   create(input: DespesaInput, tenantId?: string): Promise<Despesa>;
-  update(id: string, input: DespesaInput): Promise<Despesa | null>;
-  delete(id: string): Promise<boolean>;
+  createRecurrence(input: DespesaInput, tenantId?: string): Promise<Despesa>;
+  update(id: string, input: DespesaInput, tenantId?: string): Promise<Despesa | null>;
+  delete(id: string, tenantId?: string): Promise<boolean>;
 }
 
 const buildDespesa = (input: DespesaInput, current?: Despesa): Despesa => {
@@ -79,8 +83,24 @@ const buildDespesa = (input: DespesaInput, current?: Despesa): Despesa => {
     valor: input.valor,
     vencimento: input.vencimento,
     recorrente: input.recorrente ?? current?.recorrente ?? false,
+    tipoLancamento:
+      input.tipoLancamento ??
+      current?.tipoLancamento ??
+      ((input.recorrente ?? current?.recorrente) ? "fixa" : "unica"),
+    totalParcelas:
+      input.tipoLancamento === "unica"
+        ? undefined
+        : (input.totalParcelas ?? current?.totalParcelas),
     pago,
     pagoEm: paidNow ? timestamp : pago ? current?.pagoEm : undefined,
+    recorrenciaOrigemId:
+      input.tipoLancamento === "unica"
+        ? undefined
+        : (input.recorrenciaOrigemId ?? current?.recorrenciaOrigemId),
+    recorrenciaIndice:
+      input.tipoLancamento === "unica"
+        ? undefined
+        : (input.recorrenciaIndice ?? current?.recorrenciaIndice),
     createdAt: current?.createdAt ?? timestamp,
     updatedAt: timestamp,
   };
@@ -142,8 +162,18 @@ export class MemoryDespesasRepository implements DespesasRepository {
     return despesa;
   }
 
-  async update(id: string, input: DespesaInput) {
-    const current = await this.findById(id);
+  async createRecurrence(input: DespesaInput, tenantId?: string) {
+    const existing = Array.from(this.despesas.values()).find(
+      (despesa) =>
+        despesa.recorrenciaOrigemId === input.recorrenciaOrigemId &&
+        despesa.recorrenciaIndice === input.recorrenciaIndice,
+    );
+
+    return existing ?? this.create(input, tenantId);
+  }
+
+  async update(id: string, input: DespesaInput, tenantId?: string) {
+    const current = await this.findById(id, tenantId);
 
     if (!current) {
       return null;
@@ -156,7 +186,7 @@ export class MemoryDespesasRepository implements DespesasRepository {
     return despesa;
   }
 
-  async delete(id: string) {
+  async delete(id: string, _tenantId?: string) {
     return this.despesas.delete(id);
   }
 }
@@ -216,8 +246,39 @@ export class FirestoreDespesasRepository implements DespesasRepository {
     return despesa;
   }
 
-  async update(id: string, input: DespesaInput) {
-    const current = await this.findById(id);
+  async createRecurrence(input: DespesaInput, tenantId = DEFAULT_TENANT_ID) {
+    const originId = input.recorrenciaOrigemId;
+    const index = input.recorrenciaIndice;
+
+    if (!originId || index === undefined) {
+      return this.create(input, tenantId);
+    }
+
+    // A deterministic document prevents duplicate installments when two Cloud Run
+    // requests materialize the same competence at the same time.
+    const safeTenantId = tenantId.replace(/[^a-zA-Z0-9_-]/g, "_");
+    const document = this.firestore
+      .collection(despesasCollection)
+      .doc(`rec_${safeTenantId}_${originId}_${index}`);
+
+    return this.firestore.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(document);
+      if (snapshot.exists) {
+        return this.fromDocument(snapshot.id, snapshot.data() ?? {});
+      }
+
+      const despesa = {
+        ...buildDespesa(input),
+        id: document.id,
+        tenantId,
+      };
+      transaction.create(document, withoutUndefined(despesa));
+      return despesa;
+    });
+  }
+
+  async update(id: string, input: DespesaInput, tenantId?: string) {
+    const current = await this.findById(id, tenantId);
 
     if (!current) {
       return null;
@@ -233,8 +294,8 @@ export class FirestoreDespesasRepository implements DespesasRepository {
     return despesa;
   }
 
-  async delete(id: string) {
-    const current = await this.findById(id);
+  async delete(id: string, tenantId?: string) {
+    const current = await this.findById(id, tenantId);
 
     if (!current) {
       return false;
@@ -254,8 +315,18 @@ export class FirestoreDespesasRepository implements DespesasRepository {
       valor: Number(data.valor ?? 0),
       vencimento: String(data.vencimento ?? ""),
       recorrente: data.recorrente === true,
+      tipoLancamento:
+        data.tipoLancamento === "parcelada" || data.tipoLancamento === "unica"
+          ? data.tipoLancamento
+          : data.recorrente === true
+            ? "fixa"
+            : "unica",
+      totalParcelas: data.totalParcelas !== undefined ? Number(data.totalParcelas) : undefined,
       pago: data.pago === true,
       pagoEm: data.pagoEm ? String(data.pagoEm) : undefined,
+      recorrenciaOrigemId: data.recorrenciaOrigemId ? String(data.recorrenciaOrigemId) : undefined,
+      recorrenciaIndice:
+        data.recorrenciaIndice !== undefined ? Number(data.recorrenciaIndice) : undefined,
       tenantId: data.tenantId ? String(data.tenantId) : undefined,
       createdAt: String(data.createdAt ?? ""),
       updatedAt: String(data.updatedAt ?? ""),

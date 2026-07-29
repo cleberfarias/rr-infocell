@@ -44,9 +44,9 @@ Campos principais:
 
 Essa configuracao e estatica, versionada no codigo e usada como preparacao para uma configuracao real por tenant.
 
-## Futuro: configuracao por banco
+## Configuracao por banco
 
-Em uma fase futura, essas configuracoes poderao vir do banco de dados, associadas a um `tenantId` ou `empresaId`.
+As configuracoes editaveis vem do documento `tenants/{tenantId}` e possuem fallback estatico para preservar a operacao quando o documento ainda nao existe.
 
 Possiveis dados futuros:
 
@@ -61,15 +61,7 @@ Possiveis dados futuros:
 
 ## Limites da etapa atual
 
-Nesta etapa:
-
-- Nao ha edicao de configuracoes.
-- Nao ha salvamento.
-- Nao ha backend para tenant.
-- Nao ha mudanca de banco.
-- Nao ha multiempresa real.
-
-Qualquer tela de configuracao criada nesta fase deve ser somente leitura.
+Nesta etapa, administradores podem editar a identidade e os dados operacionais do proprio tenant. Plano, assinatura, produto base e permissoes nao sao editaveis pela tela. O isolamento continua baseado no `tenantId` resolvido pelo backend.
 
 ## Diretriz de seguranca
 

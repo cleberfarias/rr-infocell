@@ -10,7 +10,6 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { perguntarAI } from "@/services/ajuda";
-import { tenantConfig } from "@/config/tenantConfig";
 
 type Message = {
   id: string;
@@ -65,12 +64,27 @@ const quickGuides = [
     label: "Como usar o PDV?",
     question: "Como eu faço uma venda direta no PDV?",
   },
+  {
+    label: "Despesa fixa",
+    question:
+      "Como cadastrar uma despesa fixa mensal informando apenas o dia do vencimento?",
+  },
+  {
+    label: "Despesa parcelada",
+    question:
+      "Como cadastrar uma despesa parcelada e pagar cada parcela separadamente?",
+  },
+  {
+    label: "Centro de treinamento",
+    question: "Como encontro um guia no Centro de treinamento?",
+  },
 ];
 
 const INITIAL_MESSAGE: Message = {
   id: "init",
   role: "assistant",
-  content: `Olá! Sou o assistente do ${tenantConfig.tenantName}. Posso te ajudar a entender como usar qualquer parte do sistema.\n\nUse os guias rápidos abaixo ou escreva sua dúvida.`,
+  content:
+    "Olá! Eu sou a Stella, assistente inteligente do seu sistema. Posso explicar os fluxos da operação e ajudar você a encontrar o caminho certo.\n\nUse os guias rápidos abaixo ou escreva sua dúvida.",
 };
 
 export const AIAssistant = () => {
@@ -135,7 +149,7 @@ export const AIAssistant = () => {
     <>
       <button
         onClick={() => setOpen(true)}
-        title="Assistente IA"
+        title="Abrir Stella"
         className="fixed bottom-20 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-primary shadow-glow transition-all hover:scale-105 hover:opacity-90 md:bottom-6 md:right-6"
       >
         <Sparkles className="h-6 w-6 text-primary-foreground" />
@@ -150,10 +164,10 @@ export const AIAssistant = () => {
               </div>
               <div>
                 <SheetTitle className="text-left text-base">
-                  Assistente {tenantConfig.tenantName}
+                  Stella
                 </SheetTitle>
                 <p className="text-xs text-muted-foreground">
-                  Tire dúvidas sobre como usar o sistema
+                  Assistente inteligente da sua operação
                 </p>
               </div>
             </div>

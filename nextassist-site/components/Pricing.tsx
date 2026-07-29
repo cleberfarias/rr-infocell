@@ -10,11 +10,11 @@ const PLANS = [
     items: [
       { text: "1 usuário", ok: true },
       { text: "OS ilimitadas", ok: true },
-      { text: "Estoque e PDV", ok: true },
+      { text: "Cadastro de clientes", ok: true },
       { text: "Impressão de recibos", ok: true },
       { text: "Dashboard básico", ok: true },
+      { text: "Estoque e PDV", ok: false },
       { text: "Notificações WhatsApp", ok: false },
-      { text: "Múltiplos usuários", ok: false },
       { text: "Relatórios avançados", ok: false },
     ],
   },
@@ -30,9 +30,9 @@ const PLANS = [
       { text: "Estoque e PDV", ok: true },
       { text: "Impressão de recibos", ok: true },
       { text: "Dashboard completo", ok: true },
-      { text: "Notificações WhatsApp", ok: true },
       { text: "Perfis de acesso", ok: true },
-      { text: "Relatórios avançados", ok: false },
+      { text: "Relatórios avançados", ok: true },
+      { text: "Notificações WhatsApp", ok: false },
     ],
   },
   {
@@ -47,16 +47,16 @@ const PLANS = [
       { text: "Estoque e PDV", ok: true },
       { text: "Impressão de recibos", ok: true },
       { text: "Dashboard consolidado", ok: true },
-      { text: "Notificações WhatsApp", ok: true },
       { text: "Perfis de acesso", ok: true },
       { text: "Relatórios avançados", ok: true },
+      { text: "Notificações WhatsApp", ok: true },
     ],
   },
 ];
 
 export default function Pricing() {
   return (
-    <section id="planos">
+    <section id="planos" className="immersive-section immersive-pricing">
       <div className="section-center">
         <ScrollReveal>
           <span className="section-tag">Planos</span>
@@ -71,8 +71,9 @@ export default function Pricing() {
 
         <ScrollReveal>
           <div className="pricing-grid">
-            {PLANS.map((plan) => (
-              <div key={plan.name} className={`plan-card${plan.popular ? " popular" : ""}`}>
+            {PLANS.map((plan, index) => (
+              <ScrollReveal key={plan.name} variant="scale" delay={index * 120}>
+              <div className={`plan-card${plan.popular ? " popular" : ""}`}>
                 {plan.popular && <span className="plan-badge">Mais popular</span>}
                 <div className="plan-name">{plan.name}</div>
                 <div className="plan-desc">{plan.desc}</div>
@@ -97,6 +98,7 @@ export default function Pricing() {
                   Contratar agora →
                 </a>
               </div>
+              </ScrollReveal>
             ))}
           </div>
 

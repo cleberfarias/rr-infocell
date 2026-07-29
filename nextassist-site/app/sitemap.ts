@@ -3,6 +3,10 @@ import { getPublishedPosts } from "@/lib/blog-api";
 
 const BASE_URL = "https://www.nextassist-app.com.br";
 
+// O sitemap precisa refletir posts publicados pela API sem depender de um
+// novo build/deploy do site.
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
@@ -29,7 +33,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   let blogPages: MetadataRoute.Sitemap = [];
   try {
-    const posts = await getPublishedPosts();
+    const posts = await getPublishedPosts({ fresh: true });
     blogPages = posts.map((post) => ({
       url: `${BASE_URL}/blog/${post.slug}`,
       lastModified: new Date(post.atualizadoEm || post.publicadoEm || post.criadoEm),

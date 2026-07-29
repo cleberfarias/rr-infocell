@@ -32,12 +32,12 @@ const seedClientes: Cliente[] = [
 ];
 
 export interface ClientesRepository {
-  list(search?: string, tenantId?: string): Promise<Cliente[]>;
+  list(search?: string, tenantId?: string, allTenants?: boolean): Promise<Cliente[]>;
   findById(id: string, tenantId?: string): Promise<Cliente | null>;
   findByTelefone(telefone: string): Promise<Cliente | null>;
   create(input: ClienteInput, tenantId?: string): Promise<Cliente>;
-  update(id: string, input: ClienteInput): Promise<Cliente | null>;
-  delete(id: string): Promise<boolean>;
+  update(id: string, input: ClienteInput, tenantId?: string): Promise<Cliente | null>;
+  delete(id: string, tenantId?: string): Promise<boolean>;
 }
 
 export class MemoryClientesRepository implements ClientesRepository {
@@ -45,7 +45,7 @@ export class MemoryClientesRepository implements ClientesRepository {
     seedClientes.map((cliente) => [cliente.id, cliente]),
   );
 
-  async list(search = "", _tenantId?: string) {
+  async list(search = "", _tenantId?: string, _allTenants?: boolean) {
     const normalizedSearch = search.trim().toLowerCase();
     const clientes = Array.from(this.clientes.values()).sort((a, b) =>
       a.nome.localeCompare(b.nome, "pt-BR"),
@@ -84,8 +84,8 @@ export class MemoryClientesRepository implements ClientesRepository {
     return cliente;
   }
 
-  async update(id: string, input: ClienteInput) {
-    const current = await this.findById(id);
+  async update(id: string, input: ClienteInput, tenantId?: string) {
+    const current = await this.findById(id, tenantId);
 
     if (!current) {
       return null;
@@ -102,7 +102,7 @@ export class MemoryClientesRepository implements ClientesRepository {
     return cliente;
   }
 
-  async delete(id: string) {
+  async delete(id: string, _tenantId?: string) {
     return this.clientes.delete(id);
   }
 }
@@ -110,17 +110,17 @@ export class MemoryClientesRepository implements ClientesRepository {
 export class FirestoreClientesRepository implements ClientesRepository {
   constructor(private readonly firestore: Firestore) {}
 
-  async list(search = "", tenantId = DEFAULT_TENANT_ID) {
+  async list(search = "", tenantId = DEFAULT_TENANT_ID, allTenants = false) {
     let query: FirebaseFirestore.Query = this.firestore.collection(clientesCollection);
 
-    if (tenantId !== DEFAULT_TENANT_ID) {
+    if (!allTenants && tenantId !== DEFAULT_TENANT_ID) {
       query = query.where("tenantId", "==", tenantId);
     }
 
     const snapshot = await query.get();
     const clientes = snapshot.docs
       .map((document) => this.fromDocument(document.id, document.data()))
-      .filter((cliente) => getClienteTenantId(cliente) === tenantId)
+      .filter((cliente) => allTenants || getClienteTenantId(cliente) === tenantId)
       .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
     const normalizedSearch = search.trim().toLowerCase();
@@ -181,8 +181,8 @@ export class FirestoreClientesRepository implements ClientesRepository {
     return cliente;
   }
 
-  async update(id: string, input: ClienteInput) {
-    const current = await this.findById(id);
+  async update(id: string, input: ClienteInput, tenantId?: string) {
+    const current = await this.findById(id, tenantId);
 
     if (!current) {
       return null;
@@ -200,8 +200,8 @@ export class FirestoreClientesRepository implements ClientesRepository {
     return cliente;
   }
 
-  async delete(id: string) {
-    const current = await this.findById(id);
+  async delete(id: string, tenantId?: string) {
+    const current = await this.findById(id, tenantId);
 
     if (!current) {
       return false;

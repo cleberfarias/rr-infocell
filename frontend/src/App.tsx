@@ -29,6 +29,7 @@ import Observabilidade from "./pages/Observabilidade";
 import LeadsTrials from "./pages/LeadsTrials";
 import TenantSettings from "./pages/TenantSettings";
 import ConfiguracoesMensagens from "./pages/ConfiguracoesMensagens";
+import Integracoes from "./pages/Integracoes";
 import Planos from "./pages/Planos";
 
 const queryClient = new QueryClient();
@@ -66,6 +67,7 @@ const App = () => (
                 <Route path="treinamento" element={<Treinamento />} />
                 <Route path="configuracoes" element={<TenantSettings />} />
                 <Route path="configuracoes/mensagens" element={<ConfiguracoesMensagens />} />
+                <Route path="configuracoes/integracoes" element={<Integracoes />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

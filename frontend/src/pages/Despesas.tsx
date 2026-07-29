@@ -54,6 +54,7 @@ import {
   type Despesa,
   type DespesaCategoria,
   type DespesaInput,
+  type DespesaTipo,
 } from "@/services/despesas";
 
 const categorias: DespesaCategoria[] = [...despesaCategorias];
@@ -65,6 +66,7 @@ const emptyForm: DespesaInput = {
   valor: 0,
   vencimento: "",
   recorrente: true,
+  tipoLancamento: "fixa",
   pago: false,
 };
 
@@ -75,20 +77,30 @@ const toInput = (despesa: Despesa): DespesaInput => ({
   valor: despesa.valor,
   vencimento: despesa.vencimento,
   recorrente: despesa.recorrente,
+  tipoLancamento: despesa.tipoLancamento,
+  totalParcelas: despesa.totalParcelas,
   pago: despesa.pago,
 });
 
-const parseDespesaMes = (vencimento: string): { mes: number; ano: number | null } | null => {
+const parseDespesaMes = (
+  vencimento: string,
+): { mes: number; ano: number | null } | null => {
   const trimmed = vencimento.trim();
   const brDate = trimmed.match(/^\d{1,2}\/(\d{1,2})(?:\/(\d{2,4}))?$/);
   const isoDate = trimmed.match(/^(\d{4})-(\d{2})-\d{2}/);
 
-  const mes = brDate ? Number(brDate[1]) - 1 : isoDate ? Number(isoDate[2]) - 1 : NaN;
+  const mes = brDate
+    ? Number(brDate[1]) - 1
+    : isoDate
+      ? Number(isoDate[2]) - 1
+      : NaN;
   const anoText = brDate ? brDate[2] : isoDate ? isoDate[1] : undefined;
 
   if (!Number.isInteger(mes) || mes < 0 || mes > 11) return null;
 
-  const ano = anoText ? Number(anoText.length === 2 ? `20${anoText}` : anoText) : null;
+  const ano = anoText
+    ? Number(anoText.length === 2 ? `20${anoText}` : anoText)
+    : null;
   return { mes, ano };
 };
 
@@ -120,9 +132,10 @@ const Despesas = () => {
     return d;
   }, [mesOffset]);
 
+  const competencia = `${mesRef.getFullYear()}-${String(mesRef.getMonth() + 1).padStart(2, "0")}`;
   const despesasQuery = useQuery({
-    queryKey: ["despesas"],
-    queryFn: () => listDespesas(),
+    queryKey: ["despesas", competencia],
+    queryFn: () => listDespesas({ competencia }),
   });
 
   const lista = useMemo(() => despesasQuery.data ?? [], [despesasQuery.data]);
@@ -139,7 +152,10 @@ const Despesas = () => {
     const mes = mesRef.getMonth();
     return filtrada.filter((despesa) => {
       const parsed = parseDespesaMes(despesa.vencimento);
-      if (!parsed) return true;
+      if (!parsed) {
+        const hoje = new Date();
+        return mes === hoje.getMonth() && ano === hoje.getFullYear();
+      }
       if (parsed.ano === null) return parsed.mes === mes;
       return parsed.mes === mes && parsed.ano === ano;
     });
@@ -214,7 +230,9 @@ const Despesas = () => {
     .filter((despesa) => despesa.pago)
     .reduce((sum, despesa) => sum + despesa.valor, 0);
   const totalAberto = total - totalPago;
-  const recorrentes = despesasDoMes.filter((despesa) => despesa.recorrente).length;
+  const recorrentes = despesasDoMes.filter(
+    (despesa) => despesa.recorrente,
+  ).length;
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
   const abrirNovo = () => {
@@ -235,12 +253,33 @@ const Despesas = () => {
       return;
     }
 
-    if (editingId) {
-      updateMutation.mutate({ id: editingId, input: form });
+    const tipo = form.tipoLancamento ?? "unica";
+    const somenteDia = form.vencimento.trim().match(/^(\d{1,2})$/);
+    const vencimento = somenteDia && tipo !== "unica"
+      ? `${String(Number(somenteDia[1])).padStart(2, "0")}/${String(mesRef.getMonth() + 1).padStart(2, "0")}/${mesRef.getFullYear()}`
+      : form.vencimento;
+
+    if (!parseDespesaMes(vencimento)) {
+      toast({
+        title: "Informe o vencimento com dia e mes",
+        description: tipo === "unica" ? "Use dd/mm, dd/mm/aaaa ou aaaa-mm-dd." : "Informe somente o dia ou uma data completa.",
+        variant: "destructive",
+      });
       return;
     }
 
-    createMutation.mutate(form);
+    if (tipo === "parcelada" && (!form.totalParcelas || form.totalParcelas < 2)) {
+      toast({ title: "Informe ao menos 2 parcelas", variant: "destructive" });
+      return;
+    }
+
+    const input = { ...form, vencimento, recorrente: tipo !== "unica" };
+    if (editingId) {
+      updateMutation.mutate({ id: editingId, input });
+      return;
+    }
+
+    createMutation.mutate(input);
   };
 
   const remover = (id: string) => {
@@ -301,18 +340,34 @@ const Despesas = () => {
           </p>
           <h2 className="font-display text-2xl font-bold">Despesas</h2>
           <p className="text-sm text-muted-foreground capitalize">
-            {mesRef.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
+            {mesRef.toLocaleDateString("pt-BR", {
+              month: "long",
+              year: "numeric",
+            })}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1 rounded-md border border-border bg-secondary/30 px-1">
-            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setMesOffset((m) => m - 1)}>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+              onClick={() => setMesOffset((m) => m - 1)}
+            >
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="min-w-[110px] text-center text-sm font-medium capitalize">
-              {mesRef.toLocaleDateString("pt-BR", { month: "short", year: "numeric" })}
+              {mesRef.toLocaleDateString("pt-BR", {
+                month: "short",
+                year: "numeric",
+              })}
             </span>
-            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setMesOffset((m) => m + 1)}>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+              onClick={() => setMesOffset((m) => m + 1)}
+            >
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
@@ -399,6 +454,41 @@ const Despesas = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
+                    <Label>Tipo de lancamento</Label>
+                    <Select
+                      value={form.tipoLancamento ?? "unica"}
+                      onValueChange={(value) =>
+                        setForm({
+                          ...form,
+                          tipoLancamento: value as DespesaTipo,
+                          recorrente: value !== "unica",
+                          totalParcelas: value === "parcelada" ? (form.totalParcelas ?? 2) : undefined,
+                        })
+                      }
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unica">Unica</SelectItem>
+                        <SelectItem value="fixa">Fixa mensal</SelectItem>
+                        <SelectItem value="parcelada">Parcelada</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {form.tipoLancamento === "parcelada" && (
+                    <div className="space-y-2">
+                      <Label>Quantidade de parcelas</Label>
+                      <Input
+                        type="number"
+                        min={2}
+                        max={120}
+                        value={form.totalParcelas ?? 2}
+                        onChange={(event) => setForm({ ...form, totalParcelas: Number(event.target.value) })}
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
                     <Label>Valor (R$)</Label>
                     <Input
                       type="number"
@@ -414,9 +504,9 @@ const Despesas = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Vencimento</Label>
+                    <Label>{form.tipoLancamento === "unica" ? "Vencimento" : "Dia do vencimento"}</Label>
                     <Input
-                      placeholder="dd/mm"
+                      placeholder={form.tipoLancamento === "unica" ? "dd/mm ou dd/mm/aaaa" : "Ex.: 10"}
                       value={form.vencimento}
                       onChange={(event) =>
                         setForm({ ...form, vencimento: event.target.value })
@@ -424,18 +514,13 @@ const Despesas = () => {
                     />
                   </div>
                 </div>
-                <div className="flex items-center justify-between rounded-md border border-border bg-secondary/30 px-3 py-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Repeat className="h-4 w-4 text-primary" /> Despesa
-                    recorrente
-                  </div>
-                  <Switch
-                    checked={form.recorrente}
-                    onCheckedChange={(value) =>
-                      setForm({ ...form, recorrente: value })
-                    }
-                  />
-                </div>
+                {form.tipoLancamento !== "unica" && (
+                  <p className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+                    {form.tipoLancamento === "fixa"
+                      ? "A despesa sera repetida mensalmente, sem prazo final, sempre em aberto."
+                      : `Serao criadas ${form.totalParcelas ?? 2} parcelas mensais independentes, todas em aberto.`}
+                  </p>
+                )}
                 <div className="flex items-center justify-between rounded-md border border-border bg-secondary/30 px-3 py-2">
                   <div className="flex items-center gap-2 text-sm">
                     <CheckCircle2 className="h-4 w-4 text-success" /> Ja esta
@@ -557,6 +642,11 @@ const Despesas = () => {
                       <Repeat className="h-3 w-3 text-primary" />
                     )}
                   </span>
+                  {despesa.tipoLancamento === "parcelada" && despesa.totalParcelas && (
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      Parcela {(despesa.recorrenciaIndice ?? 0) + 1}/{despesa.totalParcelas}
+                    </div>
+                  )}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {despesa.fornecedor || "-"}
@@ -620,6 +710,7 @@ const Despesas = () => {
           </TableBody>
         </Table>
       </Card>
+
     </div>
   );
 };

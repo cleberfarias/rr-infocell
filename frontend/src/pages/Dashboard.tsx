@@ -245,7 +245,7 @@ const Dashboard = () => {
         <EmptyState
           icon={ClipboardList}
           title="Não foi possível carregar o dashboard"
-          description="Verifique se o backend está rodando em http://localhost:3333."
+          description="Verifique sua conexão e tente novamente."
           actions={
             <Button
               variant="outline"

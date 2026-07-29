@@ -4,7 +4,11 @@ import { ZodError } from "zod";
 import { AppError } from "../../shared/errors.js";
 import { httpStatus } from "../../shared/http-status.js";
 import { resolveTenant, getRequestTenantId, type TenantRequest } from "../../middlewares/tenant.js";
-import { despesaInputSchema, despesaSearchSchema } from "./despesas.schemas.js";
+import {
+  despesaInputSchema,
+  despesaRecorrenciaSchema,
+  despesaSearchSchema,
+} from "./despesas.schemas.js";
 import { despesasService } from "./despesas.service.js";
 
 export const despesasRoutes = Router();
@@ -39,12 +43,15 @@ despesasRoutes.get(
   "/",
   asyncHandler(async (request, response) => {
     const tenantId = getRequestTenantId(request as TenantRequest);
-    const { q, categoria, pago } = parseOrThrow(() => despesaSearchSchema.parse(request.query));
+    const { q, categoria, pago, competencia } = parseOrThrow(() =>
+      despesaSearchSchema.parse(request.query),
+    );
     const despesas = await despesasService.list(
       {
         categoria,
         pago: pago === "" ? "" : pago === "true",
         search: q,
+        competencia,
       },
       tenantId,
     );
@@ -83,13 +90,26 @@ despesasRoutes.post(
   }),
 );
 
+despesasRoutes.post(
+  "/:id/recorrencias",
+  asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
+    const { meses } = parseOrThrow(() => despesaRecorrenciaSchema.parse(request.body));
+
+    response.status(httpStatus.created).json({
+      data: await despesasService.criarRecorrencias(String(request.params.id), meses, tenantId),
+    });
+  }),
+);
+
 despesasRoutes.put(
   "/:id",
   asyncHandler(async (request, response) => {
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const input = parseOrThrow(() => despesaInputSchema.parse(request.body));
 
     response.status(httpStatus.ok).json({
-      data: await despesasService.update(String(request.params.id), input),
+      data: await despesasService.update(String(request.params.id), input, tenantId),
     });
   }),
 );
@@ -97,7 +117,8 @@ despesasRoutes.put(
 despesasRoutes.delete(
   "/:id",
   asyncHandler(async (request, response) => {
-    await despesasService.delete(String(request.params.id));
+    const tenantId = getRequestTenantId(request as TenantRequest);
+    await despesasService.delete(String(request.params.id), tenantId);
 
     response.status(204).send();
   }),

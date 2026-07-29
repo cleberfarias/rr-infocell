@@ -14,6 +14,22 @@ export type TenantBranding = {
   showPoweredBy: boolean;
 };
 
+export type TenantCompany = {
+  nome: string;
+  cnpj: string;
+  endereco: string;
+  bairro: string;
+  cidade: string;
+  uf: string;
+  enderecoCompleto: string;
+  telefone: string;
+  whatsapp: string;
+  horarioAtendimento: string;
+  tecnicoPadrao: string;
+  mensagemFinal: string;
+  rodape: string;
+};
+
 export type TenantConfig = {
   id: TenantId;
   productName: string;

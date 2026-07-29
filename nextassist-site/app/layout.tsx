@@ -61,7 +61,6 @@ const jsonLd = {
         { "@type": "Offer", name: "Profissional", price: "149.00", priceCurrency: "BRL" },
         { "@type": "Offer", name: "Empresarial", price: "249.00", priceCurrency: "BRL" },
       ],
-      aggregateRating: { "@type": "AggregateRating", ratingValue: "5", reviewCount: "3" },
     },
     {
       "@type": "Organization",

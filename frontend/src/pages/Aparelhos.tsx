@@ -287,7 +287,7 @@ const Aparelhos = () => {
           <EmptyState
             icon={Smartphone}
             title="Não foi possível carregar aparelhos"
-            description="Verifique se o backend está rodando em http://localhost:3333."
+            description="Verifique sua conexão e tente novamente."
             actions={
               <Button
                 variant="outline"

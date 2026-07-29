@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/select";
 import { formatBRL, formatDate, formatDateTimeShort } from "@/lib/formatters";
 import { OS_STATUS_LABELS } from "@/constants/status";
-import { EMPRESA } from "@/constants/company";
+import { useTenant } from "@/contexts/TenantContext";
 import { PrintPreviewDialog } from "@/components/PrintPreviewDialog";
 import { STALE_TIME } from "@/constants/query";
 import { ROUTES } from "@/constants/routes";
@@ -72,6 +72,7 @@ const toPecasInput = (ordem: OrdemServico) =>
   }));
 
 const Orcamento = () => {
+  const { company, branding } = useTenant();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -340,7 +341,7 @@ const Orcamento = () => {
 
   const NotaOrcamentoContent = () => {
     if (!selectedOrdem) return null;
-    const logoUrl = localStorage.getItem("rr-logo-url") || null;
+    const logoUrl = branding.logo || null;
     return (
       <>
         {/* Cabeçalho */}
@@ -372,22 +373,22 @@ const Orcamento = () => {
                   fontSize: 16,
                 }}
               >
-                {EMPRESA.nome}
+                {company.nome}
               </div>
             )}
           </div>
           <div style={{ flex: 1 }}>
             <p style={{ margin: 0, fontWeight: 700, fontSize: 14 }}>
-              {EMPRESA.nome}
+              {company.nome}
             </p>
             <p style={{ margin: "2px 0 0", fontSize: 10, color: "#374151" }}>
-              CNPJ: {EMPRESA.cnpj}
+              CNPJ: {company.cnpj}
             </p>
             <p style={{ margin: "2px 0 0", fontSize: 10, color: "#374151" }}>
-              {EMPRESA.enderecoCompleto}
+              {company.enderecoCompleto}
             </p>
             <p style={{ margin: "2px 0 0", fontSize: 10, color: "#374151" }}>
-              Tel/WhatsApp: {EMPRESA.telefone}
+              Tel/WhatsApp: {company.telefone}
             </p>
           </div>
           <div style={{ textAlign: "right", flexShrink: 0 }}>
@@ -768,7 +769,7 @@ const Orcamento = () => {
               Técnico responsável
             </span>
             <strong>
-              {selectedOrdem.tecnicoResponsavel ?? EMPRESA.tecnicoPadrao}
+              {selectedOrdem.tecnicoResponsavel ?? company.tecnicoPadrao}
             </strong>
           </div>
         </div>
@@ -784,7 +785,7 @@ const Orcamento = () => {
         >
           {[
             "Aprovação do cliente",
-            `${EMPRESA.nome} — ${selectedOrdem.tecnicoResponsavel ?? EMPRESA.tecnicoPadrao}`,
+            `${company.nome} — ${selectedOrdem.tecnicoResponsavel ?? company.tecnicoPadrao}`,
           ].map((label) => (
             <div
               key={label}

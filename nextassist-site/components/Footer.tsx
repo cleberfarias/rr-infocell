@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Footer() {
   return (
     <footer>
@@ -8,9 +10,9 @@ export default function Footer() {
         <a href="#funcionalidades">Funcionalidades</a>
         <a href="#planos">Planos</a>
         <a href="#contato">Contato</a>
-        <a href="/blog">Blog</a>
-        <a href="/privacidade">Privacidade</a>
-        <a href="/termos">Termos de uso</a>
+        <Link href="/blog">Blog</Link>
+        <Link href="/privacidade">Privacidade</Link>
+        <Link href="/termos">Termos de uso</Link>
       </div>
       <span>© {new Date().getFullYear()} NextAssist. Todos os direitos reservados.</span>
     </footer>

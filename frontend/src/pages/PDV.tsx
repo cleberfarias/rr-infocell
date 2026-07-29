@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { formatBRL } from "@/lib/formatters";
-import { EMPRESA } from "@/constants/company";
+import { useTenant } from "@/contexts/TenantContext";
 import { MoneyInput } from "@/components/ui/money-input";
 import { listAparelhos } from "@/services/aparelhos";
 import { listClientes } from "@/services/clientes";
@@ -45,6 +45,7 @@ import {
 } from "@/services/ordens-servico";
 import { listProdutos, type Produto } from "@/services/produtos";
 import { createVenda, listVendas, type Venda } from "@/services/vendas";
+import { createMercadoPagoOrder, getIntegrationSettings, getMercadoPagoOrder } from "@/services/integracoes";
 import {
   createTerceirizado,
   type TerceirizadoInput,
@@ -94,6 +95,7 @@ const paymentOptions: Array<{
 ];
 
 const PDV = () => {
+  const { company, branding } = useTenant();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -106,6 +108,7 @@ const PDV = () => {
   const [valorRecebido, setValorRecebido] = useState("");
   const [desconto, setDesconto] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [paymentProgress, setPaymentProgress] = useState("");
   const [modoVenda, setModoVenda] = useState<"os" | "direta">("os");
   const [clienteVendaDireta, setClienteVendaDireta] = useState("");
   const [carrinho, setCarrinho] = useState<
@@ -156,6 +159,31 @@ const PDV = () => {
     queryKey: ["produtos", "pdv-direto"],
     queryFn: () => listProdutos({ ativo: true }),
   });
+
+  const integrationSettingsQuery = useQuery({
+    queryKey: ["integration-settings"],
+    queryFn: getIntegrationSettings,
+  });
+  const mercadoPagoIntegrado = formaPagamento === "cartao"
+    && integrationSettingsQuery.data?.payment?.provider === "mercado_pago"
+    && integrationSettingsQuery.data.payment.oauthConnected
+    && Boolean(integrationSettingsQuery.data.payment.terminalId);
+
+  const processIntegratedCardPayment = async (amount: number, description: string, reference: string) => {
+    if (!mercadoPagoIntegrado) return null;
+    const terminalId = integrationSettingsQuery.data?.payment?.terminalId;
+    if (!terminalId) throw new Error("Selecione um terminal Point nas configurações de pagamentos.");
+    setPaymentProgress("Enviando cobrança ao terminal Mercado Pago...");
+    const transaction = await createMercadoPagoOrder({ terminalId, amount, description, reference });
+    for (let attempt = 0; attempt < 90; attempt += 1) {
+      setPaymentProgress("Aguardando o cliente concluir o pagamento no terminal...");
+      await new Promise((resolve) => window.setTimeout(resolve, 2_000));
+      const current = await getMercadoPagoOrder(transaction.id);
+      if (current.status === "approved") { setPaymentProgress("Pagamento aprovado. Finalizando venda..."); return current; }
+      if (["failed", "canceled", "expired"].includes(current.status)) throw new Error(`Pagamento não aprovado (${current.status}).`);
+    }
+    throw new Error("Tempo de espera do terminal esgotado. Consulte a transação antes de tentar novamente.");
+  };
 
   const ordens = useMemo(
     () =>
@@ -340,13 +368,15 @@ const PDV = () => {
       const recebido = Number(valorRecebido.replace(",", ".")) || 0;
       const adiantadoOS = selectedOrdemPronta.valorAdiantado ?? 0;
       const saldoFinal = Math.max(0, totalFinal - adiantadoOS);
-      if (recebido < saldoFinal) {
+      if (!mercadoPagoIntegrado && recebido < saldoFinal) {
         throw new Error("Valor recebido menor que o saldo devedor da OS.");
       }
+      const paymentTransaction = await processIntegratedCardPayment(saldoFinal, `OS ${selectedOrdemPronta.numero}`, `os_${selectedOrdemPronta.id}`);
       const venda = await createVenda({
+        paymentTransactionId: paymentTransaction?.id,
         ordemServicoId: selectedOrdemPronta.id,
         formaPagamento,
-        valorRecebido: recebido,
+        valorRecebido: paymentTransaction ? saldoFinal : recebido,
         desconto: desc > 0 ? desc : undefined,
       });
       return { ordem: selectedOrdemPronta, venda };
@@ -373,8 +403,10 @@ const PDV = () => {
       setTerceirizadoInfo(emptyTerceirizado);
       setTercErrors({});
       setFormError(null);
+      setPaymentProgress("");
     },
     onError: (error) => {
+      setPaymentProgress("");
       setFormError(
         error instanceof Error
           ? error.message
@@ -389,12 +421,14 @@ const PDV = () => {
       const recebido = Number(valorRecebido.replace(",", ".")) || 0;
       const desc = Number(desconto.replace(",", ".")) || 0;
       const totalFinal = Math.max(0, totalDireto - desc);
-      if (recebido < totalFinal)
+      if (!mercadoPagoIntegrado && recebido < totalFinal)
         throw new Error("Valor recebido menor que o total da venda.");
+      const paymentTransaction = await processIntegratedCardPayment(totalFinal, "Venda direta no PDV", `direta_${crypto.randomUUID()}`);
       return createVenda({
+        paymentTransactionId: paymentTransaction?.id,
         clienteNome: clienteVendaDireta || undefined,
         formaPagamento,
-        valorRecebido: recebido,
+        valorRecebido: paymentTransaction ? totalFinal : recebido,
         desconto: desc > 0 ? desc : undefined,
         itens: carrinho.map((item) => ({
           produtoId: item.id,
@@ -416,8 +450,10 @@ const PDV = () => {
       setClienteVendaDireta("");
       setDesconto("");
       setFormError(null);
+      setPaymentProgress("");
     },
     onError: (error) => {
+      setPaymentProgress("");
       setFormError(
         error instanceof Error
           ? error.message
@@ -584,7 +620,7 @@ const PDV = () => {
       (venda.clienteId ? clienteById.get(venda.clienteId)?.nome : undefined) ??
       "AO CONSUMIDOR"
     ).toUpperCase();
-    const atendente = EMPRESA.tecnicoPadrao.toUpperCase();
+    const atendente = company.tecnicoPadrao.toUpperCase();
     const formaPgto = (venda.formaPagamento ?? "dinheiro").toUpperCase();
 
     const center = (str: string) => {
@@ -643,7 +679,7 @@ const PDV = () => {
 
     const pgWidth = larguraCupom === "58mm" ? "58mm" : "80mm";
 
-    const logoUrl = localStorage.getItem("rr-logo-url");
+    const logoUrl = branding.logo;
     const logoHtml = logoUrl
       ? `<div class="center" style="margin-bottom:4px"><img src="${logoUrl}" style="max-height:50px;max-width:${larguraCupom === "58mm" ? "120px" : "160px"};object-fit:contain" /></div>`
       : "";
@@ -672,11 +708,11 @@ const PDV = () => {
   .sep { border: none; border-top: 2px dashed #000; margin: 2px 0; }
 </style>
 </head><body>
-${logoHtml}<div class="center">${EMPRESA.cnpj} ${EMPRESA.nome.toUpperCase()}</div>
-<div class="center">${EMPRESA.endereco.toUpperCase()} - SALA</div>
-<div class="center">${EMPRESA.bairro.toUpperCase()} - ${EMPRESA.cidade.toUpperCase()}/${EMPRESA.uf}</div>
-<div class="center">TELEFONE: ${EMPRESA.telefone.replace(/\D/g, "")}</div>
-<div class="center">CNPJ: ${EMPRESA.cnpj}</div>
+${logoHtml}<div class="center">${company.cnpj} ${company.nome.toUpperCase()}</div>
+<div class="center">${company.endereco.toUpperCase()} - SALA</div>
+<div class="center">${company.bairro.toUpperCase()} - ${company.cidade.toUpperCase()}/${company.uf}</div>
+<div class="center">TELEFONE: ${company.telefone.replace(/\D/g, "")}</div>
+<div class="center">CNPJ: ${company.cnpj}</div>
 <div class="center">IE:</div>
 <div>${sep}</div>
 <div>DATA: ${now}</div>
@@ -699,9 +735,9 @@ ${itensHtml}
 <div>${rAlign(formaPgto + ": R$", recebido)}</div>
 ${troco}
 <div>${sep}</div>
-<div class="center">${EMPRESA.mensagemFinal}</div>
+<div class="center">${company.mensagemFinal}</div>
 <div>${sep}</div>
-<div class="center small">${EMPRESA.rodape}</div>
+<div class="center small">${company.rodape}</div>
 <script>window.onload = () => { window.print(); window.onafterprint = () => window.close(); }<\/script>
 </body></html>`;
   };
@@ -717,7 +753,7 @@ ${troco}
       (venda.clienteId ? clienteById.get(venda.clienteId)?.nome : undefined) ??
       "AO CONSUMIDOR"
     ).toUpperCase();
-    const atendente = EMPRESA.tecnicoPadrao.toUpperCase();
+    const atendente = company.tecnicoPadrao.toUpperCase();
     const formaPgto = (venda.formaPagamento ?? "dinheiro").toUpperCase();
     const servicoCupom = getServicoCupom(venda);
     const fBRL = (v: number) =>
@@ -743,19 +779,19 @@ ${troco}
         }}
       >
         <div style={{ textAlign: "center" }}>
-          {EMPRESA.cnpj} {EMPRESA.nome.toUpperCase()}
+          {company.cnpj} {company.nome.toUpperCase()}
         </div>
         <div style={{ textAlign: "center" }}>
-          {EMPRESA.endereco.toUpperCase()}
+          {company.endereco.toUpperCase()}
         </div>
         <div style={{ textAlign: "center" }}>
-          {EMPRESA.bairro.toUpperCase()} - {EMPRESA.cidade.toUpperCase()}/
-          {EMPRESA.uf}
+          {company.bairro.toUpperCase()} - {company.cidade.toUpperCase()}/
+          {company.uf}
         </div>
         <div style={{ textAlign: "center" }}>
-          TELEFONE: {EMPRESA.telefone.replace(/\D/g, "")}
+          TELEFONE: {company.telefone.replace(/\D/g, "")}
         </div>
-        <div style={{ textAlign: "center" }}>CNPJ: {EMPRESA.cnpj}</div>
+        <div style={{ textAlign: "center" }}>CNPJ: {company.cnpj}</div>
         <div style={{ textAlign: "center" }}>IE:</div>
         <div>{sep}</div>
         <div>DATA: {now}</div>
@@ -825,10 +861,10 @@ ${troco}
         <div>{rAlign(formaPgto + ": R$", fBRL(venda.valorRecebido))}</div>
         {venda.troco > 0 && <div>{rAlign("TROCO:", fBRL(venda.troco))}</div>}
         <div>{sep}</div>
-        <div style={{ textAlign: "center" }}>{EMPRESA.mensagemFinal}</div>
+        <div style={{ textAlign: "center" }}>{company.mensagemFinal}</div>
         <div>{sep}</div>
         <div style={{ textAlign: "center", fontSize: 10 }}>
-          {EMPRESA.rodape}
+          {company.rodape}
         </div>
       </div>
     );
@@ -872,7 +908,7 @@ ${troco}
   const handleSalvarReciboPdf = () => {
     const venda = vendaFinalizada;
     if (!venda) return;
-    const logoUrl = localStorage.getItem("rr-logo-url");
+    const logoUrl = branding.logo;
     const cliente = venda.clienteNome ?? (venda.clienteId ? clienteById.get(venda.clienteId)?.nome : undefined) ?? "Consumidor";
     const fBRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     const now = new Date().toLocaleString("pt-BR");
@@ -883,7 +919,7 @@ ${troco}
     const win = window.open("", "_blank", "width=800,height=1000");
     if (!win) return;
     win.document.write(`<!DOCTYPE html><html lang="pt-BR"><head>
-<meta charset="UTF-8"/><title>Recibo — ${EMPRESA.nome}</title>
+<meta charset="UTF-8"/><title>Recibo — ${company.nome}</title>
 <style>
   @page { size: A4; margin: 20mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -906,10 +942,10 @@ ${troco}
 <div class="header">
   <div class="empresa">
     ${logoHtml}
-    <h1>${EMPRESA.nome}</h1>
-    <p>CNPJ: ${EMPRESA.cnpj}</p>
-    <p>${EMPRESA.enderecoCompleto}</p>
-    <p>Tel: ${EMPRESA.telefone}</p>
+    <h1>${company.nome}</h1>
+    <p>CNPJ: ${company.cnpj}</p>
+    <p>${company.enderecoCompleto}</p>
+    <p>Tel: ${company.telefone}</p>
   </div>
   <div style="text-align:right">
     <h2>RECIBO NÃO FISCAL</h2>
@@ -930,7 +966,7 @@ ${troco}
   <p>Recebido: ${fBRL(venda.valorRecebido)}</p>
   ${venda.troco > 0 ? `<p>Troco: ${fBRL(venda.troco)}</p>` : ""}
 </div>
-<div class="rodape"><p>${EMPRESA.mensagemFinal ?? ""}</p></div>
+<div class="rodape"><p>${company.mensagemFinal ?? ""}</p></div>
 <script>window.onload = () => { window.print(); }<\/script>
 </body></html>`);
     win.document.close();
@@ -1998,6 +2034,9 @@ ${troco}
               {formError && (
                 <p className="mt-3 text-sm text-destructive">{formError}</p>
               )}
+              {paymentProgress && (
+                <p className="mt-3 flex items-center gap-2 text-sm text-primary"><Loader2 className="h-4 w-4 animate-spin" />{paymentProgress}</p>
+              )}
 
               <Button
                 className="mt-4 w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
@@ -2213,6 +2252,9 @@ ${troco}
                 </div>
                 {formError && (
                   <p className="text-sm text-destructive">{formError}</p>
+                )}
+                {paymentProgress && (
+                  <p className="flex items-center gap-2 text-sm text-primary"><Loader2 className="h-4 w-4 animate-spin" />{paymentProgress}</p>
                 )}
                 <Button
                   className="w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"

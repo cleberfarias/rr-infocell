@@ -39,6 +39,7 @@ export type Venda = {
 };
 
 export type VendaInput = {
+  paymentTransactionId?: string;
   ordemServicoId?: string;
   clienteId?: string;
   clienteNome?: string;

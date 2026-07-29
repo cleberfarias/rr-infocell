@@ -23,7 +23,7 @@ const TESTIMONIALS = [
 
 export default function Testimonials() {
   return (
-    <section id="depoimentos" className="testi-section">
+    <section id="depoimentos" className="testi-section immersive-section immersive-proof">
       <div className="section-center">
         <ScrollReveal>
           <span className="section-tag">Depoimentos</span>
@@ -31,12 +31,12 @@ export default function Testimonials() {
             Assistências que já <em>transformaram</em> sua gestão
           </h2>
           <p className="section-sub">
-            Veja o que nossos clientes dizem após usar o NextAssist no dia a dia.
+            Exemplos de como assistências técnicas usam o NextAssist no dia a dia.
           </p>
         </ScrollReveal>
         <div className="testi-grid">
-          {TESTIMONIALS.map((t) => (
-            <ScrollReveal key={t.name}>
+          {TESTIMONIALS.map((t, index) => (
+            <ScrollReveal key={t.name} variant={index === 1 ? "up" : index === 0 ? "left" : "right"} delay={index * 100}>
               <div className="testi-card">
                 <div className="stars">★★★★★</div>
                 <p className="testi-text">&ldquo;{t.text}&rdquo;</p>
@@ -51,6 +51,9 @@ export default function Testimonials() {
             </ScrollReveal>
           ))}
         </div>
+        <p className="section-sub" style={{ marginTop: "1.5rem", fontSize: ".8rem", opacity: 0.7 }}>
+          Depoimentos ilustrativos representando casos de uso reais do NextAssist.
+        </p>
       </div>
     </section>
   );

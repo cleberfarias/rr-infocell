@@ -72,10 +72,18 @@ jobs:
       - name: TypeScript check
         run: npx tsc --noEmit
 
-      - name: Build
+      - name: Build RR Infocell White Label
         run: npm run build
         env:
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || 'http://localhost:3333/api' }}
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || 'https://rr-infocell-api-91248386036.southamerica-east1.run.app/api' }}
+          VITE_AUTH_DEV_MODE: "false"
+          VITE_TENANT_ID: rr-infocell
+          VITE_PRODUCT_NAME: NextAssist
+          VITE_SYSTEM_NAME: RR Infocell
+          VITE_TENANT_NAME: RR Infocell
+          VITE_DEFAULT_PLAN: empresarial
+          VITE_OWNER_LOGIN: cleber.adm
+          VITE_OWNER_EMAIL: cleber.adm@nextassist.app
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY || 'ci-placeholder' }}
           VITE_FIREBASE_AUTH_DOMAIN: rr-infocell.firebaseapp.com
           VITE_FIREBASE_PROJECT_ID: rr-infocell
@@ -87,7 +95,35 @@ jobs:
         uses: actions/upload-artifact@v4
         if: github.ref == 'refs/heads/main'
         with:
-          name: frontend-dist
+          name: frontend-dist-rr-infocell
+          path: frontend/dist
+          retention-days: 1
+
+      - name: Build NextAssist
+        if: github.ref == 'refs/heads/main'
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || 'https://rr-infocell-api-91248386036.southamerica-east1.run.app/api' }}
+          VITE_AUTH_DEV_MODE: "false"
+          VITE_TENANT_ID: nextassist
+          VITE_PRODUCT_NAME: NextAssist
+          VITE_SYSTEM_NAME: NextAssist
+          VITE_TENANT_NAME: NextAssist
+          VITE_DEFAULT_PLAN: empresarial
+          VITE_OWNER_LOGIN: cleber.adm
+          VITE_OWNER_EMAIL: cleber.adm@nextassist.app
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY || 'ci-placeholder' }}
+          VITE_FIREBASE_AUTH_DOMAIN: rr-infocell.firebaseapp.com
+          VITE_FIREBASE_PROJECT_ID: rr-infocell
+          VITE_FIREBASE_STORAGE_BUCKET: rr-infocell.appspot.com
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID || 'ci-placeholder' }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID || 'ci-placeholder' }}
+
+      - name: Upload NextAssist build artifact
+        uses: actions/upload-artifact@v4
+        if: github.ref == 'refs/heads/main'
+        with:
+          name: frontend-dist-nextassist
           path: frontend/dist
           retention-days: 1
 
@@ -119,12 +155,17 @@ jobs:
             --allow-unauthenticated \
             --set-env-vars "NODE_ENV=production" \
             --set-env-vars "FIREBASE_PROJECT_ID=rr-infocell" \
-            --set-env-vars "CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}" \
+            --set-env-vars "^@^CORS_ORIGIN=https://rr-infocell.web.app,https://nextassist.web.app" \
+            --set-env-vars "OBSERVABILIDADE_ALLOWED_EMAILS=cleber.adm@nextassist.app" \
             --set-env-vars "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" \
             --set-env-vars "ATENDIMENTO_LEMBRETE_ORCAMENTO_HORAS=24" \
             --set-env-vars "ATENDIMENTO_LEMBRETE_RETIRADA_DIAS=2" \
             --set-env-vars "ATENDIMENTO_AUTOARQUIVAR_DIAS=7" \
             --set-env-vars "FIREBASE_WEB_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY }}" \
+            --set-env-vars "MERCADO_PAGO_CLIENT_ID=${{ secrets.MERCADO_PAGO_CLIENT_ID }}" \
+            --set-env-vars "MERCADO_PAGO_OAUTH_REDIRECT_URI=https://rr-infocell-api-91248386036.southamerica-east1.run.app/api/integracoes/mercado-pago/oauth/callback" \
+            --set-env-vars "APP_URL=https://nextassist.web.app" \
+            --set-secrets "MERCADO_PAGO_CLIENT_SECRET=mercado-pago-client-secret:latest,INTEGRATIONS_ENCRYPTION_KEY=integrations-encryption-key:latest" \
             --min-instances 1 \
             --max-instances 1 \
             --quiet
@@ -149,7 +190,7 @@ jobs:
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
-          name: frontend-dist
+          name: frontend-dist-rr-infocell
           path: frontend/dist
 
       - name: Authenticate to Firebase
@@ -174,6 +215,17 @@ jobs:
               exit "$status"
             fi
           fi
+
+      - name: Prepare NextAssist artifact directory
+        run: |
+          rm -rf frontend/dist
+          mkdir -p frontend/dist
+
+      - name: Download NextAssist build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist-nextassist
+          path: frontend/dist
 
       - name: Deploy nextassist.web.app
         run: |

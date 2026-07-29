@@ -6,22 +6,15 @@ import { auth, db } from "../../firebase/admin.js";
 import { requireRole, type AuthenticatedRequest } from "../../middlewares/auth.js";
 import { httpStatus } from "../../shared/http-status.js";
 import { AppError } from "../../shared/errors.js";
+import { isPlatformOwner } from "../../shared/platform-owner.js";
 import { resolveTenant, getRequestTenantId, type TenantRequest } from "../../middlewares/tenant.js";
 import { DEFAULT_TENANT_ID, defaultTenant } from "./tenant.config.js";
+import { tenantSettingsSchema } from "./tenant.schemas.js";
 import type { Tenant } from "./tenant.types.js";
 
 export const tenantsRoutes = Router();
 
 tenantsRoutes.use(resolveTenant);
-
-const separarLista = (valor?: string) =>
-  (valor ?? "")
-    .split(",")
-    .map((item) => item.trim().toLowerCase())
-    .filter(Boolean);
-
-const emailsPermitidos = separarLista(env.OBSERVABILIDADE_ALLOWED_EMAILS);
-const uidsPermitidos = separarLista(env.OBSERVABILIDADE_ALLOWED_UIDS);
 
 const asyncHandler =
   (handler: (req: Request, res: Response, next: NextFunction) => Promise<unknown>) =>
@@ -39,12 +32,7 @@ const requireDonoPlataforma = (
     return;
   }
 
-  const uid = request.user?.uid?.toLowerCase();
-  const email = request.user?.email?.toLowerCase();
-  const permitidoPorUid = uid ? uidsPermitidos.includes(uid) : false;
-  const permitidoPorEmail = email ? emailsPermitidos.includes(email) : false;
-
-  if (!permitidoPorUid && !permitidoPorEmail) {
+  if (!isPlatformOwner(request)) {
     next(
       new AppError(
         "platform_admin_forbidden",
@@ -210,7 +198,83 @@ tenantsRoutes.get(
         name: data.name ?? tenantId,
         productName: data.productName ?? "NextAssist",
         plan: data.plan ?? "empresarial",
+        status: data.status ?? "active",
+        trialEndsAt: toIso(data.trialEndsAt),
+        diasRestantes: diasRestantes(data.trialEndsAt),
         branding: data.branding ?? {},
+        company: data.company ?? {},
+      },
+    });
+  }),
+);
+
+tenantsRoutes.patch(
+  "/current",
+  asyncHandler(async (request, response) => {
+    const authenticatedRequest = request as AuthenticatedRequest & TenantRequest;
+    if (authenticatedRequest.user?.role !== "admin") {
+      throw new AppError(
+        "forbidden",
+        "Apenas administradores podem alterar as configuracoes da empresa.",
+        httpStatus.forbidden,
+      );
+    }
+
+    if (!db) {
+      throw new AppError(
+        "firebase_not_configured",
+        "Firebase Admin SDK nao esta configurado.",
+        httpStatus.internalServerError,
+      );
+    }
+
+    const parsed = tenantSettingsSchema.safeParse(request.body);
+    if (!parsed.success) {
+      throw new AppError(
+        "validation_error",
+        parsed.error.errors[0]?.message ?? "Configuracoes da empresa invalidas.",
+        httpStatus.badRequest,
+      );
+    }
+    const input = parsed.data;
+    const tenantId = getRequestTenantId(authenticatedRequest);
+    const now = new Date().toISOString();
+    const branding = {
+      ...input.branding,
+      logoUrl: input.branding.logoUrl || undefined,
+    };
+
+    const tenantRef = db.collection("tenants").doc(tenantId);
+    const tenantSnapshot = await tenantRef.get();
+    const createDefaults = tenantSnapshot.exists
+      ? {}
+      : {
+          id: tenantId,
+          slug: tenantId,
+          productName: defaultTenant.productName,
+          plan: defaultTenant.plan,
+          whiteLabel: true,
+          status: defaultTenant.status,
+          createdAt: now,
+        };
+
+    await tenantRef.set(
+      {
+        ...createDefaults,
+        name: input.name,
+        branding,
+        company: input.company,
+        updatedAt: now,
+      },
+      { merge: true },
+    );
+
+    response.status(httpStatus.ok).json({
+      data: {
+        id: tenantId,
+        name: input.name,
+        branding,
+        company: input.company,
       },
     });
   }),
@@ -222,6 +286,10 @@ function buildFallback(tenantId: string) {
     name: tenantId === DEFAULT_TENANT_ID ? "RR Infocell" : tenantId,
     productName: "NextAssist",
     plan: "empresarial",
+    status: "active",
+    trialEndsAt: null,
+    diasRestantes: 0,
     branding: {},
+    company: {},
   };
 }

@@ -89,10 +89,11 @@ clientesRoutes.put(
   "/:id",
   asyncHandler(async (request, response) => {
     const id = String(request.params.id);
+    const tenantId = getRequestTenantId(request as TenantRequest);
     const input = parseOrThrow(() => clienteInputSchema.parse(request.body));
 
     response.status(httpStatus.ok).json({
-      data: await clientesService.update(id, input),
+      data: await clientesService.update(id, input, tenantId),
     });
   }),
 );
@@ -101,8 +102,9 @@ clientesRoutes.delete(
   "/:id",
   asyncHandler(async (request, response) => {
     const id = String(request.params.id);
+    const tenantId = getRequestTenantId(request as TenantRequest);
 
-    await clientesService.delete(id);
+    await clientesService.delete(id, tenantId);
 
     response.status(204).send();
   }),

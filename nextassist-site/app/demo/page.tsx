@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { trackConversion } from "@/lib/conversionTracking";
 
 type Estado = "form" | "enviando" | "sucesso" | "erro" | "ja-existe";
 
@@ -14,6 +15,8 @@ export default function DemoPage() {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [empresa, setEmpresa] = useState("");
+
+  useEffect(() => { trackConversion("demo_view"); }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -48,6 +51,7 @@ export default function DemoPage() {
       }
 
       setEstado("sucesso");
+      trackConversion("demo_submit");
     } catch (err: unknown) {
       setErroMsg(err instanceof Error ? err.message : "Tente novamente.");
       setEstado("erro");
@@ -69,7 +73,7 @@ export default function DemoPage() {
           <div className="demo-steps">
             <div className="demo-step">
               <span className="demo-step-num">1</span>
-              <span>Abra o e-mail de <strong>NextAssist</strong> e clique em "Definir senha"</span>
+              <span>Abra o e-mail de <strong>NextAssist</strong> e clique em &quot;Definir senha&quot;</span>
             </div>
             <div className="demo-step">
               <span className="demo-step-num">2</span>
@@ -92,7 +96,7 @@ export default function DemoPage() {
           </a>
           <p className="demo-help">
             Não recebeu o e-mail? No login clique em{" "}
-            <strong>"Esqueci a senha"</strong> ou{" "}
+            <strong>&quot;Esqueci a senha&quot;</strong> ou{" "}
             <a href="https://wa.me/5548999019525">fale pelo WhatsApp</a>.
           </p>
         </div>

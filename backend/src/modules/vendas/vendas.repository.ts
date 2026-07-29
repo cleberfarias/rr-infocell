@@ -14,7 +14,7 @@ export interface VendasRepository {
     filters?: { ordemServicoId?: string; status?: VendaStatus | "" },
     tenantId?: string,
   ): Promise<Venda[]>;
-  findByOrdem(ordemServicoId: string): Promise<Venda | null>;
+  findByOrdem(ordemServicoId: string, tenantId?: string): Promise<Venda | null>;
   create(input: Omit<Venda, "id">): Promise<Venda>;
 }
 
@@ -49,8 +49,8 @@ export class MemoryVendasRepository implements VendasRepository {
     return filterVendas(vendas, filters);
   }
 
-  async findByOrdem(ordemServicoId: string) {
-    const [venda] = await this.list({ ordemServicoId, status: "finalizada" });
+  async findByOrdem(ordemServicoId: string, tenantId?: string) {
+    const [venda] = await this.list({ ordemServicoId, status: "finalizada" }, tenantId);
 
     return venda ?? null;
   }
@@ -100,8 +100,8 @@ export class FirestoreVendasRepository implements VendasRepository {
     return filterVendas(vendas, filters);
   }
 
-  async findByOrdem(ordemServicoId: string) {
-    const [venda] = await this.list({ ordemServicoId, status: "finalizada" });
+  async findByOrdem(ordemServicoId: string, tenantId?: string) {
+    const [venda] = await this.list({ ordemServicoId, status: "finalizada" }, tenantId);
 
     return venda ?? null;
   }
