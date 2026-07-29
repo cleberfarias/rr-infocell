@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import ScrollReveal from "./ScrollReveal";
+import { trackConversion } from "@/lib/conversionTracking";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "https://rr-infocell-api-91248386036.southamerica-east1.run.app";
@@ -39,6 +40,7 @@ export default function Contact() {
 
       form.reset();
       setToast(true);
+      trackConversion("contact_submit");
       setTimeout(() => setToast(false), 4000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao enviar mensagem. Tente novamente.");
@@ -135,6 +137,7 @@ export default function Contact() {
                         href="https://wa.me/5548999019525"
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={() => trackConversion("whatsapp_click")}
                       >
                         +55 (48) 99901-9525
                       </a>

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { trackConversion } from "@/lib/conversionTracking";
 
 type Estado = "form" | "enviando" | "sucesso" | "erro" | "ja-existe";
 
@@ -14,6 +15,8 @@ export default function DemoPage() {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [empresa, setEmpresa] = useState("");
+
+  useEffect(() => { trackConversion("demo_view"); }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -48,6 +51,7 @@ export default function DemoPage() {
       }
 
       setEstado("sucesso");
+      trackConversion("demo_submit");
     } catch (err: unknown) {
       setErroMsg(err instanceof Error ? err.message : "Tente novamente.");
       setEstado("erro");
