@@ -30,8 +30,7 @@ docs/nextassist/
 
 ## Regras de produto que nao podem regredir
 
-- Modelo mental obrigatorio: RR Infocell e um cliente White Label (WL) em producao e o tenant piloto; NextAssist e a plataforma SaaS/White Label preparada para atender a RR Infocell e outros clientes.
-- A RR Infocell deve ter identidade propria por tenant, incluindo logo, nome, cores, dados da empresa e demais personalizacoes. Nao use a marca NextAssist como identidade visual operacional desse cliente.
+- Modelo mental obrigatorio: RR Infocell e o cliente/tenant piloto em producao; NextAssist e o produto SaaS/White Label preparado para vender a outros clientes.
 - Mudancas pedidas para "RR Infocell" normalmente afetam a operacao do cliente atual. Avalie se a regra tambem deve ir para a base SaaS comum.
 - Mudancas pedidas para "NextAssist", "site", "planos", "SaaS", "WL" ou "White Label" devem considerar outros clientes futuros, nao apenas a RR Infocell.
 - Nao trocar marca RR Infocell por NextAssist em documentos operacionais, fiscais, recibos, OS, garantias ou relatorios sem confirmar o contexto.
@@ -66,13 +65,6 @@ docs/nextassist/
 - Formatos aceitos de vencimento: `dd/mm`, `dd/mm/aaaa` e `aaaa-mm-dd`.
 - Despesa marcada como paga pode receber `pagoEm` no backend, mas isso nao deve mover a despesa para outro mes do DRE.
 - No Dashboard, metricas dentro de um bloco mensal devem usar o mesmo recorte temporal do bloco. Nao misture contagem historica com titulo "Valores de <mes>".
-- Recorrencias materializadas devem ser idempotentes inclusive com requisicoes simultaneas e multiplas instancias do Cloud Run. Checar antes de gravar nao basta; use chave deterministica, transacao ou outra garantia atomica no Firestore.
-- Trate separadamente a origem da serie e cada ocorrencia mensal. Antes de editar ou excluir, defina explicitamente se a acao vale para esta ocorrencia, para esta e as futuras ou para toda a serie.
-- Converter uma despesa fixa em unica deve encerrar/desvincular a recorrencia de forma persistente. Depois da conversao, excluir o lancamento nao pode fazer o backend recria-lo na proxima listagem.
-- Excluir uma ocorrencia de despesa fixa nao pode resultar em recriacao silenciosa. Se a regra exigir manter a serie, persista cancelamento/excecao ou ofereca escopo de exclusao claro.
-- Nunca corrija duplicacao apenas filtrando a interface: os documentos duplicados continuam afetando DRE, totais e outras consultas. Corrija a invariavel no backend/repositorio.
-- Ao alterar recorrencias, adicione testes para: chamadas concorrentes, navegacao repetida na mesma competencia, edicao de ocorrencia, conversao fixa para unica, exclusao sem reaparecimento e isolamento por `tenantId`.
-- Dados duplicados ja existentes exigem auditoria/limpeza separada. Preserve lancamentos pagos e alterados manualmente, execute primeiro em dry-run e nao apague producao por semelhanca apenas de descricao/valor/data.
 
 ## PDV, OS e descontos
 
@@ -80,17 +72,6 @@ docs/nextassist/
 - No fechamento de OS no PDV, se `selectedOrdem.desconto` existir, mostre a linha do desconto antes do total para evitar confusao no caixa.
 - Venda/finalizacao de OS deve invalidar queries relacionadas: ordens, ordem individual, vendas e eventos.
 - Ao lidar com pagamento de OS, respeite `valorAdiantado`, `formaPagamentoAdiantamento`, desconto e troco.
-
-## Integracoes fiscais e pagamentos
-
-- A documentacao de referencia fica em `docs/nextassist/integracoes-fiscais-pagamentos.md`.
-- Configuracoes fiscais, tokens OAuth, terminal e adquirente sao sempre resolvidos por `tenantId`; nunca use credenciais de um tenant em outro.
-- `MERCADO_PAGO_CLIENT_ID` e `MERCADO_PAGO_CLIENT_SECRET` pertencem a aplicacao NextAssist. Cada cliente conecta a propria conta via OAuth e nao recebe essas credenciais globais.
-- Segredos persistidos devem usar a criptografia de `backend/src/modules/integracoes/integracoes.crypto.ts`. Nunca salvar senha de certificado, token ou client secret em texto puro, frontend, Git ou logs.
-- No pagamento integrado, o backend deve validar tenant, status aprovado, valor suficiente e consumo unico antes de criar a venda. Validacao apenas no frontend nao e aceitavel.
-- A integracao Mercado Pago Point esta ativa; o status atual usa polling de Orders. Webhook assinado, estorno e recuperacao de pendencias ainda sao trabalhos futuros.
-- A interface ja armazena configuracao de NFC-e/NFS-e, mas emissao fiscal real ainda nao esta implementada. Nao apresentar configuracao salva como nota fiscal autorizada.
-- Novos adquirentes e emissores devem implementar `PaymentProvider` ou `FiscalProvider`, preservando o nucleo e o isolamento multiempresa.
 
 ## Sistema de impressao
 
@@ -126,8 +107,7 @@ Via interna de impressao pode exibir senha; via cliente nao deve expor senha do 
 
 ## NextAssist SaaS, planos e site comercial
 
-- O produto SaaS/White Label e NextAssist; RR Infocell e um cliente WL em producao e o tenant piloto operacional.
-- Trate logo, marca, cores, dados empresariais e demais personalizacoes da RR Infocell como configuracao exclusiva do tenant. Elas nao devem virar padrao global da plataforma nem ser herdadas por outros clientes.
+- O produto SaaS/White Label e NextAssist; RR Infocell e o tenant piloto operacional.
 - O sistema deve ser mantido como base comum: melhorias estruturais entram no produto, mas configuracoes, branding, dados e permissoes devem ser resolvidos por tenant/plano quando forem SaaS.
 - Para outro cliente com White Label, o app deve poder exibir marca, cores, dados de empresa, plano e permissoes diferentes sem alterar regras centrais de OS, PDV, estoque e financeiro.
 - Ao implementar algo para SaaS real, nao confiar em config estatica do frontend como fonte final; o backend/tenant deve ser a fonte de verdade para plano, status de assinatura e features.
@@ -189,11 +169,3 @@ npx tsx src/scripts/reverter-venda-vanessa.ts
 - Para regras financeiras, rode `cd frontend && npm run test -- financeiro.test.ts`.
 - Se mexer em UI critica, preferir validar visualmente no navegador/dev server.
 - Nao incluir arquivos soltos ou scripts de manutencao nao relacionados no commit.
-
-## Commit e deploy automatico
-
-- Commit local nao dispara deploy. O deploy de producao ocorre apos `push` para `main`, desde que o commit altere caminhos monitorados pelo workflow.
-- `.github/workflows/ci.yml` monitora `frontend/**`, `backend/**`, `infra/**` e o proprio workflow. Depois das validacoes, faca commit apenas dos arquivos da tarefa, envie `main` e acompanhe o run `CI / CD` ate concluir.
-- O workflow gera artefatos separados: RR Infocell para `rr-infocell.web.app` e NextAssist para `nextassist.web.app`. Nao reutilize um unico build com a mesma identidade nos dois targets.
-- Alteracoes em `nextassist-site/**` disparam o workflow separado `.github/workflows/nextassist-deploy.yml`.
-- Mudancas apenas em documentacao ou `AGENTS.md` nao disparam deploy, salvo quando o arquivo estiver listado nos filtros do workflow.
