@@ -1,0 +1,28 @@
+# Dependências e artefatos gerados
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+build/
+**/build/
+.git/
+graphify-out/
+
+# Segredos e credenciais
+.env
+.env.*
+**/.env
+**/.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*credentials*.json
+*credential*.json
+*service-account*.json
+*firebase-adminsdk*.json
+secrets/
+**/secrets/
+credentials/
+**/credentials/
+

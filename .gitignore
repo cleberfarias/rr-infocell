@@ -43,3 +43,6 @@ backend/src/scripts/limpar-tudo.ts
 # Dados exportados do Firestore para o emulador local
 emulator-data/
 duplicate-reports/
+
+# Artefatos locais do Graphify
+graphify-out/

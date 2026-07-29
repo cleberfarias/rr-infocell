@@ -27,7 +27,7 @@ export default function Hero() {
           </BlurFade>
           <BlurFade className="hero-blur-fade" delay={0.08} duration={0.6}>
             <h1>
-              Da entrada do aparelho ao <em>recibo final.</em>
+              Sistema de gestão para <em>assistência técnica</em>
             </h1>
           </BlurFade>
           <BlurFade className="hero-blur-fade" delay={0.16} duration={0.6}>

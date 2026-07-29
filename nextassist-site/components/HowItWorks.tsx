@@ -35,7 +35,7 @@ export default function HowItWorks() {
         <ScrollReveal>
           <span className="section-tag">Como funciona</span>
           <h2>
-            Em funcionamento em <em>minutos</em>
+            Um sistema para assistência técnica funcionando em <em>minutos</em>
           </h2>
           <p className="section-sub">
             Sem treinamento longo, sem suporte técnico de TI. Qualquer membro da equipe aprende
